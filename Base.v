@@ -1,5 +1,7 @@
 Set Warnings "-notation-overridden,-parsing".
-From Coq Require Import Lists.List. Import ListNotations.
+
+Require Import Lists.List.
+Import ListNotations.
 Require Import Strings.String.
 Require Import Reals.
 Require Import Logic.JMeq.
@@ -15,10 +17,13 @@ Main paper:
   Diffeologies and Categorical Gluing by Huot, Stanton and Vakar.
 
 Well-scoped, well-typed debruijn indices in language:
-- Parametric Higher-Order Abstract Syntax for Mechanized Semantics by Chlipala.
-- Type-Preserving Renaming and Substitution by McBride.
 - Strongly Typed Term Representations in Coq by Benton, et al.
+- Type-Preserving Renaming and Substitution by McBride.
+- Parametric Higher-Order Abstract Syntax for Mechanized Semantics by Chlipala.
 
+GADTs in Coq and the Program command:
+- Elimination with a motive by McBride.
+- Program-ing Finger Trees using Coq by Sozeau.
 
 Notational conventions:
   capital greeks for typing environment
@@ -126,12 +131,12 @@ Inductive has_type : Ctx -> smf -> ty -> Prop :=
     has_type Γ (snd p) σ
 .
 
-Notation "Γ |- t ∷ τ" := (has_type Γ t τ) (at level 70).
+Notation "Γ ⊢ t ∷ τ" := (has_type Γ t τ) (at level 70).
 
 (* Lemma 1 *)
 
 Lemma functorial_macro : forall Γ t τ,
-  Γ |- t ∷ τ -> Dctx Γ |- Dsmf t ∷ Dt τ.
+  Γ ⊢ t ∷ τ -> Dctx Γ ⊢ Dsmf t ∷ Dt τ.
 Proof with eauto.
 Admitted.
 
@@ -159,8 +164,8 @@ Inductive smf (Γ : Ctx) : ty -> Type :=
     τ ∈ Γ -> smf Γ τ
   | app : forall τ σ,
     smf Γ (σ → τ) ->
-    smf Γ τ ->
-    smf Γ σ
+    smf Γ σ ->
+    smf Γ τ
   | abs : forall τ σ,
     smf (σ::Γ) τ -> smf Γ (σ → τ)
 
@@ -177,7 +182,7 @@ Inductive smf (Γ : Ctx) : ty -> Type :=
   | snd : forall τ σ, smf Γ (τ × σ) -> smf Γ σ
 .
 
-(* #region Examples *)
+(* Examples *)
 Definition ex_id :=
   abs [] Real Real
     (var [Real] Real (Top _ _)).
@@ -207,7 +212,7 @@ Definition neuron :=
             (Pop [Real;Real] Real Real
               (Pop [Real] Real Real
                 (Top [] Real))))))).
-(* #endregion Examples *)
+(* Examples *)
 
 (* Functorial macro *)
 
@@ -243,24 +248,48 @@ Program Fixpoint Dsmf {Γ τ} (t : smf Γ τ) : smf (map Dt Γ) (Dt τ) :=
   | snd _ _ _ p => snd _ _ _ (Dsmf p)
   end.
 
-Lemma Dt_lift Γ τ : τ ∈ Γ -> (Dt τ) ∈ (map Dt Γ).
+Lemma Dt_lift_var Γ τ : τ ∈ Γ -> (Dt τ) ∈ (map Dt Γ).
 Proof with eauto.
   intros. induction H; constructor. assumption.
 Qed.
 
 (*
+  Substitution
+
   Adapted from:
     Strongly Typed Term Representations in Coq by Benton, et al.
 *)
 
+(* Substitutes a variable typed in one context and swaps it
+  with an expression with the same type typed in a different context.
+*)
 Definition sub Γ Γ' := forall τ, Var Γ τ -> smf Γ' τ.
 Definition ren Γ Γ' := forall τ, Var Γ τ -> Var Γ' τ.
 
+(* Helper functions for defining substitutions on the i'th variable *)
+Definition id_sub {Γ} : sub Γ Γ := var Γ.
+Program Definition cons_sub {Γ Γ' τ}
+    (e: smf Γ' τ) (s: sub Γ Γ') : sub (τ::Γ) Γ'
+  := fun σ (x : Var (τ::Γ) σ) =>
+    match x with
+    | Top _ _ => e
+    | Pop _ _ _ v' => s σ v'
+    end.
+
+Notation "| a ; .. ; b |" :=
+  (cons_sub a  .. ( cons_sub b id_sub) .. )
+  (at level 12, no associativity).
+
+(* For decomposing substitutions *)
+Definition hd_sub {Γ Γ' τ} (s : sub (τ::Γ) Γ') : smf Γ' τ := s τ (Top Γ τ).
+Definition tl_sub {Γ Γ' τ} (s : sub (τ::Γ) Γ') : sub Γ Γ'
+  := fun σ x => s σ (Pop Γ σ τ x).
+
 Program Definition rename_lifted {Γ Γ' τ} (r : ren Γ Γ')
-  : ren (τ::Γ) (τ::Γ') := fun τ' v =>
+  : ren (τ::Γ) (τ::Γ') := fun σ v =>
   match v with
-  | Top _ _  => Top _ _
-  | Pop _ _ _ v' => Pop _ _ _ (r _ v')
+  | Top _ _  => Top Γ' τ
+  | Pop _ _ _ v' => Pop Γ' σ τ (r σ v')
   end.
 
 Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : smf Γ τ) : (smf Γ' τ) :=
@@ -278,13 +307,13 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : smf Γ τ) : (smf Γ' τ) :=
   end.
 
 Definition shift {Γ τ σ} : smf Γ τ -> smf (σ::Γ) τ
-  := rename (fun _ x => Pop _ _ _ x).
+  := rename (fun ρ x => Pop Γ ρ σ x).
 
 Program Definition substitute_lifted {Γ Γ' τ} (s : sub Γ Γ')
   : sub (τ::Γ) (τ::Γ') := fun τ' v =>
   match v with
-  | Top _ _  => var _ _ (Top _ _)
-  | Pop _ _ _ w => shift (s _ w)
+  | Top _ _  => var (τ::Γ') τ (Top Γ' τ)
+  | Pop _ _ _ w => shift (s τ' w)
   end.
 
 Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : smf Γ τ) : smf Γ' τ :=
@@ -301,4 +330,67 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : smf Γ τ) : smf Γ' τ :=
   | snd _ _ _ p => snd _ _ _ (substitute s p)
   end.
 
-End snd_attempt.
+(*
+  Typing
+
+  TODO: Redundant to define this considering it is builtin to the
+   structure of the language?
+*)
+Definition has_type {Γ τ} (t : smf Γ τ) : ty := τ.
+Notation "Γ ⊢ t ∷ τ" := (@has_type Γ τ t) (at level 70).
+Corollary has_type_refl Γ τ (t : smf Γ τ) :
+  has_type t = τ.
+Proof. reflexivity. Qed.
+
+(*
+  Evaluation
+*)
+
+Inductive value : forall Γ τ, smf Γ τ -> Prop :=
+  | v_real : forall Γ r,
+      value Γ Real (const Γ r)
+  | v_pair : forall Γ τ σ t1 t2,
+      value Γ τ t1 ->
+      value Γ σ t2 ->
+      value Γ (τ × σ) (tuple Γ τ σ t1 t2)
+  | v_abs : forall Γ τ σ t,
+      value Γ (σ → τ) (abs Γ τ σ t)
+.
+Hint Constructors value.
+
+Inductive eval : forall τ, smf [] τ -> smf [] τ -> Prop :=
+  | EV_App : forall τ σ t1 t1' t2 t2' v,
+      eval (σ → τ) t1 (abs _ τ σ t1') ->
+      eval σ t2 t2' ->
+      eval τ (substitute (| t2' |) t1') v ->
+        eval τ (app _ τ σ t1 t2) v
+
+  | EV_Add : forall t1 t1' t2 t2',
+      eval Real t1 t1' ->
+      eval Real t2 t2' ->
+      eval Real (add _ t1 t2) (add _ t1' t2')
+
+  | EV_Tuple : forall τ σ t1 t1' t2 t2',
+      eval τ t1 t1' ->
+      eval σ t2 t2' ->
+      eval (τ × σ) (tuple _ τ σ t1 t2) (tuple _ τ σ t1' t2')
+  | EV_FstTuple : forall τ σ t1 t2,
+      eval τ (fst _ τ σ (tuple _ τ σ t1 t2)) t1
+  | EV_SndTuple : forall τ σ t1 t2,
+      eval σ (snd _ τ σ (tuple _ τ σ t1 t2)) t2
+.
+
+Lemma D_type : forall Γ τ
+  (t : smf Γ τ),
+  has_type (Dsmf t) = Dt τ.
+Proof. trivial. Qed.
+
+Lemma D_substitute : forall Γ Γ' τ
+  (t : smf (τ::Γ) τ)
+  (s : smf Γ τ)
+  (sb : sub Γ Γ'),
+  Dsmf (substitute (| s |) t) =
+    substitute (| Dsmf s |) (Dsmf t).
+Proof with eauto.
+  induction τ; intros.
+Admitted.
