@@ -196,7 +196,7 @@ Notation step_normal_form := (normal_form step).
 
 Lemma value__normal : forall t, value t -> step_normal_form t.
 Proof with eauto.
-  intros t H; induction H; intros [t' ST]; inversion ST...
+  intros t H. induction H. intros [t' ST]; inversion ST...
 Qed.
 
 (* ----------------------------------------------------------------- *)
