@@ -19,109 +19,6 @@ Inductive ty : Type :=
 Notation "A × B" := (Prod A B) (left associativity, at level 90).
 Notation "A → B" := (Arrow A B) (right associativity, at level 20).
 
-Module fst_attempt.
-
-(* Just STLC with debruijn *)
-
-Inductive tm : Type :=
-  (* Base STLC *)
-  | var : string -> tm
-  | app : tm -> tm -> tm
-  | abs : string -> ty -> tm -> tm
-
-  (* Reals *)
-  | const : R -> tm
-  | add : tm -> tm -> tm
-
-  (* Products (currently using projection instead of pattern matching) *)
-  | pair : tm -> tm -> tm
-  | fst : tm -> tm
-  | snd : tm -> tm
-.
-
-Fixpoint Dt (τ : ty) : ty :=
-  match τ with
-  | Real => Real × Real
-  | t1 × t2 => Dt t1 × Dt t2
-  | t1 → t2 => Dt t1 → Dt t2
-  end.
-
-Fixpoint Dtm (t : tm) : tm :=
-  match t with
-  | var s => t
-  | app t1 t2 => app (Dtm t1) (Dtm t2)
-  | abs s τ f => abs s τ (Dtm f)
-
-  | const r => pair t (const 0)
-  | add t1 t2 =>
-    let d1 := (Dtm t1) in
-    let d2 := (Dtm t2) in
-      pair (add (fst d1) (fst d2)) (add (snd d1) (snd d2))
-
-  | pair t1 t2 => pair (Dtm t1) (Dtm t2)
-  | fst p => fst (Dtm p)
-  | snd p => snd (Dtm p)
-  end.
-
-Notation Ctx := (list (string * ty)).
-
-Fixpoint Dctx (Γ : Ctx) : Ctx :=
-  match Γ with
-  | nil => nil
-  | (h, τ) :: t => (h, Dt τ) :: Dctx t
-  end.
-
-Fixpoint lookup (Γ : Ctx) (x : string) : option ty :=
-  match Γ with
-  | nil => None
-  | (h, τ) :: Γ' => if eqb x h then Some τ else lookup Γ' x
-  end.
-
-Inductive has_type : Ctx -> tm -> ty -> Prop :=
-  | T_var : forall Γ x τ,
-    lookup Γ x = Some τ ->
-    has_type Γ (var x) τ
-  | T_app : forall Γ t1 t2 τ σ,
-    has_type Γ t1 (τ → σ) ->
-    has_type Γ t2 τ ->
-    has_type Γ (app t1 t2) σ
-  | T_abs : forall Γ x t τ σ,
-    has_type Γ t σ ->
-    has_type ((x,τ)::Γ) (abs x τ t) (τ → σ)
-
-  | T_const : forall Γ c,
-    has_type Γ (const c) Real
-  | T_add : forall Γ t1 t2,
-    has_type Γ t2 Real ->
-    has_type Γ t1 Real ->
-    has_type Γ (add t1 t2) Real
-
-  | T_pair : forall Γ t1 t2 τ σ,
-    has_type Γ t1 τ ->
-    has_type Γ t2 σ ->
-    has_type Γ (pair t1 t2) (τ × σ)
-  | T_fst : forall Γ τ σ p,
-    has_type Γ p (τ × σ) ->
-    has_type Γ (fst p) τ
-  | T_snd : forall Γ τ σ p,
-    has_type Γ p (τ × σ) ->
-    has_type Γ (snd p) σ
-.
-
-Notation "Γ ⊢ t ∷ τ" := (has_type Γ t τ) (at level 70).
-
-(* Lemma 1 *)
-
-Lemma functorial_macro : forall Γ t τ,
-  Γ ⊢ t ∷ τ -> Dctx Γ ⊢ Dtm t ∷ Dt τ.
-Proof with eauto.
-Admitted.
-
-(* Theorem 1 *)
-
-End fst_attempt.
-
-
 (* STLC with well-typed well-scoped debruijn *)
 (*
   Adapted from:
@@ -280,7 +177,6 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
 
 (*
   Typing
-
   TODO: Redundant to define this considering it is builtin to the
    structure of the language?
 *)
@@ -298,7 +194,7 @@ Proof. reflexivity. Qed.
   Adapted from:
     From Mathematics to Abstract Machine by Swierstra, et al.
  *)
-(* Inductive value : forall τ, Closed τ -> Prop :=
+Inductive value : forall τ, Closed τ -> Prop :=
   | v_real : forall Γ r env,
     value Real (Closure Γ Real (const Γ r) env)
   | v_tuple : forall Γ τ σ t1 t2 env,
@@ -307,17 +203,6 @@ Proof. reflexivity. Qed.
     value (τ × σ) (Closure Γ (τ × σ) (tuple Γ τ σ t1 t2) env)
   | v_abs : forall Γ τ σ b env,
     value (σ → τ) (Closure Γ (σ → τ) (abs Γ τ σ b) env)
-. *)
-
-Inductive value : forall Γ τ, tm Γ τ -> Prop :=
-  | v_real : forall Γ r,
-      value Γ Real (const Γ r)
-  | v_tuple : forall Γ τ σ t1 t2,
-      value Γ τ t1 ->
-      value Γ σ t2 ->
-      value Γ (τ × σ) (tuple Γ τ σ t1 t2)
-  | v_abs : forall Γ τ σ t,
-      value Γ (σ → τ) (abs Γ τ σ t)
 .
 
 Hint Constructors value.
@@ -346,8 +231,7 @@ Inductive eval : forall τ, tm [] τ -> tm [] τ -> Prop :=
 (*
   Adapted from Software Foundations vol.2
  *)
-
-Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
+(* Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
   ~ exists t', R t t'.
 
 Lemma value__normal : forall τ t, value [] τ t -> normal_form (eval τ) t.
@@ -381,4 +265,4 @@ Proof with eauto.
   induction H; intros y2 H'; inversion H'; subst.
   - inversion H.
   Admitted.
-Qed.
+Qed. *)

@@ -74,12 +74,30 @@ Lemma D_sub : forall Γ τ σ
 Proof with eauto.
   dependent induction t...
   - dependent induction τ; dependent induction v...
-  - dependent induction τ. intros.
+  - dependent induction τ; admit.
+  - dependent induction τ; admit.
+  - intros. simpl.
+    assert (H: σ :: Γ = σ :: Γ). reflexivity.
+    assert (H1: t1 ~= t1). reflexivity.
+    assert (H2: t2 ~= t2). reflexivity.
+    pose proof (IHt1 Γ σ t1 H H1) as Ht1. rewrite -> Ht1.
+    pose proof (IHt2 Γ σ t2 H H2) as Ht2. rewrite -> Ht2...
+  - intros. simpl.
+    assert (H: σ :: Γ = σ :: Γ). reflexivity.
+    assert (H1: t1 ~= t1). reflexivity.
+    assert (H2: t2 ~= t2). reflexivity.
+    pose proof (IHt1 Γ σ t1 H H1) as Ht1. rewrite -> Ht1.
+    pose proof (IHt2 Γ σ t2 H H2) as Ht2. rewrite -> Ht2...
+  - intros.
+    remember (fst (σ :: Γ) τ σ0 t) as t'.
+    assert (H: σ :: Γ = σ :: Γ). reflexivity.
+    assert (H': t ~= t). reflexivity.
+    pose proof (IHt Γ σ t H H').
 Admitted.
 
 (* Don't know if this is correct,
    'Γ is invariant to Dctx Γ' is not true I think? *)
-Program Definition Dsub {Γ Γ'} (s : sub Γ Γ')
+(* Program Definition Dsub {Γ Γ'} (s : sub Γ Γ')
   : sub (Dctx Γ) (Dctx Γ') :=
   fun τ x => Dtm (s τ x).
 Admit Obligations of Dsub.
@@ -89,4 +107,4 @@ Lemma D_type_sub' : forall Γ Γ' τ
   (sb : sub Γ Γ'),
   has_type (Dtm (substitute sb t)) =
     has_type (substitute (Dsub sb) (Dtm t)).
-Proof. trivial. Qed.
+Proof. trivial. Qed. *)

@@ -32,16 +32,16 @@ Logical Relations:
 - Step-Indexed Syntactic Logical Relations for
     Recursive and Quantified Types - Ahman
 
-GADTs in Coq and the Program command:
+Coq:
 - Elimination with a motive by McBride.
 - Program-ing Finger Trees using Coq by Sozeau.
+- Improving Real Analysis in Coq by Boldo, et al.
 
 Automatic Differentiation:
 - The Simple Essence of Automatic Differentiation by Eliott.
 
 Mathematics:
 - An Introduction To Diffeology - Zemmour.
-
 
 Notational conventions:
   capital greeks for typing environment
