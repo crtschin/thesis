@@ -18,65 +18,101 @@ Require Import Macro.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 
+(*
+  Goal:
+    Setup either a type (or an interface?) which models the Diff category in
+    the paper containing diffeological spaces and smooth functions between
+    diffeological spaces.
+
+  Description of diffeological spaces:
+
+    Diffeological spaces essentially describe sets X along with a diffeology P_X
+    containing functions (f: U -> X) where U is some subset R^n for some n and
+    where every function is a plot.
+
+    A plot is defined as a function containing the following properties:
+    - all constant functions are plots.
+    - if (f: U -> V) is a smooth function, a p is a plot, f . p is also a plot.
+    - stays a plot under gluing from some smaller set into its super set.
+
+    Example:
+    So R, R^n are diffeological spaces. But also the smooth functions between
+    these spaces.
+
+    These correspond to directly to the type system we use as:
+    - ground types correspond to R
+    - product types of arity n correspond to R^n
+    - function types of some X to Y correspond to the smooth functions between
+      the spaces corresponding to X and Y
+    - coproduct types correspond to the 3rd property
+
+  Expected to be needed/defined/proves:
+    R^n: using std's vector or mathcomp's matrix with a single column
+    plots: as a prop containing the 3 properties
+      constant functions
+      smooth function
+    diffeological space: written as some abstract interface containing the type
+      and the plot property (relevant are type classes or canonical structures)
+    membership: prove R, R^n and the smooth functions between spaces are members
+      of diffeological spaces
+*)
+
 Module sketch.
-(*
-  Currently just contains sketches and (probably) nonsense.
-    Doubt that any of this is actually mathematically sound.
-*)
 
-(*
-  Define R^n as a n-length vector.
-*)
-Definition EuclidSp : nat -> Type :=
-  fun n => t R n
-.
+  (*
+    Currently just contains sketches and (probably) nonsense.
+      Doubt that any of this is actually mathematically sound.
+  *)
 
-Definition constant_function {X Y} (f : X -> Y) : Prop :=
-  exists y, forall (x : X), f x = y
-.
+  (*
+    Define R^n as a n-length vector.
+  *)
+  Definition EuclidSp : nat -> Type :=
+    fun n => t R n
+  .
 
-(*
-  Using Coquelicot's formulation:
+  Definition constant_function {X Y} (f : X -> Y) : Prop :=
+    exists y, forall (x : X), f x = y
+  .
 
-*)
+  (*
+    Functions which are differentiable over their complete input domain.
+      Highly doubt that this definition is correct.
 
-(*
-  Functions which are differentiable over their complete input domain.
-    Highly doubt that this definition is correct.
+    Should look for a proper (hopefully existing) notion of
+      multivariate differentiabiliy.
+  *)
+  Inductive differentiable {X Y} (f : X -> Y) :=
+    | const_diff :
+      constant_function f -> differentiable f
+  .
+  Definition smooth_function {X Y} (f : X -> Y) : Prop :=
+    differentiable f
+  .
 
-  Should look for a proper (hopefully existing) notion of
-    multivariate differentiabiliy.
- *)
-Inductive differentiable {X Y} (f : X -> Y) :=
-  | const_diff :
-    constant_function f -> differentiable f
-.
-Definition smooth_function {X Y} (f : X -> Y) : Prop :=
-  differentiable f
-.
+  Inductive plot : forall {U X}, (U -> X) -> Type :=
+    | const_plot : forall U X (f : U -> X),
+      constant_function f ->
+      plot f
+    | compose_plot : forall U V X (g : V -> U) (f : U -> X),
+      smooth_function g ->
+      plot f ->
+      plot (compose f g)
+  .
 
-Inductive plot : forall {U X}, (U -> X) -> Type :=
-  | const_plot : forall U X (f : U -> X),
-    constant_function f ->
-    plot f
-  | compose_plot : forall U V X (g : V -> U) (f : U -> X),
-    smooth_function g ->
-    plot f ->
-    plot (compose f g)
-.
+  (* Definition open_subset n (P : EuclidSp n) := @open P. *)
+  Record DiffeoSp := make_dsp {
+    X :> Type;
+    diff_plots : forall n (f : EuclidSp n -> X), plot f;
+  }.
 
-(* Definition open_subset n (P : EuclidSp n) := @open P. *)
-Record DiffeoSp := make_dsp {
-  X :> Type;
-  diff_plots : forall n (f : EuclidSp n -> X), plot f;
-}.
-
-Lemma R_plot n : forall n' (f : EuclidSp n' -> EuclidSp n),
-  plot f.
-Proof. Admitted.
-
-Definition R_diff : forall n, make_dsp (EuclidSp n) (R_plot n).
+  Lemma R_plot n : forall n' (f : EuclidSp n' -> EuclidSp n),
+    plot f.
+  Proof.
   Admitted.
+
+  Definition R_diff : forall n, make_dsp (EuclidSp n) (R_plot n).
+    Admitted.
 
 End sketch.
 
