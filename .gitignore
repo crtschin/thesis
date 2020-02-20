@@ -35,6 +35,9 @@ lia.cache
 nia.cache
 nlia.cache
 nra.cache
-*.md
 
 # End of https://www.gitignore.io/api/coq
+
+*.md
+*-ignore/
+Sf2/

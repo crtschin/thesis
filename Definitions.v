@@ -207,26 +207,27 @@ Inductive value : forall τ, Closed τ -> Prop :=
 
 Hint Constructors value.
 
-Inductive eval : forall τ, tm [] τ -> tm [] τ -> Prop :=
+Reserved Notation "t1 '⇓' t2" (at level 40).
+Inductive eval : forall {τ}, tm [] τ -> tm [] τ -> Prop :=
   | EV_App : forall τ σ t1 t1' t2 t2',
-      eval (σ → τ) t1 (abs [] τ σ t1') ->
-      eval σ t2 t2' ->
-        eval τ (app [] τ σ t1 t2) (substitute (| t2' |) t1')
+      t1 ⇓ (abs [] τ σ t1') ->
+      t2 ⇓ t2' ->
+        (app [] τ σ t1 t2) ⇓ (substitute (| t2' |) t1')
 
   | EV_Add : forall t1 t1' t2 t2',
-      eval Real t1 t1' ->
-      eval Real t2 t2' ->
-      eval Real (add [] t1 t2) (add [] t1' t2')
+      t1 ⇓ t1' ->
+      t2 ⇓ t2' ->
+      (add [] t1 t2) ⇓ (add [] t1' t2')
 
   | EV_Tuple : forall τ σ t1 t1' t2 t2',
-      eval τ t1 t1' ->
-      eval σ t2 t2' ->
-      eval (τ × σ) (tuple [] τ σ t1 t2) (tuple [] τ σ t1' t2')
+      t1 ⇓ t1' ->
+      t2 ⇓ t2' ->
+      (tuple [] τ σ t1 t2) ⇓ (tuple [] τ σ t1' t2')
   | EV_FstTuple : forall τ σ t1 t2,
-      eval τ (fst [] τ σ (tuple [] τ σ t1 t2)) t1
+      (fst [] τ σ (tuple [] τ σ t1 t2)) ⇓ t1
   | EV_SndTuple : forall τ σ t1 t2,
-      eval σ (snd [] τ σ (tuple [] τ σ t1 t2)) t2
-.
+      (snd [] τ σ (tuple [] τ σ t1 t2)) ⇓ t2
+where "t '⇓' v" := (eval t v).
 
 (*
   Adapted from Software Foundations vol.2

@@ -21,6 +21,10 @@ Definition R_space n := t R n.
 Definition smooth_function n m := (R_space n -> R_space m) -> Prop.
 (* Definition Diff := forall n m, R_space n -> R_space m. *)
 
+Record DiffeoSp := {
+  X : Type
+}
+
 Inductive Diff : Type :=
   | Df_R :
     Diff

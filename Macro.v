@@ -73,7 +73,7 @@ Lemma D_sub : forall Γ τ σ
     substitute (| Dtm s |) (Dtm t).
 Proof with eauto.
   dependent induction t...
-  - dependent induction τ; dependent induction v...
+  - dependent induction v...
   - dependent induction τ; admit.
   - dependent induction τ; admit.
   - intros. simpl.
@@ -89,7 +89,7 @@ Proof with eauto.
     pose proof (IHt1 Γ σ t1 H H1) as Ht1. rewrite -> Ht1.
     pose proof (IHt2 Γ σ t2 H H2) as Ht2. rewrite -> Ht2...
   - intros.
-    remember (fst (σ :: Γ) τ σ0 t) as t'.
+    (* remember (fst (σ :: Γ) τ σ0 t) as t'. *)
     assert (H: σ :: Γ = σ :: Γ). reflexivity.
     assert (H': t ~= t). reflexivity.
     pose proof (IHt Γ σ t H H').
