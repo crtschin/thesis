@@ -26,9 +26,12 @@ Local Open Scope R_scope.
 
   Description of diffeological spaces:
 
-    Diffeological spaces essentially describe sets X along with a diffeology P_X
-    containing functions (f: U -> X) where U is some subset R^n for some n and
-    where every function is a plot.
+    Like posets are sets with a partial ordering property, diffeological spaces
+    are sets with a continuously differentiable property.
+
+    Diffeological spaces describe sets X along with a diffeology P_X
+    containing functions (f: U -> X) where U is some open subset of R^n for some
+    n and every such function is a plot.
 
     A plot is defined as a function containing the following properties:
     - all constant functions are plots.
@@ -46,8 +49,9 @@ Local Open Scope R_scope.
       the spaces corresponding to X and Y
     - coproduct types correspond to the 3rd property
 
-  Expected to be needed/defined/proves:
+  Expected to be needed/defined/proven:
     R^n: using std's vector or mathcomp's matrix with a single column
+    open subsets: ?
     plots: as a prop containing the 3 properties
       constant functions
       smooth function
@@ -71,10 +75,6 @@ Module sketch.
     fun n => t R n
   .
 
-  Definition constant_function {X Y} (f : X -> Y) : Prop :=
-    exists y, forall (x : X), f x = y
-  .
-
   (*
     Functions which are differentiable over their complete input domain.
       Highly doubt that this definition is correct.
@@ -82,15 +82,21 @@ Module sketch.
     Should look for a proper (hopefully existing) notion of
       multivariate differentiabiliy.
   *)
+
+  Definition constant_function {X Y} (f : X -> Y) : Prop :=
+    exists y, forall (x : X), f x = y
+  .
+
   Inductive differentiable {X Y} (f : X -> Y) :=
     | const_diff :
       constant_function f -> differentiable f
   .
-  Definition smooth_function {X Y} (f : X -> Y) : Prop :=
-    differentiable f
+
+  Definition smooth_function {X Y} : (X -> Y) -> Prop :=
+    fun f => differentiable f
   .
 
-  Inductive plot : forall {U X}, (U -> X) -> Type :=
+  Inductive plot : forall {U X}, (U -> X) -> Prop :=
     | const_plot : forall U X (f : U -> X),
       constant_function f ->
       plot f
@@ -100,19 +106,44 @@ Module sketch.
       plot (compose f g)
   .
 
-  (* Definition open_subset n (P : EuclidSp n) := @open P. *)
   Record DiffeoSp := make_dsp {
-    X :> Type;
-    diff_plots : forall n (f : EuclidSp n -> X), plot f;
+    X : Type;
+    (* Subset of functions from (R^n -> X) which satisfy the requirements of
+        being a plot *)
+    diff_plots :
+      forall n P,
+      @sig (@sig (EuclidSp n) P -> X) plot;
   }.
 
-  Lemma R_plot n : forall n' (f : EuclidSp n' -> EuclidSp n),
-    plot f.
+  Lemma R_plot :
+    forall n P,
+      @sig (@sig (EuclidSp n) P -> R) plot.
   Proof.
-  Admitted.
-
-  Definition R_diff : forall n, make_dsp (EuclidSp n) (R_plot n).
+    intros.
+    econstructor. econstructor...
     Admitted.
+
+  Lemma Rn_plot m :
+    forall n P,
+      @sig (@sig (EuclidSp n) P -> EuclidSp m) plot.
+  Proof.
+    intros.
+    econstructor. econstructor...
+    Admitted.
+
+  Lemma smooth_plot X Y :
+    forall n P,
+      @sig (@sig (EuclidSp n) P -> (sig (@smooth_function X Y))) plot.
+  Proof.
+    intros.
+    econstructor. econstructor...
+    Admitted.
+
+  Definition R_diff := make_dsp R R_plot.
+  Definition Rn_diff m := make_dsp (EuclidSp m) (Rn_plot m).
+  Definition Rsmooth_diff X Y := make_dsp
+    (sig (@smooth_function X Y))
+    (smooth_plot X Y).
 
 End sketch.
 
@@ -120,7 +151,7 @@ End sketch.
   In the style of mathcomp/analysis which uses
     Canonical Structures
 *)
-Module Diff.
+Module DIFF.
 
 Section ClassDef.
 
@@ -155,6 +186,5 @@ Definition UniformSpace := UniformSpace.Pack cT xclass xT.
 Definition Diff := Diff.Pack cT xclass xT.
 
 End ClassDef.
-
 
 End DIFF.
