@@ -61,7 +61,7 @@ Local Open Scope R_scope.
       of diffeological spaces
 *)
 
-Module sketch.
+Section sketch.
 
   (*
     Currently just contains sketches and (probably) nonsense.
@@ -92,8 +92,8 @@ Module sketch.
       constant_function f -> differentiable f
   .
 
-  Definition smooth_function {X Y} : (X -> Y) -> Prop :=
-    fun f => differentiable f
+  Definition smooth_function {X Y} (f : X -> Y) : Prop :=
+    differentiable f
   .
 
   Inductive plot : forall {U X}, (U -> X) -> Prop :=
@@ -106,52 +106,69 @@ Module sketch.
       plot (compose f g)
   .
 
+  (*
+    Interface(?) of a diffeological space:
+      In the actual proof would have to be integrated in existing hierarchy to
+      get the definitions of derivatives proofs using either mathcomp's or
+      Coquelicot's algebraic hierarchy.
+  *)
   Record DiffeoSp := make_dsp {
-    X : Type;
     (* Subset of functions from (R^n -> X) which satisfy the requirements of
         being a plot *)
-    diff_plots :
+    carrier :> Set;
+    plots :
       forall n P,
-      @sig (@sig (EuclidSp n) P -> X) plot;
+      @sig (@sig (EuclidSp n) P -> carrier) plot;
   }.
 
-  Lemma R_plot :
+  (* The set of smooth functions between diffeological spaces *)
+  (* Record diff_smooth := make_dsmooth {
+    dsmooth :> DiffeoSp -> DiffeoSp;
+    smooth_dsmooth : smooth_function dsmooth;
+  }. *)
+
+  Lemma product_plots (X Y : DiffeoSp) :
+      forall n P,
+        @sig (@sig (EuclidSp n) P -> carrier X * carrier Y) plot.
+  Proof.
+    intros. simpl.
+    Admitted.
+
+  Definition product_diffeology (X Y : DiffeoSp) : DiffeoSp :=
+    make_dsp (carrier X * carrier Y)
+      (product_plots X Y).
+
+  Lemma smooth_plots (X Y : DiffeoSp) :
+    forall n P,
+      @sig (@sig (EuclidSp n) P ->
+        (carrier X -> carrier Y)) plot.
+  Proof.
+    Admitted.
+
+  Definition functional_diffeology (X Y : DiffeoSp) : DiffeoSp :=
+    make_dsp (carrier X -> carrier Y) (smooth_plots X Y).
+
+  (*
+    Proofs that
+      R,
+      smooth functions over diffeological spaces,
+    are diffeological spaces
+  *)
+  Lemma R_plots :
     forall n P,
       @sig (@sig (EuclidSp n) P -> R) plot.
   Proof.
-    intros.
-    econstructor. econstructor...
     Admitted.
 
-  Lemma Rn_plot m :
-    forall n P,
-      @sig (@sig (EuclidSp n) P -> EuclidSp m) plot.
-  Proof.
-    intros.
-    econstructor. econstructor...
-    Admitted.
-
-  Lemma smooth_plot X Y :
-    forall n P,
-      @sig (@sig (EuclidSp n) P -> (sig (@smooth_function X Y))) plot.
-  Proof.
-    intros.
-    econstructor. econstructor...
-    Admitted.
-
-  Definition R_diff := make_dsp R R_plot.
-  Definition Rn_diff m := make_dsp (EuclidSp m) (Rn_plot m).
-  Definition Rsmooth_diff X Y := make_dsp
-    (sig (@smooth_function X Y))
-    (smooth_plot X Y).
-
+  Definition R_diffeology := make_dsp R R_plots.
+  (* Definition R_diff := @ground R_diffeology. *)
 End sketch.
 
 (*
-  In the style of mathcomp/analysis which uses
+  In the style of mathcomp.analysis which uses
     Canonical Structures
 *)
-Module DIFF.
+(* Module Diff.
 
 Section ClassDef.
 
@@ -187,4 +204,4 @@ Definition Diff := Diff.Pack cT xclass xT.
 
 End ClassDef.
 
-End DIFF.
+End Diff. *)

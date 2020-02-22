@@ -28,7 +28,7 @@ Notation "A → B" := (Arrow A B) (right associativity, at level 20).
 
 Notation Ctx := (list ty).
 
-Inductive Var : Ctx -> ty -> Type :=
+Inductive Var {T} : list T -> T -> Type :=
   | Top : forall Γ τ, Var (τ::Γ) τ
   | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ
 .
@@ -108,8 +108,8 @@ Definition neuron :=
 (* Substitutes a variable typed in one context and swaps it
   with an expression with the same type typed in a different context.
 *)
-Definition sub Γ Γ' := forall τ, Var Γ τ -> tm Γ' τ.
-Definition ren Γ Γ' := forall τ, Var Γ τ -> Var Γ' τ.
+Definition sub Γ Γ' := forall (τ : ty), Var Γ τ -> tm Γ' τ.
+Definition ren Γ Γ' := forall (τ : ty), Var Γ τ -> Var Γ' τ.
 
 (* Helper functions for defining substitutions on the i'th variable *)
 Definition id_sub {Γ} : sub Γ Γ := var Γ.
