@@ -1,4 +1,3 @@
-Require Import Lists.List.
 Require Import Logic.FunctionalExtensionality.
 Require Import Strings.String.
 Require Import Relations.
@@ -6,11 +5,13 @@ Require Import Logic.JMeq.
 Require Import Reals.
 Require Import Arith.PeanoNat.
 Require Import Program.
-Require Import Coquelicot.Coquelicot.
 Require Import mathcomp.ssreflect.ssreflect.
+Require Import mathcomp.analysis.topology.
+Require Import mathcomp.analysis.normedtype.
+Require Import mathcomp.analysis.derive.
+Require Import mathcomp.analysis.classical_sets.
 Require Import Arith_base.
-Require Import Vector.
-Require Import mathcomp.algebra.vector.
+Require Import mathcomp.algebra.matrix.
 From mathcomp Require Import ssralg.
 Require Import Definitions.
 Require Import Macro.
@@ -61,19 +62,16 @@ Local Open Scope R_scope.
       of diffeological spaces
 *)
 
-Section sketch.
-
   (*
     Currently just contains sketches and (probably) nonsense.
       Doubt that any of this is actually mathematically sound.
   *)
 
   (*
-    Define R^n as a n-length vector.
+    Define R^n as a 1-col n-row matrix.
   *)
-  Definition EuclidSp : nat -> Type :=
-    fun n => t R n
-  .
+  Definition R_space_open n := forall (v : set 'rV[R]_n), open v.
+  Definition R_space := forall n, R_space_open n.
 
   (*
     Functions which are differentiable over their complete input domain.
@@ -100,10 +98,10 @@ Section sketch.
     | const_plot : forall U X (f : U -> X),
       constant_function f ->
       plot f
-    | compose_plot : forall U V X (g : V -> U) (f : U -> X),
-      smooth_function g ->
-      plot f ->
-      plot (compose f g)
+    | compose_plot : forall U V X (f : V -> U) (p : U -> X),
+      smooth_function f ->
+      plot p ->
+      plot (compose p f)
   .
 
   (*
@@ -117,52 +115,99 @@ Section sketch.
         being a plot *)
     carrier :> Set;
     plots :
-      forall n P,
-      @sig (@sig (EuclidSp n) P -> carrier) plot;
+      forall (f : R_space -> carrier),
+        plot f;
   }.
 
   (* The set of smooth functions between diffeological spaces *)
-  (* Record diff_smooth := make_dsmooth {
-    dsmooth :> DiffeoSp -> DiffeoSp;
+  Record diff_smooth (D1 D2 : DiffeoSp) := make_dsmooth {
+    dsmooth :> D1 -> D2;
     smooth_dsmooth : smooth_function dsmooth;
-  }. *)
+  }.
+
+  Notation "a -d> b" := (diff_smooth a b) (at level 30).
+
+  Definition smooth_compose {X Y Z} (f : X -d> Y) (g : Y -d> Z)
+    : X -d> Z.
+  Proof with auto.
+    inversion f as [f' Hf].
+    inversion g as [g' Hg].
+    pose proof (compose g' f') as h.
+    inversion Hf. inversion Hg.
+    assert (H': smooth_function h). { admit. }
+    exists (make_dsmooth X Z h H')...
+  Admitted.
+
+  Lemma R_plots :
+    forall (f : R_space -> R),
+      plot f.
+  Proof.
+    Admitted.
 
   Lemma product_plots (X Y : DiffeoSp) :
-      forall n P,
-        @sig (@sig (EuclidSp n) P -> carrier X * carrier Y) plot.
+    forall (f : R_space -> carrier X * carrier Y),
+      plot f.
   Proof.
-    intros. simpl.
     Admitted.
 
   Definition product_diffeology (X Y : DiffeoSp) : DiffeoSp :=
     make_dsp (carrier X * carrier Y)
       (product_plots X Y).
 
-  Lemma smooth_plots (X Y : DiffeoSp) :
-    forall n P,
-      @sig (@sig (EuclidSp n) P ->
-        (carrier X -> carrier Y)) plot.
+  Notation "a *d* b" := (product_diffeology a b) (at level 90).
+
+  Definition d_fst (X Y : DiffeoSp)
+    : X *d* Y -> X.
+  Proof with auto.
+    intros H. inversion H. assumption.
+  Defined.
+
+  Definition d_snd (X Y : DiffeoSp)
+    : X *d* Y -> Y.
+  Proof with auto.
+    intros H. inversion H. assumption.
+  Defined.
+
+  Definition product_fst
+    : forall (X Y : DiffeoSp), (X *d* Y) -d> X.
+  Proof.
+    inversion X as [X1 Hplot1].
+    inversion Y as [X2 Hplot2].
+    assert (smooth_function (d_fst X Y)).
+    { admit. }
+    exists (make_dsmooth (X *d* Y) X (d_fst X Y) H).
+    Admitted.
+
+  Definition product_snd
+    : forall (X Y : DiffeoSp), (X *d* Y) -d> Y.
+  Proof.
+    inversion X as [X1 Hplot1].
+    inversion Y as [X2 Hplot2].
+    assert (smooth_function (d_snd X Y)).
+    { admit. }
+    exists (make_dsmooth (X *d* Y) Y (d_snd X Y) H).
+    Admitted.
+
+  Lemma smooth_plots X Y :
+    forall (f : R_space -> diff_smooth X Y),
+      plot f.
   Proof.
     Admitted.
 
   Definition functional_diffeology (X Y : DiffeoSp) : DiffeoSp :=
-    make_dsp (carrier X -> carrier Y) (smooth_plots X Y).
+    make_dsp (diff_smooth X Y) (smooth_plots X Y).
 
-  (*
-    Proofs that
-      R,
-      smooth functions over diffeological spaces,
-    are diffeological spaces
-  *)
-  Lemma R_plots :
-    forall n P,
-      @sig (@sig (EuclidSp n) P -> R) plot.
+  Notation "a -D> b" := (functional_diffeology a b) (at level 70).
+
+  Definition R_diffeology := make_dsp R R_plots.
+
+  Lemma unit_plots :
+    forall (f : R_space -> ()),
+      plot f.
   Proof.
     Admitted.
 
-  Definition R_diffeology := make_dsp R R_plots.
-  (* Definition R_diff := @ground R_diffeology. *)
-End sketch.
+  Definition unit_diffeology := make_dsp unit unit_plots.
 
 (*
   In the style of mathcomp.analysis which uses

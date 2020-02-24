@@ -24,35 +24,31 @@ Local Open Scope R_scope.
 Fixpoint denote_t τ : DiffeoSp :=
   match τ with
   | Real => R_diffeology
-  | Prod τ1 τ2 => product_diffeology (denote_t τ1) (denote_t τ2)
-  | Arrow τ1 τ2 => functional_diffeology (denote_t τ1) (denote_t τ2)
+  | Prod τ1 τ2 => denote_t τ1 *d* denote_t τ2
+  | Arrow τ1 τ2 => denote_t τ1 -D> denote_t τ2
   end.
 
-Example denote_t_ex :
-  carrier (denote_t ((Real × Real × Real × Real) → (Real × Real))) =
-    ((R * R * R * R) -> (R * R)).
-Proof. trivial. Qed.
+(* Example denote_t_ex :
+  denote_t ((Real × Real × Real × Real) → (Real × Real)) =
+    diff_smooth (denote_t (Real × Real × Real × Real)) (denote_t (Real × Real)).
+Proof. trivial. Qed. *)
 
-Definition denote_ctx Γ : list DiffeoSp := map denote_t Γ.
+Fixpoint denote_ctx Γ : DiffeoSp :=
+  match Γ with
+  | [] => unit_diffeology
+  | τ :: Γ' => denote_t τ *d* denote_ctx Γ'
+  end.
 
-Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : (denote_t τ) ∈ (denote_ctx Γ) :=
+Program Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : denote_ctx Γ -d> denote_t τ :=
   match v with
-  | Top Γ τ => Top (denote_ctx Γ) (denote_t τ)
-  | Pop Γ τ σ t => Pop (denote_ctx Γ) (denote_t τ) (denote_t σ) (denote_v t)
+  | Top Γ τ => product_snd (denote_ctx Γ) (denote_t τ)
+  | Pop Γ τ σ t =>
+    denote_v t
   end.
 
-Program Fixpoint denote_tm Γ τ (t : tm Γ τ) : carrier (denote_t τ) :=
+Fixpoint denote_tm Γ τ (t : tm Γ τ) : denote_ctx Γ -> carrier (denote_t τ) :=
   match t with
-  | const r => (fun _ => r)
-  | add t1 t2 => _
-
-  | var σ v => _
-  | app _ _ t1 t2 => _
-  | abs _ _ f => _
-
-  | tuple _ _ t1 t2 => _
-  | fst _ _ p => _
-  | snd _ _ p => _
+  | var _ v => denote_v v
   end.
 
 Definition diff_func :=
