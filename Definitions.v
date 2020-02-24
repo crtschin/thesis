@@ -187,7 +187,7 @@ Corollary has_type_refl Γ τ (t : tm Γ τ) :
 Proof. reflexivity. Qed.
 
 (*
-  Evaluation
+  Evaluation (unfinished)
 *)
 
 (*
