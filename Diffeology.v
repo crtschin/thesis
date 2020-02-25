@@ -156,36 +156,36 @@ Local Open Scope R_scope.
 
   Notation "a *d* b" := (product_diffeology a b) (at level 90).
 
-  Definition d_fst (X Y : DiffeoSp)
+  Definition d_first (X Y : DiffeoSp)
     : X *d* Y -> X.
   Proof with auto.
     intros H. inversion H. assumption.
   Defined.
 
-  Definition d_snd (X Y : DiffeoSp)
+  Definition d_second (X Y : DiffeoSp)
     : X *d* Y -> Y.
   Proof with auto.
     intros H. inversion H. assumption.
   Defined.
 
-  Definition product_fst
+  Definition product_first
     : forall (X Y : DiffeoSp), (X *d* Y) -d> X.
   Proof.
     inversion X as [X1 Hplot1].
     inversion Y as [X2 Hplot2].
-    assert (smooth_function (d_fst X Y)).
+    assert (smooth_function (d_first X Y)).
     { admit. }
-    exists (make_dsmooth (X *d* Y) X (d_fst X Y) H).
+    exists (make_dsmooth (X *d* Y) X (d_first X Y) H).
     Admitted.
 
-  Definition product_snd
+  Definition product_second
     : forall (X Y : DiffeoSp), (X *d* Y) -d> Y.
   Proof.
     inversion X as [X1 Hplot1].
     inversion Y as [X2 Hplot2].
-    assert (smooth_function (d_snd X Y)).
+    assert (smooth_function (d_second X Y)).
     { admit. }
-    exists (make_dsmooth (X *d* Y) Y (d_snd X Y) H).
+    exists (make_dsmooth (X *d* Y) Y (d_second X Y) H).
     Admitted.
 
   Lemma smooth_plots X Y :

@@ -40,12 +40,12 @@ Program Fixpoint Dtm {Γ τ} (t : tm Γ τ) : tm (map Dt Γ) (Dt τ) :=
     let d1 := (Dtm t1) in
     let d2 := (Dtm t2) in
     tuple _ _ _
-      (add _ (fst _ _ _ d1) (fst _ _ _ d2))
-      (add _ (snd _ _ _ d1) (snd _ _ _ d2))
+      (add _ (first _ _ _ d1) (first _ _ _ d2))
+      (add _ (second _ _ _ d1) (second _ _ _ d2))
 
   | tuple _ _ _ t1 t2 => tuple _ _ _ (Dtm t1) (Dtm t2)
-  | fst _ _ _ p => fst _ _ _ (Dtm p)
-  | snd _ _ _ p => snd _ _ _ (Dtm p)
+  | first _ _ _ p => first _ _ _ (Dtm p)
+  | second _ _ _ p => second _ _ _ (Dtm p)
   end.
 
 Lemma Dt_lift_var : forall Γ τ, τ ∈ Γ -> (Dt τ) ∈ (map Dt Γ).

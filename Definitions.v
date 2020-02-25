@@ -55,8 +55,8 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
     tm Γ τ ->
     tm Γ σ ->
     tm Γ (τ × σ)
-  | fst : forall τ σ, tm Γ (τ × σ) -> tm Γ τ
-  | snd : forall τ σ, tm Γ (τ × σ) -> tm Γ σ
+  | first : forall τ σ, tm Γ (τ × σ) -> tm Γ τ
+  | second : forall τ σ, tm Γ (τ × σ) -> tm Γ σ
 .
 
 Inductive Closed : ty -> Type :=
@@ -147,8 +147,8 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | add _ t1 t2 => add _ (rename r t1) (rename r t2)
 
   | tuple _ _ _ t1 t2 => tuple _ _ _(rename r t1) (rename r t2)
-  | fst _ _ _ p => fst _ _ _ (rename r p)
-  | snd _ _ _ p => snd _ _ _ (rename r p)
+  | first _ _ _ p => first _ _ _ (rename r p)
+  | second _ _ _ p => second _ _ _ (rename r p)
   end.
 
 Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
@@ -171,8 +171,8 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | add _ t1 t2 => add _ (substitute s t1) (substitute s t2)
 
   | tuple _ _ _ t1 t2 => tuple _ _ _ (substitute s t1) (substitute s t2)
-  | fst _ _ _ p => fst _ _ _ (substitute s p)
-  | snd _ _ _ p => snd _ _ _ (substitute s p)
+  | first _ _ _ p => first _ _ _ (substitute s p)
+  | second _ _ _ p => second _ _ _ (substitute s p)
   end.
 
 (*
@@ -224,9 +224,9 @@ Inductive eval : forall {τ}, tm [] τ -> tm [] τ -> Prop :=
       t2 ⇓ t2' ->
       (tuple [] τ σ t1 t2) ⇓ (tuple [] τ σ t1' t2')
   | EV_FstTuple : forall τ σ t1 t2,
-      (fst [] τ σ (tuple [] τ σ t1 t2)) ⇓ t1
+      (first [] τ σ (tuple [] τ σ t1 t2)) ⇓ t1
   | EV_SndTuple : forall τ σ t1 t2,
-      (snd [] τ σ (tuple [] τ σ t1 t2)) ⇓ t2
+      (second [] τ σ (tuple [] τ σ t1 t2)) ⇓ t2
 where "t '⇓' v" := (eval t v).
 
 (*
