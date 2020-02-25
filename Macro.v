@@ -3,6 +3,7 @@ Set Warnings "-notation-overridden,-parsing".
 Require Import Lists.List.
 Import ListNotations.
 Require Import Strings.String.
+Require Import Logic.FunctionalExtensionality.
 Require Import Reals.
 Require Import Logic.JMeq.
 Require Import Arith.PeanoNat.
@@ -69,9 +70,12 @@ Proof. trivial. Qed.
 Lemma D_sub_lifted : forall Γ τ σ ρ
   (t : tm (ρ::σ::Γ) τ)
   (s : tm Γ σ),
+  (forall r : tm (σ :: Γ) ρ,
+     Dtm (substitute (| r |) t) = substitute (| Dtm r |) (Dtm t)) ->
   Dtm (substitute (substitute_lifted (| s |)) t) =
     substitute (substitute_lifted (| Dtm s |)) (Dtm t).
 Proof with eauto.
+  intros.
 Admitted.
 
 Theorem D_sub : forall Γ τ σ
@@ -99,7 +103,7 @@ Proof with eauto.
     assert (Hr :
       Dtm (substitute (substitute_lifted (| s |)) t) =
       substitute (substitute_lifted (| Dtm s |)) (Dtm t)).
-    { apply D_sub_lifted. }
+    { apply D_sub_lifted... }
     rewrite Hr...
   - intros. simpl.
     assert (H: σ :: Γ = σ :: Γ). reflexivity.

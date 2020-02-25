@@ -81,7 +81,7 @@ Definition ex_plus :=
   abs [] (Real → Real) Real
     (abs [Real] Real Real
       (add [Real;Real]
-        (var [Real;Real] Real (Top [Real] Real))
+        (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
           (var [Real;Real] Real (Top [Real] Real)))).
 
 Definition neuron :=
@@ -105,8 +105,9 @@ Definition neuron :=
     Strongly Typed Term Representations in Coq by Benton, et al.
 *)
 
-(* Substitutes a variable typed in one context and swaps it
-  with an expression with the same type typed in a different context.
+(*
+  Substitutes a variable typed in one context and swaps it
+    with an expression with the same type typed in a different context.
 *)
 Definition sub Γ Γ' := forall (τ : ty), Var Γ τ -> tm Γ' τ.
 Definition ren Γ Γ' := forall (τ : ty), Var Γ τ -> Var Γ' τ.
@@ -125,10 +126,14 @@ Notation "| a ; .. ; b |" :=
   (cons_sub a  .. ( cons_sub b id_sub) .. )
   (at level 12, no associativity).
 
-(* For decomposing substitutions *)
+(* For decomposing substitutions and renames *)
 Definition hd_sub {Γ Γ' τ} (s : sub (τ::Γ) Γ') : tm Γ' τ := s τ (Top Γ τ).
 Definition tl_sub {Γ Γ' τ} (s : sub (τ::Γ) Γ') : sub Γ Γ'
   := fun σ x => s σ (Pop Γ σ τ x).
+
+Definition hd_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : tm Γ' τ := var Γ' τ (r τ (Top Γ τ)).
+Definition tl_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : ren Γ Γ'
+  := fun σ x => r σ (Pop Γ σ τ x).
 
 Program Definition rename_lifted {Γ Γ' τ} (r : ren Γ Γ')
   : ren (τ::Γ) (τ::Γ') := fun σ v =>
@@ -176,6 +181,105 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   end.
 
 (*
+  Tactics from:
+    Strongly Typed Term Representations in Coq by Benton, et al.
+*)
+Ltac Rewrites E :=
+  (intros; simpl; try rewrite E;
+    repeat
+      (match goal with | [H:context[_=_] |- _] => rewrite H end);
+    auto).
+
+Ltac ExtVar :=
+  match goal with
+    [ |- ?X = ?Y ] =>
+    (apply (@functional_extensionality_dep _ _ X Y) ;
+      let t := fresh "t" in intro t;
+      apply functional_extensionality;
+      let v := fresh "v" in intro v;
+      dependent destruction v; auto)
+end.
+
+Lemma lift_sub_id : forall Γ τ,
+  substitute_lifted (@id_sub Γ) = @id_sub (τ::Γ).
+Proof. intros. ExtVar. Qed.
+
+Lemma app_sub_id : forall Γ τ (t : tm Γ τ),
+  substitute id_sub t = t.
+Proof. induction t; Rewrites lift_sub_id. Qed.
+
+(* Composing substitutions and renames *)
+Definition compose_ren_ren {Γ Γ' Γ''} (r : ren Γ' Γ'') (r' : ren Γ Γ')
+  : ren Γ Γ'' := (fun t v => r t (r' t v)).
+Definition compose_sub_ren {Γ Γ' Γ''} (s : sub Γ' Γ'') (r : ren Γ Γ')
+  : sub Γ Γ'' := (fun t v => s t (r t v)).
+Definition compose_ren_sub {Γ Γ' Γ''} (r : ren Γ' Γ'') (s : sub Γ Γ')
+  : sub Γ Γ'' := (fun t v => rename r (s t v)).
+Definition compose_sub_sub {Γ Γ' Γ''} (s : sub Γ' Γ'') (s' : sub Γ Γ')
+  : sub Γ Γ'' := (fun t v => substitute s (s' t v)).
+
+Lemma lift_ren_ren : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (r' : ren Γ Γ'),
+  rename_lifted (τ:=τ) (compose_ren_ren r r') =
+    compose_ren_ren (rename_lifted r) (rename_lifted r').
+Proof. intros. ExtVar. Qed.
+
+Lemma app_ren_ren : forall Γ Γ' Γ'' τ
+    (t : tm Γ τ) (r : ren Γ' Γ'') (r' : ren Γ Γ'),
+  rename (compose_ren_ren r r') t = rename r (rename r' t).
+Proof.
+  intros. generalize dependent Γ'. generalize dependent Γ''.
+  induction t; Rewrites lift_ren_ren.
+Qed.
+
+Lemma lift_sub_ren : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (r : ren Γ Γ'),
+  substitute_lifted (τ:=τ) (compose_sub_ren s r) =
+    compose_sub_ren (substitute_lifted s) (rename_lifted r).
+Proof. intros. ExtVar. Qed.
+
+Lemma app_sub_ren : forall Γ Γ' Γ'' τ
+    (t : tm Γ τ) (s : sub Γ' Γ'') (r : ren Γ Γ'),
+  substitute (compose_sub_ren s r) t =
+    substitute s (rename r t).
+Proof with eauto.
+  intros. generalize dependent Γ'. generalize dependent Γ''.
+  induction t; Rewrites lift_sub_ren.
+Qed.
+
+Lemma lift_ren_sub : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (s : sub Γ Γ'),
+  substitute_lifted (τ:=τ) (compose_ren_sub r s) =
+    compose_ren_sub (rename_lifted r) (substitute_lifted s).
+Proof with eauto.
+  intros. ExtVar. unfold compose_ren_sub.
+  simpl. unfold shift. rewrite <- 2 app_ren_ren...
+Qed.
+
+Lemma app_ren_sub : forall Γ Γ' Γ'' τ
+    (t : tm Γ τ) (r : ren Γ' Γ'') (s : sub Γ Γ'),
+  substitute (compose_ren_sub r s) t =
+    rename r (substitute s t).
+Proof with eauto.
+  intros. generalize dependent Γ'. generalize dependent Γ''.
+  induction t; Rewrites lift_ren_sub.
+Qed.
+
+Lemma lift_sub_sub : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (s' : sub Γ Γ'),
+  substitute_lifted (τ:=τ) (compose_sub_sub s s') =
+    compose_sub_sub (substitute_lifted s) (substitute_lifted s').
+Proof with eauto.
+  intros. ExtVar. unfold compose_sub_sub. simpl. unfold shift.
+  rewrite <- app_ren_sub. rewrite <- app_sub_ren...
+Qed.
+
+Lemma app_sub_sub : forall Γ Γ' Γ'' τ
+    (t : tm Γ τ) (s : sub Γ' Γ'') (s' : sub Γ Γ'),
+  substitute (compose_sub_sub s s') t =
+    substitute s (substitute s' t).
+Proof with eauto.
+  intros. generalize dependent Γ'. generalize dependent Γ''.
+  induction t; Rewrites lift_sub_sub.
+Qed.
+
+(*
   Typing
   TODO: Redundant to define this considering it is builtin to the
    structure of the language?
@@ -194,7 +298,7 @@ Proof. reflexivity. Qed.
   Adapted from:
     From Mathematics to Abstract Machine by Swierstra, et al.
  *)
-Inductive value : forall τ, Closed τ -> Prop :=
+(* Inductive value : forall τ, Closed τ -> Prop :=
   | v_real : forall Γ r env,
     value Real (Closure Γ Real (const Γ r) env)
   | v_tuple : forall Γ τ σ t1 t2 env,
@@ -227,7 +331,7 @@ Inductive eval : forall {τ}, tm [] τ -> tm [] τ -> Prop :=
       (first [] τ σ (tuple [] τ σ t1 t2)) ⇓ t1
   | EV_SndTuple : forall τ σ t1 t2,
       (second [] τ σ (tuple [] τ σ t1 t2)) ⇓ t2
-where "t '⇓' v" := (eval t v).
+where "t '⇓' v" := (eval t v). *)
 
 (*
   Adapted from Software Foundations vol.2
@@ -235,7 +339,8 @@ where "t '⇓' v" := (eval t v).
 (* Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
   ~ exists t', R t t'.
 
-Lemma value__normal : forall τ t, value [] τ t -> normal_form (eval τ) t.
+
+  Lemma value__normal : forall τ t, value [] τ t -> normal_form (eval τ) t.
 Proof with eauto.
   intros τ t H; dependent induction H.
   - intros [t H']. inversion H'.
