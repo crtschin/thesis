@@ -279,9 +279,12 @@ Proof with eauto.
   induction t; Rewrites lift_sub_sub.
 Qed.
 
-(* Rename helpers *)
+(* Helpers *)
 Lemma rename_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (r : ren Γ Γ'),
   rename r (abs Γ τ σ t) = abs Γ' τ σ (rename (rename_lifted r) t).
+Proof. reflexivity. Qed.
+Lemma substitute_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (s : sub Γ Γ'),
+  substitute s (abs Γ τ σ t) = abs Γ' τ σ (substitute (substitute_lifted s) t).
 Proof. reflexivity. Qed.
 
 (*

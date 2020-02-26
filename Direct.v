@@ -76,37 +76,35 @@ Record Gl := make_gl {
   Prop translation of S in the proof of theorem 1 as an
     inductive definition
 *)
-Inductive Sprop : forall τ, (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
+Inductive GlProp : forall τ σ, (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ σ ⟧ₜ) -> Prop :=
   | s_r : forall f,
-      Sprop Real f (fun r => (f r, Derive f r))
+      GlProp Real (Dt Real) f (fun r => (f r, Derive f r))
   | s_prod : forall τ σ f1 f2 g1 g2,
-      Sprop τ f1 f2 ->
-      Sprop σ g1 g2 ->
-      Sprop (τ × σ) (fun r => (f1 r, g1 r)) (fun r => (f2 r, g2 r))
-  | s_arr : forall τ σ f1 f2 g1 g2 (s1 : Sprop τ g1 g2),
-      Sprop σ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x)) ->
-      Sprop (τ → σ) (fun r => f1 r) (fun r => f2 r)
+      GlProp τ (Dt τ) f1 f2 ->
+      GlProp σ (Dt σ) g1 g2 ->
+      GlProp (τ × σ) (Dt (τ × σ)) (fun r => (f1 r, g1 r)) (fun r => (f2 r, g2 r))
+  | s_arr : forall τ σ f1 f2 g1 g2 (s1 : GlProp τ (Dt τ) g1 g2),
+      GlProp σ (Dt σ) (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x)) ->
+      GlProp (τ → σ) (Dt (τ → σ))(fun r => f1 r) (fun r => f2 r)
 .
 
 Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
-  := Sprop τ.
+  := GlProp τ (Dt τ).
 
-(*
-Record S := make_s {
-  Sτ : ty;
-  SP : (R -> ⟦Sτ⟧ₜ) -> (R -> ⟦Dt Sτ⟧ₜ) -> Prop;
+Record St := make_s {
+  carrier : ty;
+  SP : (R -> ⟦carrier⟧ₜ) -> (R -> ⟦Dt carrier⟧ₜ) -> Prop;
 }.
 
-Definition interpret τ : S :=
+Definition interpret τ : St :=
   match τ with
-  | Real => make_s Real (Sprop Real)
-  | τ1 × τ2 => make_s (τ1 × τ2) (Sprop (τ1 × τ2))
-  | τ1 → τ2 => make_s (τ1 → τ2) (Sprop (τ1 → τ2))
+  | Real => make_s Real (GlProp Real (Dt Real))
+  | τ1 × τ2 => make_s (τ1 × τ2) (GlProp (τ1 × τ2) (Dt (τ1 × τ2)))
+  | τ1 → τ2 => make_s (τ1 → τ2) (GlProp (τ1 → τ2) (Dt (τ1 → τ2)))
   end.
-*)
 
-Fixpoint denote_sub {Γ Γ'}: sub Γ' Γ -> denote_ctx Γ -> denote_ctx Γ' :=
-  match Γ' with
+Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
+  match Γ with
   | [] => fun s ctx => tt
   | h :: t => fun s ctx =>
       (denote_tm (hd_sub s) ctx, denote_sub (tl_sub s) ctx)
@@ -119,58 +117,58 @@ Fixpoint denote_ren {Γ Γ'}: ren Γ' Γ -> denote_ctx Γ -> denote_ctx Γ' :=
       (denote_tm (hd_ren r) ctx, denote_ren (tl_ren r) ctx)
   end.
 
-Lemma den_rename_elim : forall Γ Γ' τ
+Lemma denote_ren_elim : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
   denote_ren r ctx = denote_ren (tl_ren (rename_lifted r)) (x, ctx).
 Proof with eauto.
     intros. unfold tl_ren. simpl.
-    Admitted.
+  Admitted.
 
-Lemma den_ren_commutes :
+Lemma denote_ren_commutes :
   forall Γ Γ' τ (t : tm Γ τ) (r : ren Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
     ⟦ t ⟧ₜₘ (denote_ren r ctx) = ⟦rename r t ⟧ₜₘ ctx.
 Proof with eauto.
   intros. generalize dependent Γ'.
-  induction t...
-  { simpl. intros. induction v...
+  induction t; intros...
+  { simpl. induction v...
     intros. simpl. rewrite IHv... }
-  { simpl. intros. rewrite IHt1. rewrite IHt2... }
-  { intros. specialize IHt with (r:=rename_lifted r).
-    simpl in IHt.
-    rewrite -> rename_abs. simpl.
-    apply functional_extensionality.
+  { simpl. rewrite IHt1. rewrite IHt2... }
+  { specialize IHt with (r:=rename_lifted r).
+    simpl in IHt. rewrite -> rename_abs.
+    simpl. apply functional_extensionality.
     intros. rewrite <- IHt. simpl.
-    rewrite <- den_rename_elim... }
-  { simpl. intros. rewrite IHt1. rewrite IHt2... }
-  { simpl. intros. rewrite IHt1. rewrite IHt2... }
-  { simpl. intros. rewrite IHt... }
-  { simpl. intros. rewrite IHt... }
+    rewrite <- denote_ren_elim... }
+  { simpl. rewrite IHt1. rewrite IHt2... }
+  { simpl. rewrite IHt1. rewrite IHt2... }
+  { simpl. rewrite IHt... }
+  { simpl. rewrite IHt... }
 Qed.
 
-Lemma den_sub_comm_abs :
-  forall Γ Γ' τ σ (t : tm (σ :: Γ) τ) (s : sub Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
-    (forall (Γ' : Ctx) (s : sub (σ :: Γ) Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
-      ⟦ t ⟧ₜₘ (denote_sub s ctx) = ⟦ substitute s t ⟧ₜₘ ctx) ->
-    ⟦ abs Γ τ σ t ⟧ₜₘ (denote_sub s ctx) =
-      ⟦ substitute s (abs Γ τ σ t) ⟧ₜₘ ctx.
-Proof.
-  intros. remember (abs Γ τ σ t).
+Lemma denote_sub_elim : forall Γ Γ' τ
+  (s : sub Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
+  denote_sub s ctx = denote_sub (tl_sub (substitute_lifted s)) (x, ctx).
+Proof with eauto.
+  intros. unfold tl_sub. simpl.
 Admitted.
 
-Lemma den_sub_commutes :
+Lemma denote_sub_commutes :
   forall Γ Γ' τ (t : tm Γ τ) (s : sub Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
     ⟦ t ⟧ₜₘ (denote_sub s ctx) = ⟦substitute s t ⟧ₜₘ ctx.
 Proof with eauto.
   intros. generalize dependent Γ'.
-  induction t; simpl; intros...
-  { induction v...
+  induction t; intros...
+  { simpl. induction v...
     intros. simpl. rewrite IHv... }
-  { rewrite IHt1. rewrite IHt2... }
-  { apply den_sub_comm_abs... }
-  { rewrite IHt1. rewrite IHt2... }
-  { rewrite IHt1. rewrite IHt2... }
-  { rewrite IHt... }
-  { rewrite IHt... }
+  { simpl. rewrite IHt1. rewrite IHt2... }
+  { specialize IHt with (s:=substitute_lifted s).
+    simpl in IHt. rewrite -> substitute_abs.
+    simpl. apply functional_extensionality.
+    intros. rewrite <- IHt. simpl.
+    erewrite denote_sub_elim... }
+  { simpl. rewrite IHt1. rewrite IHt2... }
+  { simpl. rewrite IHt1. rewrite IHt2... }
+  { simpl. rewrite IHt... }
+  { simpl. rewrite IHt... }
 Qed.
 
 Definition Dsub {Γ Γ'} : sub Γ Γ' -> sub (Dctx Γ) (Dctx Γ').
@@ -201,18 +199,6 @@ Admitted.
   forall Γ τ
     env Γ -> *)
 
-Lemma fundamental_lemma_id_sub :
-  forall Γ τ
-    (t : tm Γ τ)
-    (ctx : ⟦ Γ ⟧ₜₓ)
-    (dctx : ⟦ Dctx Γ ⟧ₜₓ),
-  S τ (fun _ => ⟦ t ⟧ₜₘ ctx) (fun _ => ⟦ Dtm t ⟧ₜₘ dctx) ->
-  S τ (fun _ => ⟦ substitute id_sub t ⟧ₜₘ ctx)
-        (fun _ => ⟦ Dtm (substitute id_sub t) ⟧ₜₘ dctx).
-Proof with eauto.
-  induction τ; simpl; intros; erewrite app_sub_id...
-Qed.
-
 Lemma S_eq {τ f f'} (s : S τ f f') g g':
   f = g -> f' = g' ->
   S τ g g'.
@@ -230,15 +216,13 @@ Lemma fundamental_lemma :
   S τ (fun _ => ⟦ substitute s t ⟧ₜₘ ctx)
     (fun _ => ⟦ Dtm (substitute s t) ⟧ₜₘ dctx).
 Proof with eauto.
-  induction τ; intros.
-  { eapply (S_eq H); apply functional_extensionality; intros.
-    apply den_sub_commutes.
-    rewrite Dsub_step.  }
-  { simpl in *.
-    eapply (S_eq (τ1 → τ2) _ _ _ _ _ _ H). }
-  { simpl in *.
-    apply (S_eq H). }
-Qed.
+  induction τ; intros;
+    try (apply (S_eq H); apply functional_extensionality; intros;
+    apply denote_sub_commutes).
+  { rewrite Dsub_step. admit. }
+  { rewrite Dsub_step. admit. }
+  { rewrite Dsub_step. admit. }
+Admitted.
 
 Theorem semantic_correct :
   forall Γ τ (t : tm Γ τ)
