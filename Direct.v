@@ -173,11 +173,8 @@ Proof with eauto.
   { rewrite IHt... }
 Qed.
 
-Definition Dsub {Γ Γ'} : sub Γ Γ' -> sub (Dctx Γ) (Dctx Γ') :=
-  match Γ' with
-  | [] => fun s τ v => var (Dctx Γ') τ (s τ v)
-  | h :: t => fun τ v => v
-  end.
+Definition Dsub {Γ Γ'} : sub Γ Γ' -> sub (Dctx Γ) (Dctx Γ').
+  Admitted.
 
 Lemma Dsub_step :
   forall Γ Γ' τ (t : tm Γ τ)
