@@ -8,9 +8,6 @@ Require Import Logic.JMeq.
 Require Import Arith.PeanoNat.
 Require Import Program.Equality.
 
-Require Import Definitions.
-Require Import Macro.
-
 Open Scope R_scope.
 
 (*

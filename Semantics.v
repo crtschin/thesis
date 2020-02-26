@@ -10,9 +10,9 @@ Require Import Coq.Program.Equality.
 Require Import Arith_base.
 Import EqNotations.
 
-Require Import Definitions.
-Require Import Macro.
-Require Import Diffeology.
+From AD Require Import Definitions.
+From AD Require Import Macro.
+From AD Require Import Diffeology.
 
 Local Open Scope nat_scope.
 Local Open Scope R_scope.

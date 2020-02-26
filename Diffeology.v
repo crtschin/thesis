@@ -13,8 +13,9 @@ Require Import mathcomp.analysis.classical_sets.
 Require Import Arith_base.
 Require Import mathcomp.algebra.matrix.
 From mathcomp Require Import ssralg.
-Require Import Definitions.
-Require Import Macro.
+
+From AD Require Import Definitions.
+From AD Require Import Macro.
 
 Local Open Scope nat_scope.
 Local Open Scope R_scope.

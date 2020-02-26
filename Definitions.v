@@ -60,11 +60,11 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
 .
 
 Inductive Closed : ty -> Type :=
-  | Closure : forall Γ τ, tm Γ τ -> Env Γ -> Closed τ
-  | Clapp : forall τ σ, Closed (σ → τ) -> Closed σ -> Closed τ
+  | closure : forall Γ τ, tm Γ τ -> Env Γ -> Closed τ
+  | clapp : forall τ σ, Closed (σ → τ) -> Closed σ -> Closed τ
   with Env : Ctx -> Type :=
-  | Env_nil : Env []
-  | Env_cons : forall Γ τ, Closed τ -> Env Γ -> Env (τ::Γ)
+  | env_nil : Env []
+  | env_cons : forall Γ τ, Closed τ -> Env Γ -> Env (τ::Γ)
 .
 
 (* Examples *)
@@ -99,7 +99,7 @@ Definition neuron :=
                 (Top [] Real))))))).
 
 (*
-  Substitution
+  Context Substitution
 
   Adapted from:
     Strongly Typed Term Representations in Coq by Benton, et al.
@@ -279,9 +279,14 @@ Proof with eauto.
   induction t; Rewrites lift_sub_sub.
 Qed.
 
+(* Rename helpers *)
+Lemma rename_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (r : ren Γ Γ'),
+  rename r (abs Γ τ σ t) = abs Γ' τ σ (rename (rename_lifted r) t).
+Proof. reflexivity. Qed.
+
 (*
   Typing
-  TODO: Redundant to define this considering it is builtin to the
+  Redundant to define this considering it is builtin to the
    structure of the language?
 *)
 Definition has_type {Γ τ} (t : tm Γ τ) : ty := τ.
