@@ -63,7 +63,20 @@ Program Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧�
   | second σ ρ t => fun ctx => snd (⟦t⟧ₜₘ ctx)
   end
 where "⟦ t ⟧ₜₘ" := (denote_tm t).
-Compute ((denote_tm (Dtm ex_plus) tt) (1, 1) (0, 0)).
+
+Definition constant {X} (x : X) {Y} {F : X -> Y -> X} := F x.
+(* Compute ((denote_tm (Dtm ex_plus) tt) (id, constant 1) (id, constant 0)). *)
+
+Fixpoint denote_env {Γ} (G : Env Γ) : ⟦ Γ ⟧ₜₓ :=
+  match G with
+  | env_nil => tt
+  | env_cons Γ' τ c G' => (denote_closed c, denote_env G')
+  end
+with denote_closed {τ} (c : Closed τ) : ⟦ τ ⟧ₜ :=
+  match c with
+  | closure Γ'' τ' t G'' => denote_tm t (denote_env G'')
+  | clapp τ' σ c1 c2 => (denote_closed c1) (denote_closed c2)
+  end.
 
 (* Defined in section 5 *)
 Record Gl := make_gl {
@@ -121,8 +134,10 @@ Lemma denote_ren_elim : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
   denote_ren r ctx = denote_ren (tl_ren (rename_lifted r)) (x, ctx).
 Proof with eauto.
-    intros. unfold tl_ren. simpl.
-  Admitted.
+  induction Γ...
+  intros. specialize IHΓ with (r:=tl_ren r).
+  simpl. rewrite IHΓ with (x:=x)...
+Qed.
 
 Lemma denote_ren_commutes :
   forall Γ Γ' τ (t : tm Γ τ) (r : ren Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
@@ -144,16 +159,46 @@ Proof with eauto.
   { simpl. rewrite IHt... }
 Qed.
 
+Lemma denote_ren_pop_elim : forall Γ τ (ctx : ⟦ τ :: Γ ⟧ₜₓ),
+  denote_ren (fun (ρ : ty) (y : ρ ∈ Γ) => Pop Γ ρ τ y) ctx = snd ctx.
+Proof with eauto.
+  induction Γ; simpl; intros...
+  { induction ctx. simpl. induction b... }
+  { induction ctx as [T G].
+    apply injective_projections... simpl.
+    unfold tl_ren... simpl.
+    rewrite <- IHΓ. simpl. admit. }
+Admitted.
+
+Lemma denote_shift_elim : forall Γ τ σ (t : tm Γ τ) ctx x,
+  ⟦ t ⟧ₜₘ ctx = ⟦ shift (σ:=σ) t ⟧ₜₘ (x, ctx).
+Proof with eauto.
+  induction t; intros; simpl...
+  { rewrite IHt1 with (x:=x).
+    rewrite IHt2 with (x:=x)... }
+  { apply functional_extensionality. intros.
+    rewrite <- denote_ren_commutes. simpl.
+    rewrite <- denote_ren_elim. rewrite denote_ren_pop_elim... }
+  { erewrite IHt1. erewrite IHt2... }
+  { erewrite IHt1. erewrite IHt2... }
+  { erewrite IHt... }
+  { erewrite IHt... }
+Qed.
+
 Lemma denote_sub_elim : forall Γ Γ' τ
   (s : sub Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
   denote_sub s ctx = denote_sub (tl_sub (substitute_lifted s)) (x, ctx).
 Proof with eauto.
-  intros. unfold tl_sub. simpl.
-Admitted.
+  induction Γ; intros...
+  intros. specialize IHΓ with (s := (tl_sub s)).
+  simpl. rewrite IHΓ with (x := x). simpl.
+  unfold hd_sub. unfold tl_sub. simpl.
+  erewrite denote_shift_elim...
+Qed.
 
 Lemma denote_sub_commutes :
   forall Γ Γ' τ (t : tm Γ τ) (s : sub Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
-    ⟦ t ⟧ₜₘ (denote_sub s ctx) = ⟦substitute s t ⟧ₜₘ ctx.
+    ⟦ t ⟧ₜₘ (denote_sub s ctx) = ⟦ substitute s t ⟧ₜₘ ctx.
 Proof with eauto.
   intros. generalize dependent Γ'.
   induction t; intros...
@@ -174,20 +219,13 @@ Qed.
 Definition Dsub {Γ Γ'} : sub Γ Γ' -> sub (Dctx Γ) (Dctx Γ').
   Admitted.
 
-Lemma Dsub_step :
-  forall Γ Γ' τ (t : tm Γ τ)
-    (s : sub Γ Γ') (ctx : ⟦ Dctx Γ' ⟧ₜₓ),
-  ⟦ Dtm (substitute s t) ⟧ₜₘ ctx
-    = ⟦ substitute (Dsub s) (Dtm t) ⟧ₜₘ ctx.
-Admitted.
-
-Lemma D_denote_substitute : forall
-  Γ Γ' τ (s: sub Γ Γ')
-  (t: tm Γ τ) (dctx : ⟦ Dctx Γ' ⟧ₜₓ),
-    ⟦ Dtm t ⟧ₜₘ (denote_sub (Dsub s) dctx) = ⟦ Dtm (substitute s t) ⟧ₜₘ dctx.
+Lemma D_denote_substitute :
+  forall Γ Γ' τ (s: sub Γ Γ')
+    (t: tm Γ τ) (ctx : ⟦ Dctx Γ' ⟧ₜₓ),
+  ⟦ Dtm (substitute s t) ⟧ₜₘ ctx =
+    ⟦ Dtm t ⟧ₜₘ (denote_sub (Dsub s) ctx).
 Proof.
 Admitted.
-
 
 (*
   Plain words:
@@ -219,9 +257,9 @@ Proof with eauto.
   induction τ; intros;
     try (apply (S_eq H); apply functional_extensionality; intros;
     apply denote_sub_commutes).
-  { rewrite Dsub_step. admit. }
-  { rewrite Dsub_step. admit. }
-  { rewrite Dsub_step. admit. }
+  { rewrite D_denote_substitute. admit. }
+  { rewrite D_denote_substitute. admit. }
+  { rewrite D_denote_substitute. admit. }
 Admitted.
 
 Theorem semantic_correct :

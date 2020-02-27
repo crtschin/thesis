@@ -42,8 +42,7 @@ Fixpoint denote_ctx Γ : DiffeoSp :=
 Program Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : denote_ctx Γ -> denote_t τ :=
   match v with
   | Top Γ τ => product_second (denote_ctx Γ) (denote_t τ)
-  | Pop Γ τ σ t =>
-    denote_v t
+  | Pop Γ τ σ t => denote_v t
   end.
 
 Fixpoint denote_tm Γ τ (t : tm Γ τ) : denote_ctx Γ -> carrier (denote_t τ) :=

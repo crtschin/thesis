@@ -59,6 +59,7 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | second : forall τ σ, tm Γ (τ × σ) -> tm Γ σ
 .
 
+(* Closed terms *)
 Inductive Closed : ty -> Type :=
   | closure : forall Γ τ, tm Γ τ -> Env Γ -> Closed τ
   | clapp : forall τ σ, Closed (σ → τ) -> Closed σ -> Closed τ
@@ -66,6 +67,16 @@ Inductive Closed : ty -> Type :=
   | env_nil : Env []
   | env_cons : forall Γ τ, Closed τ -> Env Γ -> Env (τ::Γ)
 .
+
+Scheme closed_env_rec_prop := Induction for Closed Sort Prop
+  with env_closed_rec_prop := Induction for Env Sort Prop.
+
+Scheme closed_env_rec_set := Induction for Closed Sort Set
+  with env_closed_rec_set := Induction for Env Sort Set.
+
+Scheme closed_env_rec := Induction for Closed Sort Type
+  with env_closed_rec := Induction for Env Sort Type.
+(* End Closed terms *)
 
 (* Examples *)
 Definition ex_id :=
@@ -97,6 +108,7 @@ Definition neuron :=
             (Pop [Real;Real] Real Real
               (Pop [Real] Real Real
                 (Top [] Real))))))).
+(* End Examples *)
 
 (*
   Context Substitution
