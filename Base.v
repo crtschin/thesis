@@ -17,6 +17,9 @@ Main paper:
 - Correctness of Automatic Differentiation via
     Diffeologies and Categorical Gluing by Huot, Staton and Vakar.
 
+Very relevant:
+- On the Versatility of Open Logical Relations - Barthe, et al.
+
 Logical Relations:
 - From Mathematics to Abstract Machine by Swierstra
 - A Note on Logical Relations Between Semantics and Syntax by Pitts

@@ -7,6 +7,7 @@ Require Import Logic.JMeq.
 Require Import Reals.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
+Require Import Coq.Program.Basics.
 Require Import Arith_base.
 Require Import Coquelicot.Derive.
 Import EqNotations.
@@ -14,8 +15,19 @@ Import EqNotations.
 Require Import AD.Definitions.
 Require Import AD.Macro.
 
-Local Open Scope nat_scope.
+Local Open Scope program_scope.
 Local Open Scope R_scope.
+
+(* Notations:
+
+  ⟦ τ ⟧ₜ := denote_t τ, Currently piggybacks off of Coq's types.
+  ⟦ Γ ⟧ₜₓ := denote_ctx Γ, A product list of types ensured to exist
+                          in the context Γ.
+  ⟦ v ⟧ₜₓ := denote_v v, A projection of the product list denoted by the typing
+                        context relevant to the variable referenced by v
+  ⟦ t ⟧ₜₘ := denote_tm t, Gives a function f of t such that it has the correct
+                          denoted type of τ given the denoted context of Γ.
+*)
 
 (*
   Goal: Write out the logical relation over types with the goal of having both
@@ -23,23 +35,22 @@ Local Open Scope R_scope.
 
   Will piggyback on Coq's types
 *)
-
-Reserved Notation "⟦ T ⟧ₜ".
+Reserved Notation "⟦ τ ⟧ₜ".
 Fixpoint denote_t τ : Type :=
   match τ with
-  | Real => R
+  | Real => R -> R
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
   end
-where "⟦ T ⟧ₜ" := (denote_t T).
+where "⟦ τ ⟧ₜ" := (denote_t τ).
 
-Reserved Notation "⟦ T ⟧ₜₓ".
+Reserved Notation "⟦ Γ ⟧ₜₓ".
 Fixpoint denote_ctx (Γ : Ctx) : Type :=
   match Γ with
   | [] => unit
   | h :: t => ⟦h⟧ₜ * ⟦t⟧ₜₓ
   end
-where "⟦ T ⟧ₜₓ" := (denote_ctx T).
+where "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
 
 Program Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
   match v with
@@ -55,8 +66,8 @@ Program Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧�
   | app σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx)
   | abs σ ρ f => fun ctx => fun x => ⟦ f ⟧ₜₘ (x, ctx)
 
-  | const r => fun ctx => r
-  | add t1 t2 => fun ctx => ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx
+  | const r => fun ctx => fun _ => r
+  | add t1 t2 => fun ctx => fun r => ⟦t1⟧ₜₘ ctx r + ⟦t2⟧ₜₘ ctx r
 
   | tuple σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx)
   | first σ ρ t => fun ctx => fst (⟦t⟧ₜₘ ctx)
@@ -78,44 +89,6 @@ with denote_closed {τ} (c : Closed τ) : ⟦ τ ⟧ₜ :=
   | clapp τ' σ c1 c2 => (denote_closed c1) (denote_closed c2)
   end.
 
-(* Defined in section 5 *)
-Record Gl := make_gl {
-  glτ : ty;
-  glσ : ty;
-  GlP : (R -> ⟦glτ⟧ₜ) -> (R -> ⟦glσ⟧ₜ) -> Prop;
-}.
-
-(*
-  Prop translation of S in the proof of theorem 1 as an
-    inductive definition
-*)
-Inductive GlProp : forall τ σ, (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ σ ⟧ₜ) -> Prop :=
-  | s_r : forall f,
-      GlProp Real (Dt Real) f (fun r => (f r, Derive f r))
-  | s_prod : forall τ σ f1 f2 g1 g2,
-      GlProp τ (Dt τ) f1 f2 ->
-      GlProp σ (Dt σ) g1 g2 ->
-      GlProp (τ × σ) (Dt (τ × σ)) (fun r => (f1 r, g1 r)) (fun r => (f2 r, g2 r))
-  | s_arr : forall τ σ f1 f2 g1 g2 (s1 : GlProp τ (Dt τ) g1 g2),
-      GlProp σ (Dt σ) (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x)) ->
-      GlProp (τ → σ) (Dt (τ → σ))(fun r => f1 r) (fun r => f2 r)
-.
-
-Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
-  := GlProp τ (Dt τ).
-
-Record St := make_s {
-  carrier : ty;
-  SP : (R -> ⟦carrier⟧ₜ) -> (R -> ⟦Dt carrier⟧ₜ) -> Prop;
-}.
-
-Definition interpret τ : St :=
-  match τ with
-  | Real => make_s Real (GlProp Real (Dt Real))
-  | τ1 × τ2 => make_s (τ1 × τ2) (GlProp (τ1 × τ2) (Dt (τ1 × τ2)))
-  | τ1 → τ2 => make_s (τ1 → τ2) (GlProp (τ1 → τ2) (Dt (τ1 → τ2)))
-  end.
-
 Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   match Γ with
   | [] => fun s ctx => tt
@@ -130,6 +103,7 @@ Fixpoint denote_ren {Γ Γ'}: ren Γ' Γ -> denote_ctx Γ -> denote_ctx Γ' :=
       (denote_tm (hd_ren r) ctx, denote_ren (tl_ren r) ctx)
   end.
 
+(* Lemmas for renaming and substitution in the denotated context. *)
 Lemma denote_ren_elim : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
   denote_ren r ctx = denote_ren (tl_ren (rename_lifted r)) (x, ctx).
@@ -216,16 +190,56 @@ Proof with eauto.
   { simpl. rewrite IHt... }
 Qed.
 
-Definition Dsub {Γ Γ'} : sub Γ Γ' -> sub (Dctx Γ) (Dctx Γ').
-  Admitted.
+(* Defined in section 5 *)
+Record Gl := make_gl {
+  glτ : ty;
+  glσ : ty;
+  GlP : (R -> ⟦glτ⟧ₜ) -> (R -> ⟦glσ⟧ₜ) -> Prop;
+}.
 
-Lemma D_denote_substitute :
-  forall Γ Γ' τ (s: sub Γ Γ')
-    (t: tm Γ τ) (ctx : ⟦ Dctx Γ' ⟧ₜₓ),
-  ⟦ Dtm (substitute s t) ⟧ₜₘ ctx =
-    ⟦ Dtm t ⟧ₜₘ (denote_sub (Dsub s) ctx).
-Proof.
-Admitted.
+(*
+  Prop translation of S in the proof of theorem 1 as an
+    inductive definition
+*)
+(* Inductive GlProp : forall τ σ, (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ σ ⟧ₜ) -> Prop :=
+  | s_r : forall f,
+      GlProp Real (Dt Real) f (fun r => (f r, Derive f r))
+  | s_prod : forall τ σ f1 f2 g1 g2,
+      GlProp τ (Dt τ) f1 f2 ->
+      GlProp σ (Dt σ) g1 g2 ->
+      GlProp (τ × σ) (Dt (τ × σ)) (fun r => (f1 r, g1 r)) (fun r => (f2 r, g2 r))
+  | s_arr : forall τ σ f1 f2 g1 g2 (s1 : GlProp τ (Dt τ) g1 g2),
+      GlProp σ (Dt σ) (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x)) ->
+      GlProp (τ → σ) (Dt (τ → σ))(fun r => f1 r) (fun r => f2 r)
+. *)
+
+Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
+  := match τ with
+     | Real => fun f g =>
+        forall r, g r = (f r, (Derive (f r)))
+     | σ × ρ => fun f g =>
+        forall f1 f2 g1 g2,
+          S σ f1 f2 ->
+          S ρ g1 g2 ->
+            (fun r => (f1 r, g1 r)) = f /\
+            (fun r => (f2 r, g2 r)) = g
+     | σ → ρ => fun f g =>
+        forall f1 f2 g1 g2 (s1 : S σ g1 g2),
+          S ρ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x)) ->
+          f = f1 /\ g = f2
+     end.
+
+(* Record St := make_s {
+  carrier : ty;
+  SP : (R -> ⟦carrier⟧ₜ) -> (R -> ⟦Dt carrier⟧ₜ) -> Prop;
+}.
+
+Definition interpret τ : St :=
+  match τ with
+  | Real => make_s Real (GlProp Real (Dt Real))
+  | τ1 × τ2 => make_s (τ1 × τ2) (GlProp (τ1 × τ2) (Dt (τ1 × τ2)))
+  | τ1 → τ2 => make_s (τ1 → τ2) (GlProp (τ1 → τ2) (Dt (τ1 → τ2)))
+  end. *)
 
 (*
   Plain words:
@@ -233,40 +247,23 @@ Admitted.
     assignment in the context is in the relation S, applying the substitutions
     in the context to the term t is also in the relation S.
 *)
-(* Lemma fundamental_lemma_closed :
-  forall Γ τ
-    env Γ -> *)
-
-Lemma S_eq {τ f f'} (s : S τ f f') g g':
-  f = g -> f' = g' ->
-  S τ g g'.
+Lemma fundamental_lemma :
+  forall Γ Γ' τ g g'
+    (t : tm Γ τ) (sb : sub Γ Γ'),
+  (forall σ (s : tm Γ' σ) f f',
+    S σ (⟦ s ⟧ₜₘ ∘ f) (⟦ Dtm s ⟧ₜₘ ∘ f')) ->
+  S τ (⟦ substitute sb t ⟧ₜₘ  ∘ g) (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ g').
 Proof with eauto.
-  intros. subst...
+  induction τ; intros.
+  { specialize H with (σ:=Real)... }
+  { specialize H with (σ:=τ1 → τ2)... }
+  { specialize H with (σ:=τ1 × τ2)... }
 Qed.
 
-Lemma fundamental_lemma :
-  forall Γ Γ' τ s
-    (t : tm Γ τ)
-    (ctx : ⟦ Γ' ⟧ₜₓ)
-    (dctx : ⟦ Dctx Γ' ⟧ₜₓ),
-  S τ (fun _ => ⟦ t ⟧ₜₘ (denote_sub s ctx))
-    (fun _ => ⟦ Dtm t ⟧ₜₘ (denote_sub (Dsub s) dctx)) ->
-  S τ (fun _ => ⟦ substitute s t ⟧ₜₘ ctx)
-    (fun _ => ⟦ Dtm (substitute s t) ⟧ₜₘ dctx).
-Proof with eauto.
-  induction τ; intros;
-    try (apply (S_eq H); apply functional_extensionality; intros;
-    apply denote_sub_commutes).
-  { rewrite D_denote_substitute. admit. }
-  { rewrite D_denote_substitute. admit. }
-  { rewrite D_denote_substitute. admit. }
-Admitted.
-
 Theorem semantic_correct :
-  forall Γ τ (t : tm Γ τ)
-    (F : denote_ctx (Dctx Γ))
-    (fs : denote_ctx Γ),
-  ⟦ Dtm t ⟧ₜₘ F =
-    (⟦ t ⟧ₜₘ fs, Derive (⟦ t ⟧ₜₘ fs)).
+  forall Γ Γ' τ g g' (E : Env Γ)
+    (t : tm Γ τ),
+  exists g g', ⟦ Dtm t ⟧ₜₘ g =
+    (⟦ t ⟧ₜₘ ∘ (denote_env), Derive (⟦ t ⟧ₜₘ ∘ (denote_env))).
 Proof.
 Admitted.
