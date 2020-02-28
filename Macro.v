@@ -36,17 +36,17 @@ Program Fixpoint Dtm {Γ τ} (t : tm Γ τ) : tm (map Dt Γ) (Dt τ) :=
   | app _ _ _ t1 t2 => app _ _ _ (Dtm t1) (Dtm t2)
   | abs _ _ _ f => abs _ _ _ (Dtm f)
 
-  | const _ r => tuple _ _ _ (const _ r) (const _ 0)
+  | const _ r => tuple _ (const _ r) (const _ 0)
   | add _ t1 t2 =>
     let d1 := (Dtm t1) in
     let d2 := (Dtm t2) in
-    tuple _ _ _
-      (add _ (first _ _ _ d1) (first _ _ _ d2))
-      (add _ (second _ _ _ d1) (second _ _ _ d2))
+    tuple _
+      (add _ (first _ d1) (first _ d2))
+      (add _ (second _ d1) (second _ d2))
 
-  | tuple _ _ _ t1 t2 => tuple _ _ _ (Dtm t1) (Dtm t2)
-  | first _ _ _ p => first _ _ _ (Dtm p)
-  | second _ _ _ p => second _ _ _ (Dtm p)
+  | tuple _ t1 t2 => tuple _ (Dtm t1) (Dtm t2)
+  | first _ p => first _ (Dtm p)
+  | second _ p => second _ (Dtm p)
   end.
 
 Program Fixpoint Denv {Γ} (G : Env Γ) : Env (Dctx Γ) :=

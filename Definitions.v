@@ -51,12 +51,12 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | add : tm Γ Real -> tm Γ Real -> tm Γ Real
 
   (* Products (currently using projection instead of pattern matching) *)
-  | tuple : forall τ σ,
+  | tuple : forall {τ σ},
     tm Γ τ ->
     tm Γ σ ->
     tm Γ (τ × σ)
-  | first : forall τ σ, tm Γ (τ × σ) -> tm Γ τ
-  | second : forall τ σ, tm Γ (τ × σ) -> tm Γ σ
+  | first : forall {τ σ}, tm Γ (τ × σ) -> tm Γ τ
+  | second : forall {τ σ}, tm Γ (τ × σ) -> tm Γ σ
 .
 
 (* Closed terms *)
@@ -163,9 +163,9 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | const _ r => const _ r
   | add _ t1 t2 => add _ (rename r t1) (rename r t2)
 
-  | tuple _ _ _ t1 t2 => tuple _ _ _(rename r t1) (rename r t2)
-  | first _ _ _ p => first _ _ _ (rename r p)
-  | second _ _ _ p => second _ _ _ (rename r p)
+  | tuple _ t1 t2 => tuple _(rename r t1) (rename r t2)
+  | first _ p => first _ (rename r p)
+  | second _ p => second _ (rename r p)
   end.
 
 Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
@@ -187,9 +187,9 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | const _ r => const _ r
   | add _ t1 t2 => add _ (substitute s t1) (substitute s t2)
 
-  | tuple _ _ _ t1 t2 => tuple _ _ _ (substitute s t1) (substitute s t2)
-  | first _ _ _ p => first _ _ _ (substitute s p)
-  | second _ _ _ p => second _ _ _ (substitute s p)
+  | tuple _ t1 t2 => tuple  _ (substitute s t1) (substitute s t2)
+  | first _ p => first _ (substitute s p)
+  | second _ p => second _ (substitute s p)
   end.
 
 (*

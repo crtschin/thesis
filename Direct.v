@@ -36,9 +36,9 @@ Local Open Scope R_scope.
   Will piggyback on Coq's types
 *)
 Reserved Notation "⟦ τ ⟧ₜ".
-Fixpoint denote_t τ : Type :=
+Fixpoint denote_t τ : Set :=
   match τ with
-  | Real => R -> R
+  | Real => R
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
   end
@@ -52,7 +52,7 @@ Fixpoint denote_ctx (Γ : Ctx) : Type :=
   end
 where "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
 
-Program Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
+Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
   match v with
   | Top Γ' τ' => fun gamma => fst gamma
   | Pop Γ' τ' σ x => fun gamma => denote_v x (snd gamma)
@@ -60,14 +60,14 @@ Program Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ
 Notation "⟦ v ⟧ᵥ" := (denote_v v).
 
 Reserved Notation "⟦ t ⟧ₜₘ".
-Program Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
+Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
   match t with
   | var σ v => fun ctx => denote_v v ctx
   | app σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx)
   | abs σ ρ f => fun ctx => fun x => ⟦ f ⟧ₜₘ (x, ctx)
 
-  | const r => fun ctx => fun _ => r
-  | add t1 t2 => fun ctx => fun r => ⟦t1⟧ₜₘ ctx r + ⟦t2⟧ₜₘ ctx r
+  | const r => fun ctx => r
+  | add t1 t2 => fun ctx => ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx
 
   | tuple σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx)
   | first σ ρ t => fun ctx => fst (⟦t⟧ₜₘ ctx)
@@ -213,33 +213,28 @@ Record Gl := make_gl {
       GlProp (τ → σ) (Dt (τ → σ))(fun r => f1 r) (fun r => f2 r)
 . *)
 
+(* *)
+Definition der {X Y} (f : X -> Y) x := f x.
+
 Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
   := match τ with
      | Real => fun f g =>
-        forall r, g r = (f r, (Derive (f r)))
+        forall r,
+          fst (g r) = f r /\
+          snd (g r) = der f r
      | σ × ρ => fun f g =>
         forall f1 f2 g1 g2,
           S σ f1 f2 ->
           S ρ g1 g2 ->
-            (fun r => (f1 r, g1 r)) = f /\
-            (fun r => (f2 r, g2 r)) = g
+            (f = fun r => (f1 r, g1 r)) /\
+            (g = fun r => (f2 r, g2 r))
      | σ → ρ => fun f g =>
         forall f1 f2 g1 g2 (s1 : S σ g1 g2),
           S ρ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x)) ->
           f = f1 /\ g = f2
      end.
 
-(* Record St := make_s {
-  carrier : ty;
-  SP : (R -> ⟦carrier⟧ₜ) -> (R -> ⟦Dt carrier⟧ₜ) -> Prop;
-}.
-
-Definition interpret τ : St :=
-  match τ with
-  | Real => make_s Real (GlProp Real (Dt Real))
-  | τ1 × τ2 => make_s (τ1 × τ2) (GlProp (τ1 × τ2) (Dt (τ1 × τ2)))
-  | τ1 → τ2 => make_s (τ1 → τ2) (GlProp (τ1 → τ2) (Dt (τ1 → τ2)))
-  end. *)
+Ltac quick := simpl in *; intros; eauto.
 
 (*
   Plain words:
@@ -253,17 +248,59 @@ Lemma fundamental_lemma :
   (forall σ (s : tm Γ' σ) f f',
     S σ (⟦ s ⟧ₜₘ ∘ f) (⟦ Dtm s ⟧ₜₘ ∘ f')) ->
   S τ (⟦ substitute sb t ⟧ₜₘ  ∘ g) (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ g').
-Proof with eauto.
+Proof with quick.
   induction τ; intros.
   { specialize H with (σ:=Real)... }
   { specialize H with (σ:=τ1 → τ2)... }
   { specialize H with (σ:=τ1 × τ2)... }
 Qed.
 
-Theorem semantic_correct :
-  forall Γ Γ' τ g g' (E : Env Γ)
-    (t : tm Γ τ),
-  exists g g', ⟦ Dtm t ⟧ₜₘ g =
-    (⟦ t ⟧ₜₘ ∘ (denote_env), Derive (⟦ t ⟧ₜₘ ∘ (denote_env))).
+Lemma S_correct_R :
+  forall Γ (t : tm Γ Real) f,
+  S Real (⟦ t ⟧ₜₘ ∘ denote_env ∘ f)
+    (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
+  (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
+  fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
+    der (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
+Proof with quick.
+  quick. apply functional_extensionality...
+  apply injective_projections;
+    specialize H with x; destruct H; assumption.
+Qed.
+
+Lemma S_prod_R :
+  forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) f,
+  S (τ × σ) (⟦ tuple _ t s ⟧ₜₘ ∘ denote_env ∘ f)
+    (⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
+  ⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
+  fun r => (⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r))),
+    der (fun x => ⟦ Dtm s ⟧ₜₘ (denote_env (Denv (f x)))) r).
+Proof. quick. Qed.
+
+Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
+  induction Γ. constructor.
+  inversion G. assumption.
+Defined.
+
+Lemma shave_env_snd :
+  forall Γ τ (f: R -> Env (τ :: Γ)) (x: R),
+  (denote_env (shave_env (f x))) = (snd (denote_env (f x))).
 Proof.
 Admitted.
+
+Lemma well_typed_S_R :
+  forall Γ (t : tm Γ Real) f,
+    S Real (⟦ t ⟧ₜₘ ∘ denote_env ∘ f)
+      (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
+Proof with quick.
+Admitted.
+
+Theorem semantic_correct_R :
+  forall Γ (t : tm Γ Real),
+  (fun E => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv E))) =
+    fun E => (⟦ t ⟧ₜₘ (denote_env E), der ⟦ t ⟧ₜₘ (denote_env E)).
+Proof with eauto.
+  intros.
+  pose proof (well_typed_S_R Γ t).
+  apply S_correct...
+Qed.
