@@ -296,11 +296,12 @@ Proof with quick.
 Admitted.
 
 Theorem semantic_correct_R :
-  forall Γ (t : tm Γ Real),
-  (fun E => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv E))) =
-    fun E => (⟦ t ⟧ₜₘ (denote_env E), der ⟦ t ⟧ₜₘ (denote_env E)).
-Proof with eauto.
+  forall Γ (t : tm Γ Real) (f : R -> Env Γ),
+  ⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
+    fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
+              der (fun x =>⟦ t ⟧ₜₘ (denote_env (f x))) r).
+Proof with quick.
   intros.
   pose proof (well_typed_S_R Γ t).
-  apply S_correct...
+  pose proof (S_correct_R Γ t)...
 Qed.
