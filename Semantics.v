@@ -51,14 +51,14 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ)
   | var σ v => denote_v v
 
   | const r => constant_smooth (r : carrier R_diffeology)
-  | add t1 t2 => denote_tm t1 + denote_tm t2
+  | add t1 t2 => product_smooth (denote_tm t1) (denote_tm t2)
 
   | app σ ρ t1 t2 => diffeological_smooth_app (denote_tm t2) (denote_tm t1)
   | abs σ ρ f => curry (denote_tm f)
 
-  | tuple σ ρ t1 t2 => (denote_tm t1, denote_tm t2)
-  | first σ ρ t => fst (denote_tm t)
-  | second σ ρ t => snd (denote_tm t)
+  | tuple σ ρ t1 t2 => product_smooth (denote_tm t1) (denote_tm t2)
+  | first σ ρ t => product_first ∘d denote_tm t
+  | second σ ρ t => product_second ∘d denote_tm t
   end.
 
 Definition diff_func :=

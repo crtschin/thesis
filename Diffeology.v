@@ -111,180 +111,183 @@ Local Open Scope R_scope.
         plot f;
   }.
 
-  Lemma compose_constant {X Y Z} {f : X -> Y} {g : Y -> Z} :
-    constant_function f -> constant_function g -> constant_function (compose g f).
-  Proof.
-    intros. unfold constant_function in *.
-    destruct H. destruct H0.
-    exists x0. subst. unfold compose. reflexivity.
-  Qed.
+  (* Ground diffeological spaces *)
+    (* R instance *)
+      Lemma R_plots :
+        forall K {U : NormedModule K} (f : U -> R),
+          plot f.
+      Proof.
+        intros.
+        constructor.
+        unfold constant_function.
+        Admitted.
+      Definition R_diffeology := make_dsp R R_plots.
 
-  Lemma R_plots :
-    forall K {U : NormedModule K} (f : U -> R),
-      plot f.
-  Proof.
+    (* unit instance *)
+      Lemma unit_plots :
+        forall K {U : NormedModule K}
+          (f : U -> ()),
+        plot f.
+      Proof.
+        intros. constructor.
+        unfold constant_function.
+        exists tt. apply functional_extensionality.
+        intros. remember (f x). induction u. reflexivity.
+      Qed.
+      Definition unit_diffeology := make_dsp unit unit_plots.
+
+  (* Functional Diffeologies *)
+    (* Defining smooth maps between diffeological spaces *)
+      Definition smooth_diffeological
+        {D1 D2 : DiffeoSp} (f : D1 -> D2) : Prop :=
+        forall K (U : NormedModule K)
+          (p : U -> D1) (g : U -> D2),
+          g = compose f p -> plot f /\ plot g
+      .
+
+    (* The set of smooth maps between diffeological spaces *)
+      Record diffeological_smooth (D1 D2 : DiffeoSp) := make_dsmooth {
+        dsmooth :> D1 -> D2;
+        smooth_dsmooth : smooth_diffeological dsmooth;
+      }.
+      Notation "a -d> b" := (diffeological_smooth a b) (at level 90).
+
+    (* Proof smooth maps satisfy the plots requirement *)
+      Lemma smooth_plots X Y :
+        forall K {U : NormedModule K}
+          (f : U -> diffeological_smooth X Y),
+        plot f.
+      Proof.
+        Admitted.
+
+      Definition functional_diffeology (X Y : DiffeoSp) : DiffeoSp :=
+        make_dsp (diffeological_smooth X Y) (smooth_plots X Y).
+
+      Notation "a -D> b" := (functional_diffeology a b) (at level 70).
+
+      Lemma functional_diffeology_app :
+        forall {D1 D2 D3 : DiffeoSp}
+          (f1 : D1 -> D2)
+          (f2 : D1 -> (D2 -D> D3)),
+        smooth_diffeological f1 ->
+        smooth_diffeological f2 ->
+        smooth_diffeological (fun d : D1 => f2 d (f1 d)).
+      Proof.
+        intros D1 D2 D3 f1 f2 H1 H2.
+      Admitted.
+
+      Definition diffeological_smooth_app :
+        forall {D1 D2 D3:DiffeoSp},
+          (D1 -d> D2) -> (D1 -d> (D2 -D> D3)) -> D1 -d> D3.
+      Proof with auto.
+        intros D1 D2 D3 f g.
+        inversion f as [f1 P1]. inversion g as [f2 P2].
+        exists (fun d => (f2 d) (f1 d)).
+        pose proof (functional_diffeology_app f1 f2 P1 P2)...
+      Defined.
+
+      Definition diffeological_smooth_abs :
+        forall {D1 D2 D3:DiffeoSp},
+          (D1 -d> D2) -> (D1 -d> (D2 -D> D3)) -> D1 -d> D3.
+      Proof with auto.
+        intros D1 D2 D3 f g.
+        inversion f as [f1 P1]. inversion g as [f2 P2].
+        exists (fun d => (f2 d) (f1 d)).
+        pose proof (functional_diffeology_app f1 f2 P1 P2)...
+      Defined.
+
+  (* Products *)
+    (* Diffeology *)
+      Lemma product_plots (X Y : DiffeoSp) :
+        forall K {U : NormedModule K} (f : U -> carrier X * carrier Y),
+        plot f.
+      Proof.
+        Admitted.
+
+      Definition product_diffeology (X Y : DiffeoSp) : DiffeoSp :=
+        make_dsp (carrier X * carrier Y)
+          (product_plots X Y).
+      Notation "a *** b" := (product_diffeology a b) (at level 30).
+
+      Definition d_first {X Y : DiffeoSp}
+        : X *** Y -> X.
+      Proof with auto. intros H. inversion H... Defined.
+
+      Definition d_second {X Y : DiffeoSp}
+        : X *** Y -> Y.
+      Proof with auto. intros H. inversion H... Defined.
+
+    (* Smooth maps between Product diffeologies *)
+      Definition product_smooth {X Y Z: DiffeoSp}
+        (f : X -d> Y) (g : X -d> Z) : X -d> Y *** Z.
+      Proof.
+        inversion f as [f' P1].
+        inversion g as [g' P2].
+        exists (fun x => (f' x, g' x)).
+      Admitted.
+
+      Definition product_first
+        : forall {X Y : DiffeoSp}, X *** Y -d> X.
+      Proof with auto.
+        intros.
+        exists fst. red.
+        intros. rewrite H.
+        splits.
+        Admitted.
+
+      Definition product_second
+        : forall {X Y : DiffeoSp}, X *** Y -d> Y.
+      Proof.
+        Admitted.
+
+  (* Helpers over smooth maps *)
+    Definition constant_smooth {D1 D2 : DiffeoSp} (d : D2) : D1 -d> D2.
+    Proof with eauto.
+      exists (fun _ => d).
+      unfold smooth_diffeological.
+      intros. rewrite H.
+      split; unfold compose;
+        constructor; exists d...
+    Defined.
+
+    Lemma smooth_diffeological_comp :
+      forall {D1 D2 D3 : DiffeoSp} (f1 : D1 -> D2) (f2 : D2 -> D3),
+        smooth_diffeological f1 ->
+        smooth_diffeological f2 ->
+          smooth_diffeological (f2 ∘ f1).
+    Proof.
+      intros D1 D2 D3 f1 f2 H1 H2. unfold smooth_diffeological in *.
+      intros K U g h Heq.
+      specialize H1 with K U g (f1 ∘ g).
+      specialize H2 with K U (f1 ∘ g) (f2 ∘ f1 ∘ g).
+      pose proof (H1 eq_refl) as H.
+      pose proof (H2 eq_refl) as H'.
+      clear H1 H2.
+      split.
+    Admitted.
+
+    Definition diffeological_smooth_comp :
+      forall {D1 D2 D3:DiffeoSp},
+        (D2 -d> D3) -> (D1 -d> D2) -> D1 -d> D3.
+    Proof.
+      intros D1 D2 D3 f g.
+      inversion f as [f1 P1]. inversion g as [f2 P2].
+      exists (fun n => f1 (f2 n)); intros.
+      pose proof (smooth_diffeological_comp f2 f1 P2 P1).
+      unfold compose in H... auto.
+    Defined.
+    Notation " A ∘d B " := (diffeological_smooth_comp A B) (at level 89).
+
+    Definition curry {D1 D2 D3 : DiffeoSp} (f : D1 *** D2 -d> D3)
+      : D2 -d> (D1 -D> D3).
     intros.
-    constructor.
-    unfold constant_function.
+    pose proof (D1 *** D2).
     Admitted.
 
-  Lemma product_plots (X Y : DiffeoSp) :
-    forall K {U : NormedModule K} (f : U -> carrier X * carrier Y),
-    plot f.
-  Proof.
-    Admitted.
-
-  Definition product_diffeology (X Y : DiffeoSp) : DiffeoSp :=
-    make_dsp (carrier X * carrier Y)
-      (product_plots X Y).
-
-  Notation "a *** b" := (product_diffeology a b) (at level 30).
-
-  Definition d_first {X Y : DiffeoSp}
-    : X *** Y -> X.
-  Proof with auto. intros H. inversion H... Defined.
-
-  Definition d_second {X Y : DiffeoSp}
-    : X *** Y -> Y.
-  Proof with auto. intros H. inversion H... Defined.
-
-  Definition smooth_diffeological
-    {D1 D2 : DiffeoSp} (f : D1 -> D2) : Prop :=
-    forall K (U : NormedModule K)
-      (p : U -> D1) (g : U -> D2),
-      g = compose f p -> plot f /\ plot g
-  .
-
-  Lemma smooth_diffeological_comp :
-    forall {D1 D2 D3 : DiffeoSp} (f1 : D1 -> D2) (f2 : D2 -> D3),
-      smooth_diffeological f1 ->
-      smooth_diffeological f2 ->
-        smooth_diffeological (f2 ∘ f1).
-  Proof.
-    intros D1 D2 D3 f1 f2 H1 H2. unfold smooth_diffeological in *.
-    intros K U g h Heq.
-    specialize H1 with K U g (f1 ∘ g).
-    specialize H2 with K U (f1 ∘ g) (f2 ∘ f1 ∘ g).
-    pose proof (H1 eq_refl) as H.
-    pose proof (H2 eq_refl) as H'.
-    clear H1 H2.
-    split.
-    { apply compose_plot. }
-  Admitted.
-
-  (* The set of smooth functions between diffeological spaces *)
-  Record diffeological_smooth (D1 D2 : DiffeoSp) := make_dsmooth {
-    dsmooth :> D1 -> D2;
-    smooth_dsmooth : smooth_diffeological dsmooth;
-  }.
-
-  Notation "a -d> b" := (diffeological_smooth a b) (at level 90).
-
-  Lemma smooth_plots X Y :
-    forall K {U : NormedModule K}
-      (f : U -> diffeological_smooth X Y),
-    plot f.
-  Proof.
-    intros. constructor. unfold constant_function.
-    Admitted.
-
-  Definition functional_diffeology (X Y : DiffeoSp) : DiffeoSp :=
-    make_dsp (diffeological_smooth X Y) (smooth_plots X Y).
-
-  Notation "a -D> b" := (functional_diffeology a b) (at level 70).
-
-  Definition R_diffeology := make_dsp R R_plots.
-
-  Lemma unit_plots :
-    forall K {U : NormedModule K}
-      (f : U -> ()),
-    plot f.
-  Proof.
-    intros. constructor.
-    unfold constant_function.
-    exists tt. apply functional_extensionality.
-    intros. remember (f x). induction u. reflexivity.
-  Qed.
-
-  Definition unit_diffeology := make_dsp unit unit_plots.
-
-  Definition diffeological_smooth_comp :
-    forall {D1 D2 D3:DiffeoSp},
-      (D2 -d> D3) -> (D1 -d> D2) -> D1 -d> D3.
-  Proof.
-    intros D1 D2 D3 f g.
-    inversion f as [f1 P1]. inversion g as [f2 P2].
-    exists (fun n => f1 (f2 n)); intros.
-    pose proof (smooth_diffeological_comp f2 f1 P2 P1).
-    unfold compose in H... auto.
-  Defined.
-
-  Lemma functional_diffeology_app :
-    forall {D1 D2 D3 : DiffeoSp}
-      (f1 : D1 -> D2)
-      (f2 : D1 -> (D2 -D> D3)),
-    smooth_diffeological f1 ->
-    smooth_diffeological f2 ->
-    smooth_diffeological (fun d : D1 => f2 d (f1 d)).
-  Proof.
-    intros D1 D2 D3 f1 f2 H1 H2.
-  Admitted.
-
-  Definition diffeological_smooth_app :
-    forall {D1 D2 D3:DiffeoSp},
-      (D1 -d> D2) -> (D1 -d> (D2 -D> D3)) -> D1 -d> D3.
-  Proof with auto.
-    intros D1 D2 D3 f g.
-    inversion f as [f1 P1]. inversion g as [f2 P2].
-    exists (fun d => (f2 d) (f1 d)).
-    pose proof (functional_diffeology_app f1 f2 P1 P2)...
-  Defined.
-
-  Definition curry {D1 D2 D3 : DiffeoSp} (f : D1 *** D2 -d> D3)
-    : D2 -d> (D1 -D> D3).
-  intros.
-  pose proof (D1 *** D2).
-  Admitted.
-
-  Definition diffeological_smooth_abs :
-    forall {D1 D2 D3:DiffeoSp},
-      (D1 -d> D2) -> (D1 -d> (D2 -D> D3)) -> D1 -d> D3.
-  Proof with auto.
-    intros D1 D2 D3 f g.
-    inversion f as [f1 P1]. inversion g as [f2 P2].
-    exists (fun d => (f2 d) (f1 d)).
-    pose proof (functional_diffeology_app f1 f2 P1 P2)...
-  Defined.
-
-  Definition product_smooth {X Y Z: DiffeoSp}
-    (f : X -d> Y) (g : X -d> Z) : X -d> Y *** Z.
-  Proof.
-    inversion f as [f' P1].
-    inversion g as [g' P2].
-    exists (fun x => (f' x, g' x)).
-
-
-  Definition product_first
-    : forall {X Y : DiffeoSp}, X *** Y -d> X.
-  Proof with auto.
-    intros.
-    exists fst. red.
-    intros. rewrite H.
-    splits.
-    { constructor. }
-    { constructor. }
-    Admitted.
-
-  Definition product_second
-    : forall {X Y : DiffeoSp}, X *** Y -d> Y.
-  Proof.
-    Admitted.
-
-  Definition constant_smooth {D1 D2 : DiffeoSp} (d : D2) : D1 -d> D2.
-  Proof with eauto.
-    exists (fun _ => d).
-    unfold smooth_diffeological.
-    intros. rewrite H.
-    split; unfold compose;
-      constructor; exists d...
-  Defined.
+    Lemma compose_constant {X Y Z} {f : X -> Y} {g : Y -> Z} :
+      constant_function f -> constant_function g -> constant_function (compose g f).
+    Proof.
+      intros. unfold constant_function in *.
+      destruct H. destruct H0.
+      exists x0. subst. unfold compose. reflexivity.
+    Qed.
