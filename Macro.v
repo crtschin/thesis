@@ -86,7 +86,7 @@ Lemma D_sub_lifted : forall Γ τ σ ρ
   Dtm (substitute (substitute_lifted (| s |)) t) =
     substitute (substitute_lifted (| Dtm s |)) (Dtm t).
 Proof with eauto.
-  intros.
+  intros. remember (substitute_lifted (| s |)).
 Admitted.
 
 Theorem D_sub : forall Γ τ σ

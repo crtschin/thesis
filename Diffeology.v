@@ -5,15 +5,11 @@ Require Import Logic.JMeq.
 Require Import Reals.
 Require Import Arith.PeanoNat.
 Require Import Program.
-Require Import mathcomp.ssreflect.ssreflect.
-Require Import mathcomp.analysis.topology.
-Require Import mathcomp.analysis.normedtype.
-Require Import mathcomp.analysis.derive.
-Require Import mathcomp.analysis.classical_sets.
+Require Import Coquelicot.Coquelicot.
 Require Import Arith_base.
-Require Import mathcomp.algebra.matrix.
 From mathcomp Require Import ssralg.
 
+From AD Require Import Tactics.
 From AD Require Import Definitions.
 From AD Require Import Macro.
 
@@ -69,12 +65,6 @@ Local Open Scope R_scope.
   *)
 
   (*
-    Define R^n as a 1-col n-row matrix.
-  *)
-  Definition R_space_open n := forall (v : set 'rV[R]_n), open v.
-  Definition R_space := forall n, R_space_open n.
-
-  (*
     Functions which are differentiable over their complete input domain.
       Highly doubt that this definition is correct.
 
@@ -83,26 +73,27 @@ Local Open Scope R_scope.
   *)
 
   Definition constant_function {X Y} (f : X -> Y) : Prop :=
-    exists y, forall (x : X), f x = y
-  .
+    exists (a : Y), f = (fun _ => a).
 
-  Inductive differentiable {X Y} (f : X -> Y) :=
-    | const_diff :
-      constant_function f -> differentiable f
-  .
+  Program Definition smooth {K}
+    {U V: NormedModule K} (f : U -> V) : Prop :=
+    forall K l, filterdiff f K l.
 
-  Definition smooth_function {X Y} (f : X -> Y) : Prop :=
-    differentiable f
-  .
+  (* Fixpoint plot {K} {X} {U : NormedModule K} (f : U -> X): Prop :=
+    constant_function f \/
+      (forall {V : NormedModule K}
+        (g : V -> U),
+      smooth g). *)
 
   Inductive plot : forall {U X}, (U -> X) -> Prop :=
     | const_plot : forall U X (f : U -> X),
       constant_function f ->
       plot f
-    | compose_plot : forall U V X (f : V -> U) (p : U -> X),
-      smooth_function f ->
+    | compose_plot :
+      forall {K} {X} {U V: NormedModule K} (f : V -> U) (p : U -> X),
+      smooth f ->
       plot p ->
-      plot (compose p f)
+      plot (p ∘ f)
   .
 
   (*
@@ -116,38 +107,30 @@ Local Open Scope R_scope.
         being a plot *)
     carrier :> Set;
     plots :
-      forall (f : R_space -> carrier),
+      forall {K} (U : NormedModule K) (f : U -> carrier),
         plot f;
   }.
 
-  (* The set of smooth functions between diffeological spaces *)
-  Record diff_smooth (D1 D2 : DiffeoSp) := make_dsmooth {
-    dsmooth :> D1 -> D2;
-    smooth_dsmooth : smooth_function dsmooth;
-  }.
-
-  Notation "a -d> b" := (diff_smooth a b) (at level 30).
-
-  Definition smooth_compose {X Y Z} (f : X -d> Y) (g : Y -d> Z)
-    : X -d> Z.
-  Proof with auto.
-    inversion f as [f' Hf].
-    inversion g as [g' Hg].
-    pose proof (compose g' f') as h.
-    inversion Hf. inversion Hg.
-    assert (H': smooth_function h). { admit. }
-    exists (make_dsmooth X Z h H')...
-  Admitted.
+  Lemma compose_constant {X Y Z} {f : X -> Y} {g : Y -> Z} :
+    constant_function f -> constant_function g -> constant_function (compose g f).
+  Proof.
+    intros. unfold constant_function in *.
+    destruct H. destruct H0.
+    exists x0. subst. unfold compose. reflexivity.
+  Qed.
 
   Lemma R_plots :
-    forall (f : R_space -> R),
+    forall K {U : NormedModule K} (f : U -> R),
       plot f.
   Proof.
+    intros.
+    constructor.
+    unfold constant_function.
     Admitted.
 
   Lemma product_plots (X Y : DiffeoSp) :
-    forall (f : R_space -> carrier X * carrier Y),
-      plot f.
+    forall K {U : NormedModule K} (f : U -> carrier X * carrier Y),
+    plot f.
   Proof.
     Admitted.
 
@@ -155,99 +138,153 @@ Local Open Scope R_scope.
     make_dsp (carrier X * carrier Y)
       (product_plots X Y).
 
-  Notation "a *d* b" := (product_diffeology a b) (at level 90).
+  Notation "a *** b" := (product_diffeology a b) (at level 30).
 
-  Definition d_first (X Y : DiffeoSp)
-    : X *d* Y -> X.
-  Proof with auto.
-    intros H. inversion H. assumption.
-  Defined.
+  Definition d_first {X Y : DiffeoSp}
+    : X *** Y -> X.
+  Proof with auto. intros H. inversion H... Defined.
 
-  Definition d_second (X Y : DiffeoSp)
-    : X *d* Y -> Y.
-  Proof with auto.
-    intros H. inversion H. assumption.
-  Defined.
+  Definition d_second {X Y : DiffeoSp}
+    : X *** Y -> Y.
+  Proof with auto. intros H. inversion H... Defined.
 
-  Definition product_first
-    : forall (X Y : DiffeoSp), (X *d* Y) -d> X.
+  Definition smooth_diffeological
+    {D1 D2 : DiffeoSp} (f : D1 -> D2) : Prop :=
+    forall K (U : NormedModule K)
+      (p : U -> D1) (g : U -> D2),
+      g = compose f p -> plot f /\ plot g
+  .
+
+  Lemma smooth_diffeological_comp :
+    forall {D1 D2 D3 : DiffeoSp} (f1 : D1 -> D2) (f2 : D2 -> D3),
+      smooth_diffeological f1 ->
+      smooth_diffeological f2 ->
+        smooth_diffeological (f2 ∘ f1).
   Proof.
-    inversion X as [X1 Hplot1].
-    inversion Y as [X2 Hplot2].
-    assert (smooth_function (d_first X Y)).
-    { admit. }
-    exists (make_dsmooth (X *d* Y) X (d_first X Y) H).
-    Admitted.
+    intros D1 D2 D3 f1 f2 H1 H2. unfold smooth_diffeological in *.
+    intros K U g h Heq.
+    specialize H1 with K U g (f1 ∘ g).
+    specialize H2 with K U (f1 ∘ g) (f2 ∘ f1 ∘ g).
+    pose proof (H1 eq_refl) as H.
+    pose proof (H2 eq_refl) as H'.
+    clear H1 H2.
+    split.
+    { apply compose_plot. }
+  Admitted.
 
-  Definition product_second
-    : forall (X Y : DiffeoSp), (X *d* Y) -d> Y.
-  Proof.
-    inversion X as [X1 Hplot1].
-    inversion Y as [X2 Hplot2].
-    assert (smooth_function (d_second X Y)).
-    { admit. }
-    exists (make_dsmooth (X *d* Y) Y (d_second X Y) H).
-    Admitted.
+  (* The set of smooth functions between diffeological spaces *)
+  Record diffeological_smooth (D1 D2 : DiffeoSp) := make_dsmooth {
+    dsmooth :> D1 -> D2;
+    smooth_dsmooth : smooth_diffeological dsmooth;
+  }.
+
+  Notation "a -d> b" := (diffeological_smooth a b) (at level 90).
 
   Lemma smooth_plots X Y :
-    forall (f : R_space -> diff_smooth X Y),
-      plot f.
+    forall K {U : NormedModule K}
+      (f : U -> diffeological_smooth X Y),
+    plot f.
   Proof.
+    intros. constructor. unfold constant_function.
     Admitted.
 
   Definition functional_diffeology (X Y : DiffeoSp) : DiffeoSp :=
-    make_dsp (diff_smooth X Y) (smooth_plots X Y).
+    make_dsp (diffeological_smooth X Y) (smooth_plots X Y).
 
   Notation "a -D> b" := (functional_diffeology a b) (at level 70).
 
   Definition R_diffeology := make_dsp R R_plots.
 
   Lemma unit_plots :
-    forall (f : R_space -> ()),
-      plot f.
+    forall K {U : NormedModule K}
+      (f : U -> ()),
+    plot f.
   Proof.
-    Admitted.
+    intros. constructor.
+    unfold constant_function.
+    exists tt. apply functional_extensionality.
+    intros. remember (f x). induction u. reflexivity.
+  Qed.
 
   Definition unit_diffeology := make_dsp unit unit_plots.
 
-(*
-  In the style of mathcomp.analysis which uses
-    Canonical Structures
-*)
-(* Module Diff.
+  Definition diffeological_smooth_comp :
+    forall {D1 D2 D3:DiffeoSp},
+      (D2 -d> D3) -> (D1 -d> D2) -> D1 -d> D3.
+  Proof.
+    intros D1 D2 D3 f g.
+    inversion f as [f1 P1]. inversion g as [f2 P2].
+    exists (fun n => f1 (f2 n)); intros.
+    pose proof (smooth_diffeological_comp f2 f1 P2 P1).
+    unfold compose in H... auto.
+  Defined.
 
-Section ClassDef.
+  Lemma functional_diffeology_app :
+    forall {D1 D2 D3 : DiffeoSp}
+      (f1 : D1 -> D2)
+      (f2 : D1 -> (D2 -D> D3)),
+    smooth_diffeological f1 ->
+    smooth_diffeological f2 ->
+    smooth_diffeological (fun d : D1 => f2 d (f1 d)).
+  Proof.
+    intros D1 D2 D3 f1 f2 H1 H2.
+  Admitted.
 
-Variable K : AbsRing.
+  Definition diffeological_smooth_app :
+    forall {D1 D2 D3:DiffeoSp},
+      (D1 -d> D2) -> (D1 -d> (D2 -D> D3)) -> D1 -d> D3.
+  Proof with auto.
+    intros D1 D2 D3 f g.
+    inversion f as [f1 P1]. inversion g as [f2 P2].
+    exists (fun d => (f2 d) (f1 d)).
+    pose proof (functional_diffeology_app f1 f2 P1 P2)...
+  Defined.
 
-Record mixin_of := {
+  Definition curry {D1 D2 D3 : DiffeoSp} (f : D1 *** D2 -d> D3)
+    : D2 -d> (D1 -D> D3).
+  intros.
+  pose proof (D1 *** D2).
+  Admitted.
 
-}
+  Definition diffeological_smooth_abs :
+    forall {D1 D2 D3:DiffeoSp},
+      (D1 -d> D2) -> (D1 -d> (D2 -D> D3)) -> D1 -d> D3.
+  Proof with auto.
+    intros D1 D2 D3 f g.
+    inversion f as [f1 P1]. inversion g as [f2 P2].
+    exists (fun d => (f2 d) (f1 d)).
+    pose proof (functional_diffeology_app f1 f2 P1 P2)...
+  Defined.
 
-Record class_of (T : Type) := Class {
-  base : NormedModule.class_of K T ;
-  mixin : Diff.mixin_of (UniformSpace.Pack T base T)
-}.
+  Definition product_smooth {X Y Z: DiffeoSp}
+    (f : X -d> Y) (g : X -d> Z) : X -d> Y *** Z.
+  Proof.
+    inversion f as [f' P1].
+    inversion g as [g' P2].
+    exists (fun x => (f' x, g' x)).
 
-Definition base2 T (cT : class_of T) : Diff.class_of T :=
-  Diff.Class _ (base T cT) (mixin T cT).
 
-Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+  Definition product_first
+    : forall {X Y : DiffeoSp}, X *** Y -d> X.
+  Proof with auto.
+    intros.
+    exists fst. red.
+    intros. rewrite H.
+    splits.
+    { constructor. }
+    { constructor. }
+    Admitted.
 
-Variable cT : type.
+  Definition product_second
+    : forall {X Y : DiffeoSp}, X *** Y -d> Y.
+  Proof.
+    Admitted.
 
-Definition class := let: Pack _ c _ := cT return class_of cT in c.
-
-Let xT := let: Pack T _ _ := cT in T.
-Notation xclass := (class : class_of xT).
-
-Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
-Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
-Definition NormedModuleAux := NormedModuleAux.Pack _ cT xclass xT.
-Definition NormedModule := NormedModule.Pack _ cT xclass xT.
-Definition UniformSpace := UniformSpace.Pack cT xclass xT.
-Definition Diff := Diff.Pack cT xclass xT.
-
-End ClassDef.
-
-End Diff. *)
+  Definition constant_smooth {D1 D2 : DiffeoSp} (d : D2) : D1 -d> D2.
+  Proof with eauto.
+    exists (fun _ => d).
+    unfold smooth_diffeological.
+    intros. rewrite H.
+    split; unfold compose;
+      constructor; exists d...
+  Defined.

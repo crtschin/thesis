@@ -24,7 +24,7 @@ Local Open Scope R_scope.
 Fixpoint denote_t τ : DiffeoSp :=
   match τ with
   | Real => R_diffeology
-  | Prod τ1 τ2 => denote_t τ1 *d* denote_t τ2
+  | Prod τ1 τ2 => denote_t τ1 *** denote_t τ2
   | Arrow τ1 τ2 => denote_t τ1 -D> denote_t τ2
   end.
 
@@ -36,28 +36,33 @@ Proof. trivial. Qed. *)
 Fixpoint denote_ctx Γ : DiffeoSp :=
   match Γ with
   | [] => unit_diffeology
-  | τ :: Γ' => denote_t τ *d* denote_ctx Γ'
+  | τ :: Γ' => denote_t τ *** denote_ctx Γ'
   end.
 
-Program Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : denote_ctx Γ -> denote_t τ :=
+Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : denote_ctx Γ -d> denote_t τ :=
   match v with
-  | Top Γ τ => product_second (denote_ctx Γ) (denote_t τ)
-  | Pop Γ τ σ t => denote_v t
+  | Top Γ' τ' => product_first
+  | Pop Γ' τ' σ x => diffeological_smooth_comp (denote_v x) product_second
   end.
 
-Fixpoint denote_tm Γ τ (t : tm Γ τ) : denote_ctx Γ -> carrier (denote_t τ) :=
+Fixpoint denote_tm {Γ τ} (t : tm Γ τ)
+    : denote_ctx Γ -d> denote_t τ :=
   match t with
-  | var _ v => denote_v v
+  | var σ v => denote_v v
+
+  | const r => constant_smooth (r : carrier R_diffeology)
+  | add t1 t2 => denote_tm t1 + denote_tm t2
+
+  | app σ ρ t1 t2 => diffeological_smooth_app (denote_tm t2) (denote_tm t1)
+  | abs σ ρ f => curry (denote_tm f)
+
+  | tuple σ ρ t1 t2 => (denote_tm t1, denote_tm t2)
+  | first σ ρ t => fst (denote_tm t)
+  | second σ ρ t => snd (denote_tm t)
   end.
 
 Definition diff_func :=
   forall T1 T2, T1 -> T2.
-
-Inductive denote_tm
-  : forall {Γ τ} (T : denote_tm τ DT), tm Γ τ -> diff_func -> Type :=
-  | d_const : forall Γ r,
-    denote_tm (const Γ r) (fun _ _ _ => r)
-.
 
 Theorem one : forall Γ τ (t : Γ τ),
   true = true.

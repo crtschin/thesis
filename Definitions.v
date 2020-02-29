@@ -313,45 +313,69 @@ Proof. reflexivity. Qed.
 (*
   Evaluation (unfinished)
 *)
-
 (*
-  Adapted from:
-    From Mathematics to Abstract Machine by Swierstra, et al.
- *)
-(* Inductive value : forall τ, Closed τ -> Prop :=
+Inductive value : forall {τ}, Closed τ -> Prop :=
   | v_real : forall Γ r env,
-    value Real (Closure Γ Real (const Γ r) env)
+    value (closure Γ Real (const Γ r) env)
   | v_tuple : forall Γ τ σ t1 t2 env,
-    value τ (Closure Γ τ t1 env) ->
-    value σ (Closure Γ σ t2 env) ->
-    value (τ × σ) (Closure Γ (τ × σ) (tuple Γ τ σ t1 t2) env)
+    value (closure Γ τ t1 env) ->
+    value (closure Γ σ t2 env) ->
+    value (closure Γ (τ × σ) (tuple Γ t1 t2) env)
   | v_abs : forall Γ τ σ b env,
-    value (σ → τ) (Closure Γ (σ → τ) (abs Γ τ σ b) env)
+    value (closure Γ (σ → τ) (abs Γ τ σ b) env)
 .
-
 Hint Constructors value.
 
-Reserved Notation "t1 '⇓' t2" (at level 40).
-Inductive eval : forall {τ}, tm [] τ -> tm [] τ -> Prop :=
-  | EV_App : forall τ σ t1 t1' t2 t2',
-      t1 ⇓ (abs [] τ σ t1') ->
-      t2 ⇓ t2' ->
-        (app [] τ σ t1 t2) ⇓ (substitute (| t2' |) t1')
+Reserved Notation "t1 --> t2" (at level 40).
+Inductive step : forall {Γ Γ' τ}, Closed τ -> C -> Prop :=
+  | ST_AppAbs : forall Γ τ σ t1 t1' t2 t2',
+      t1 --> (abs Γ τ σ t1') ->
+      t2 --> t2' ->
+        (app Γ τ σ t1 t2) --> (substitute (| t2' |) t1')
 
-  | EV_Add : forall t1 t1' t2 t2',
-      t1 ⇓ t1' ->
-      t2 ⇓ t2' ->
-      (add [] t1 t2) ⇓ (add [] t1' t2')
+  | ST_App1 : forall Γ τ σ t1 t1' t2,
+      t1 --> t1' ->
+        (app Γ τ σ t1 t2) --> (app Γ τ σ t1' t2)
 
-  | EV_Tuple : forall τ σ t1 t1' t2 t2',
-      t1 ⇓ t1' ->
-      t2 ⇓ t2' ->
-      (tuple [] τ σ t1 t2) ⇓ (tuple [] τ σ t1' t2')
-  | EV_FstTuple : forall τ σ t1 t2,
-      (first [] τ σ (tuple [] τ σ t1 t2)) ⇓ t1
-  | EV_SndTuple : forall τ σ t1 t2,
-      (second [] τ σ (tuple [] τ σ t1 t2)) ⇓ t2
-where "t '⇓' v" := (eval t v). *)
+  | ST_App2 : forall Γ τ σ (v1 : Closed τ) t2 t2',
+      value v1 ->
+      t2 --> t2' ->
+        (app Γ τ σ v1 t2) --> (app Γ τ σ v1 t2')
+
+  (* Add *)
+  | ST_Add1 : forall Γ t1 t1' t2,
+      t1 --> t1' ->
+      (add [] t1 t2) --> (add [] t1' t2)
+  | ST_Add2 : forall Γ v1 t2 t2',
+    value v1 ->
+      t2 --> t2' ->
+      (add [] v1 t2) --> (add [] v1 t2')
+
+  | ST_Tuple : forall Γ τ σ t1 t1' t2 t2',
+      t1 --> t1' ->
+      t2 --> t2' ->
+      (@tuple [] τ σ t1 t2) --> (@tuple [] τ σ t1' t2')
+  | ST_FstTuple : forall Γ τ σ t1 t2,
+      (@first [] τ σ (@tuple [] τ σ t1 t2)) --> t1
+  | ST_SndTuple : forall Γ τ σ t1 t2,
+      (@second [] τ σ (@tuple [] τ σ t1 t2)) --> t2
+where "t  -->  v" := (step t v).
+
+Definition deterministic {X : Type} (R : relation X) :=
+  forall x y1 y2 : X, R x y1 -> R x y2 -> y1 = y2.
+
+Lemma determenistic_eval : forall τ,
+  deterministic (@eval τ).
+Proof with eauto.
+  unfold deterministic.
+  intros.
+  generalize dependent y2.
+  induction H; intros; inversion H0; subst; clear H0...
+  { rewrite <- IHeval1. }
+Admitted.
+
+Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
+  ~ exists t', R t t'. *)
 
 (*
   Adapted from Software Foundations vol.2

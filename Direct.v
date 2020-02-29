@@ -197,31 +197,13 @@ Record Gl := make_gl {
   GlP : (R -> ⟦glτ⟧ₜ) -> (R -> ⟦glσ⟧ₜ) -> Prop;
 }.
 
-(*
-  Prop translation of S in the proof of theorem 1 as an
-    inductive definition
-*)
-(* Inductive GlProp : forall τ σ, (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ σ ⟧ₜ) -> Prop :=
-  | s_r : forall f,
-      GlProp Real (Dt Real) f (fun r => (f r, Derive f r))
-  | s_prod : forall τ σ f1 f2 g1 g2,
-      GlProp τ (Dt τ) f1 f2 ->
-      GlProp σ (Dt σ) g1 g2 ->
-      GlProp (τ × σ) (Dt (τ × σ)) (fun r => (f1 r, g1 r)) (fun r => (f2 r, g2 r))
-  | s_arr : forall τ σ f1 f2 g1 g2 (s1 : GlProp τ (Dt τ) g1 g2),
-      GlProp σ (Dt σ) (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x)) ->
-      GlProp (τ → σ) (Dt (τ → σ))(fun r => f1 r) (fun r => f2 r)
-. *)
-
-(* *)
+(* Placeholder for derivatives on nD *)
 Definition der {X Y} (f : X -> Y) x := f x.
 
 Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
   := match τ with
      | Real => fun f g =>
-        forall r,
-          fst (g r) = f r /\
-          snd (g r) = der f r
+          (fun r => g r) = (fun r => (f r, der f r))
      | σ × ρ => fun f g =>
         forall f1 f2 g1 g2,
           S σ f1 f2 ->
@@ -234,12 +216,22 @@ Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
           f = f1 /\ g = f2
      end.
 
-Ltac quick := simpl in *; intros; eauto.
+(* Program Fixpoint substitute_env {Γ Γ'} (s : sub Γ Γ') (E : Env Γ) : Env Γ' :=
+  match E with
+  | env_nil => env_nil
+  | env_cons Γ'' τ c E' => env_cons Γ' τ
+    (substitute_closed s c) (substitute_env s E')
+  end
+with substitute_closed {Γ Γ' τ} (s : sub Γ Γ') (c : Closed τ) : Closed τ :=
+  match c with
+  | closure Γ'' τ t E => closure Γ' τ (substitute s t) (substitute_env s E)
+  | clapp τ σ cf c => clapp τ σ (substitute_closed s cf) (substitute_closed s c)
+  end. *)
 
 (*
   Plain words:
     Given a context Γ for which t is well-typed (Γ ⊢ t : τ) and every typing
-    assignment in the context is in the relation S, applying the substitutions
+    assignment in the context is in the relation S, assuming the substitutions
     in the context to the term t is also in the relation S.
 *)
 Lemma fundamental_lemma :
@@ -249,24 +241,17 @@ Lemma fundamental_lemma :
     S σ (⟦ s ⟧ₜₘ ∘ f) (⟦ Dtm s ⟧ₜₘ ∘ f')) ->
   S τ (⟦ substitute sb t ⟧ₜₘ  ∘ g) (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ g').
 Proof with quick.
-  induction τ; intros.
-  { specialize H with (σ:=Real)... }
-  { specialize H with (σ:=τ1 → τ2)... }
-  { specialize H with (σ:=τ1 × τ2)... }
+  intros. apply H.
 Qed.
 
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real) f,
-  S Real (⟦ t ⟧ₜₘ ∘ denote_env ∘ f)
-    (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
+  S Real (fun r => (⟦ t ⟧ₜₘ (denote_env (f r))))
+    (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) ->
   (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
   fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
     der (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
-Proof with quick.
-  quick. apply functional_extensionality...
-  apply injective_projections;
-    specialize H with x; destruct H; assumption.
-Qed.
+Proof. quick. Qed.
 
 Lemma S_prod_R :
   forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) f,
@@ -282,15 +267,20 @@ Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
   inversion G. assumption.
 Defined.
 
+Lemma shave_env_prod Γ τ (E : Env (τ :: Γ)) (c : Closed τ):
+  denote_env E = (denote_closed c, denote_env (shave_env E)).
+Proof.
+Admitted.
+
 Lemma shave_env_snd :
   forall Γ τ (f: R -> Env (τ :: Γ)) (x: R),
   (denote_env (shave_env (f x))) = (snd (denote_env (f x))).
 Proof.
 Admitted.
 
-Lemma well_typed_S_R :
-  forall Γ (t : tm Γ Real) f,
-    S Real (⟦ t ⟧ₜₘ ∘ denote_env ∘ f)
+Lemma well_typed_S :
+  forall Γ τ (t : tm Γ τ) f,
+    S τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ f)
       (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
 Proof with quick.
 Admitted.
@@ -302,6 +292,6 @@ Theorem semantic_correct_R :
               der (fun x =>⟦ t ⟧ₜₘ (denote_env (f x))) r).
 Proof with quick.
   intros.
-  pose proof (well_typed_S_R Γ t).
+  pose proof (well_typed_S Γ Real t).
   pose proof (S_correct_R Γ t)...
 Qed.
