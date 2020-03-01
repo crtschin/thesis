@@ -120,6 +120,7 @@ Definition neuron :=
 (*
   Substitutes a variable typed in one context and swaps it
     with an expression with the same type typed in a different context.
+    Effectively 'using up' one of the variables in the context.
 *)
 Definition sub Γ Γ' := forall (τ : ty), Var Γ τ -> tm Γ' τ.
 Definition ren Γ Γ' := forall (τ : ty), Var Γ τ -> Var Γ' τ.

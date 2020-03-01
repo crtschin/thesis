@@ -6,6 +6,7 @@ Require Import Relations.
 Require Import Logic.JMeq.
 Require Import Reals.
 Require Import Arith.PeanoNat.
+Require Import Coquelicot.Coquelicot.
 Require Import Coq.Program.Equality.
 Require Import Arith_base.
 Import EqNotations.
@@ -51,9 +52,10 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ)
   | var σ v => denote_v v
 
   | const r => constant_smooth (r : carrier R_diffeology)
-  | add t1 t2 => product_smooth (denote_tm t1) (denote_tm t2)
+  | add t1 t2 =>
+      uncurry add_smooth ∘d product_smooth (denote_tm t1) (denote_tm t2)
 
-  | app σ ρ t1 t2 => diffeological_smooth_app (denote_tm t2) (denote_tm t1)
+  | app σ ρ t1 t2 => diffeological_smooth_app (denote_tm t1) (denote_tm t2)
   | abs σ ρ f => curry (denote_tm f)
 
   | tuple σ ρ t1 t2 => product_smooth (denote_tm t1) (denote_tm t2)
@@ -61,8 +63,24 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ)
   | second σ ρ t => product_second ∘d denote_tm t
   end.
 
-Definition diff_func :=
-  forall T1 T2, T1 -> T2.
+Program Fixpoint S τ
+  : (R -> denote_t τ) -> (R -> denote_t (Dt τ)) -> Prop :=
+  match τ with
+  | Real => fun f g =>
+    g = fun u => (f u, Derive f u)
+  | σ × ρ => fun f g =>
+    forall f1 f2 g1 g2,
+      S σ f1 f2 ->
+      S ρ g1 g2 ->
+        (f = fun r => (f1 r, g1 r)) /\
+        (g = fun r => (f2 r, g2 r))
+  | σ → ρ => fun f g =>
+    forall f1 f2 g1 g2 (s1 : S σ g1 g2),
+      S ρ (fun x => functional_diffeology_app (f1 x) (g1 x))
+          (fun x => functional_diffeology_app (f2 x) (g2 x)) ->
+      f = f1 /\ g = f2
+  end.
+
 
 Theorem one : forall Γ τ (t : Γ τ),
   true = true.

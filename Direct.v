@@ -14,6 +14,7 @@ Import EqNotations.
 
 Require Import AD.Definitions.
 Require Import AD.Macro.
+Require Import AD.Tactics.
 
 Local Open Scope program_scope.
 Local Open Scope R_scope.
@@ -200,7 +201,7 @@ Record Gl := make_gl {
 (* Placeholder for derivatives on nD *)
 Definition der {X Y} (f : X -> Y) x := f x.
 
-Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
+Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
   := match τ with
      | Real => fun f g =>
           (fun r => g r) = (fun r => (f r, der f r))
@@ -231,15 +232,15 @@ with substitute_closed {Γ Γ' τ} (s : sub Γ Γ') (c : Closed τ) : Closed τ 
 (*
   Plain words:
     Given a context Γ for which t is well-typed (Γ ⊢ t : τ) and every typing
-    assignment in the context is in the relation S, assuming the substitutions
-    in the context to the term t is also in the relation S.
+    assignment in the context is in the relation S, applying the substitutions
+    to the term t is also in the relation S.
 *)
 Lemma fundamental_lemma :
-  forall Γ Γ' τ g g'
+  forall Γ Γ' τ g
     (t : tm Γ τ) (sb : sub Γ Γ'),
-  (forall σ (s : tm Γ' σ) f f',
-    S σ (⟦ s ⟧ₜₘ ∘ f) (⟦ Dtm s ⟧ₜₘ ∘ f')) ->
-  S τ (⟦ substitute sb t ⟧ₜₘ  ∘ g) (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ g').
+  (forall σ (s : tm Γ' σ) f,
+    S σ (⟦ s ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm s ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
+  S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g) (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
 Proof with quick.
   intros. apply H.
 Qed.
@@ -253,7 +254,7 @@ Lemma S_correct_R :
     der (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
 Proof. quick. Qed.
 
-Lemma S_prod_R :
+Lemma S_correct_prod :
   forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) f,
   S (τ × σ) (⟦ tuple _ t s ⟧ₜₘ ∘ denote_env ∘ f)
     (⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
@@ -294,4 +295,24 @@ Proof with quick.
   intros.
   pose proof (well_typed_S Γ Real t).
   pose proof (S_correct_R Γ t)...
+Qed.
+(* Theorem semantic_correct_Prod :
+  forall Γ τ σ (t : tm Γ (τ × σ)) (f : R -> Env Γ),
+  ⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
+    fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
+              der (fun x =>⟦ t ⟧ₜₘ (denote_env (f x))) r).
+Proof with quick.
+  intros.
+  pose proof (well_typed_S Γ (τ × σ) (tuple _ t s)).
+  pose proof (S_correct_prod Γ (τ × σ))...
+Qed. *)
+Theorem semantic_correct_Prod :
+  forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) (f : R -> Env Γ),
+  ⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
+    fun r => (⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r))),
+              (⟦ Dtm s ⟧ₜₘ (denote_env (Denv (f r))))).
+Proof with quick.
+  intros.
+  pose proof (well_typed_S Γ (τ × σ) (tuple _ t s)).
+  pose proof (S_correct_prod Γ (τ × σ))...
 Qed.

@@ -75,25 +75,47 @@ Local Open Scope R_scope.
   Definition constant_function {X Y} (f : X -> Y) : Prop :=
     exists (a : Y), f = (fun _ => a).
 
-  Program Definition smooth {K}
+  Definition smooth {K}
     {U V: NormedModule K} (f : U -> V) : Prop :=
     forall K l, filterdiff f K l.
 
-  (* Fixpoint plot {K} {X} {U : NormedModule K} (f : U -> X): Prop :=
+  (* Various sets of functions *)
+  Record constant_functions X Y := make_constant {
+    constant_fun :> X -> Y;
+    constant_Prop : constant_function constant_fun;
+  }.
+  Notation "R1 -c> R2" :=
+    (constant_functions R1 R2)
+    (at level 93, right associativity).
+  Record smooth_functions {K} (U V: NormedModule K) := make_sf {
+    smooth_fun :> U -> V;
+    smooth_Prop : smooth smooth_fun;
+  }.
+  Notation "R1 -s> R2" :=
+    (smooth_functions R1 R2)
+    (at level 94, right associativity).
+  Record smooth_constant_functions {K} (U V: NormedModule K) := make_scf {
+    sc_fun :> U -> V;
+    sc_Prop : smooth sc_fun \/ constant_function sc_fun;
+  }.
+  Notation "R1 -sc> R2" :=
+    (smooth_constant_functions R1 R2)
+    (at level 95, right associativity).
+
+  (* Definition plot {K} {X} {U : NormedModule K} (f : U -> X): Prop :=
     constant_function f \/
       (forall {V : NormedModule K}
         (g : V -> U),
       smooth g). *)
 
-  Inductive plot : forall {U X}, (U -> X) -> Prop :=
-    | const_plot : forall U X (f : U -> X),
-      constant_function f ->
-      plot f
+  Inductive plot : forall {K} {U : NormedModule K} {X}, (U -> X) -> Prop :=
+    | const_plot :
+      forall {K} {U : NormedModule K} {X} (f : U -> X),
+        plot f
     | compose_plot :
-      forall {K} {X} {U V: NormedModule K} (f : V -> U) (p : U -> X),
-      smooth f ->
-      plot p ->
-      plot (p ∘ f)
+      forall {K} {U V: NormedModule K} {X} (f : V -sc> U) (p : U -> X),
+        plot p ->
+        plot (p ∘ f)
   .
 
   (*
@@ -108,7 +130,7 @@ Local Open Scope R_scope.
     carrier :> Set;
     plots :
       forall {K} (U : NormedModule K) (f : U -> carrier),
-        plot f;
+        plot f
   }.
 
   (* Ground diffeological spaces *)
@@ -119,7 +141,6 @@ Local Open Scope R_scope.
       Proof.
         intros.
         constructor.
-        unfold constant_function.
         Admitted.
       Definition R_diffeology := make_dsp R R_plots.
 
@@ -129,11 +150,11 @@ Local Open Scope R_scope.
           (f : U -> ()),
         plot f.
       Proof.
-        intros. constructor.
-        unfold constant_function.
+      Admitted.
+        (* intros. constructor.
         exists tt. apply functional_extensionality.
         intros. remember (f x). induction u. reflexivity.
-      Qed.
+      Qed. *)
       Definition unit_diffeology := make_dsp unit unit_plots.
 
   (* Functional Diffeologies *)
@@ -142,7 +163,7 @@ Local Open Scope R_scope.
         {D1 D2 : DiffeoSp} (f : D1 -> D2) : Prop :=
         forall K (U : NormedModule K)
           (p : U -> D1) (g : U -> D2),
-          g = compose f p -> plot f /\ plot g
+          g = compose f p -> plot p /\ plot g
       .
 
     (* The set of smooth maps between diffeological spaces *)
@@ -150,7 +171,7 @@ Local Open Scope R_scope.
         dsmooth :> D1 -> D2;
         smooth_dsmooth : smooth_diffeological dsmooth;
       }.
-      Notation "a -d> b" := (diffeological_smooth a b) (at level 90).
+      Notation "a -d> b" := (diffeological_smooth a b) (at level 89, right associativity).
 
     (* Proof smooth maps satisfy the plots requirement *)
       Lemma smooth_plots X Y :
@@ -162,10 +183,9 @@ Local Open Scope R_scope.
 
       Definition functional_diffeology (X Y : DiffeoSp) : DiffeoSp :=
         make_dsp (diffeological_smooth X Y) (smooth_plots X Y).
+      Notation "a -D> b" := (functional_diffeology a b) (right associativity, at level 70).
 
-      Notation "a -D> b" := (functional_diffeology a b) (at level 70).
-
-      Lemma functional_diffeology_app :
+      Lemma smooth_diffeological_app :
         forall {D1 D2 D3 : DiffeoSp}
           (f1 : D1 -> D2)
           (f2 : D1 -> (D2 -D> D3)),
@@ -178,12 +198,22 @@ Local Open Scope R_scope.
 
       Definition diffeological_smooth_app :
         forall {D1 D2 D3:DiffeoSp},
-          (D1 -d> D2) -> (D1 -d> (D2 -D> D3)) -> D1 -d> D3.
+          (D1 -d> (D2 -D> D3)) -> (D1 -d> D2) -> D1 -d> D3.
+      Proof with auto.
+        intros D1 D2 D3 g f.
+        inversion f as [f1 P1]. inversion g as [f2 P2].
+        exists (fun d => (f2 d) (f1 d)).
+        pose proof (smooth_diffeological_app f1 f2 P1 P2)...
+      Defined.
+
+      Definition functional_diffeology_app :
+        forall {D1 D2 D3:DiffeoSp},
+          (D1 -D> (D2 -D> D3)) -> (D1 -D> D2) -> D1 -D> D3.
       Proof with auto.
         intros D1 D2 D3 f g.
         inversion f as [f1 P1]. inversion g as [f2 P2].
-        exists (fun d => (f2 d) (f1 d)).
-        pose proof (functional_diffeology_app f1 f2 P1 P2)...
+        exists (fun d => (f1 d) (f2 d) ).
+        pose proof (smooth_diffeological_app f2 f1 P2 P1)...
       Defined.
 
       Definition diffeological_smooth_abs :
@@ -193,7 +223,7 @@ Local Open Scope R_scope.
         intros D1 D2 D3 f g.
         inversion f as [f1 P1]. inversion g as [f2 P2].
         exists (fun d => (f2 d) (f1 d)).
-        pose proof (functional_diffeology_app f1 f2 P1 P2)...
+        pose proof (smooth_diffeological_app f1 f2 P1 P2)...
       Defined.
 
   (* Products *)
@@ -217,7 +247,7 @@ Local Open Scope R_scope.
         : X *** Y -> Y.
       Proof with auto. intros H. inversion H... Defined.
 
-    (* Smooth maps between Product diffeologies *)
+    (* Smooth maps between product diffeologies *)
       Definition product_smooth {X Y Z: DiffeoSp}
         (f : X -d> Y) (g : X -d> Z) : X -d> Y *** Z.
       Proof.
@@ -255,15 +285,16 @@ Local Open Scope R_scope.
         smooth_diffeological f1 ->
         smooth_diffeological f2 ->
           smooth_diffeological (f2 ∘ f1).
-    Proof.
+    Proof with eauto.
       intros D1 D2 D3 f1 f2 H1 H2. unfold smooth_diffeological in *.
       intros K U g h Heq.
       specialize H1 with K U g (f1 ∘ g).
       specialize H2 with K U (f1 ∘ g) (f2 ∘ f1 ∘ g).
-      pose proof (H1 eq_refl) as H.
-      pose proof (H2 eq_refl) as H'.
+      pose proof (H1 eq_refl) as [H1p H1pc].
+      pose proof (H2 eq_refl) as [H2p H2pc].
       clear H1 H2.
       split.
+      constructor.
     Admitted.
 
     Definition diffeological_smooth_comp :
@@ -278,10 +309,32 @@ Local Open Scope R_scope.
     Defined.
     Notation " A ∘d B " := (diffeological_smooth_comp A B) (at level 89).
 
+    Definition product_diffeology_symm {D1 D2 : DiffeoSp}
+      : D1 *** D2 -> D2 *** D1.
+    Proof.
+      intros.
+    Admitted.
+
+    Definition product_smooth_symm {D1 D2 : DiffeoSp}
+      : D1 *** D2 -d> D2 *** D1.
+    Proof.
+      exists product_diffeology_symm.
+    Admitted.
+
+    Definition product_diffeological_symm {D1 D2 : DiffeoSp}
+      : D1 *** D2 -D> D2 *** D1.
+    Proof.
+      exists product_diffeology_symm.
+    Admitted.
+
     Definition curry {D1 D2 D3 : DiffeoSp} (f : D1 *** D2 -d> D3)
-      : D2 -d> (D1 -D> D3).
-    intros.
-    pose proof (D1 *** D2).
+      : D2 -d> D1 -D> D3.
+    Proof.
+    Admitted.
+
+    Definition uncurry {D1 D2 D3 : DiffeoSp} (f : D2 -d> D1 -D> D3)
+      : D1 *** D2 -d> D3.
+    Proof.
     Admitted.
 
     Lemma compose_constant {X Y Z} {f : X -> Y} {g : Y -> Z} :
@@ -291,3 +344,6 @@ Local Open Scope R_scope.
       destruct H. destruct H0.
       exists x0. subst. unfold compose. reflexivity.
     Qed.
+
+    Definition add_smooth {D1 D2 D3 : DiffeoSp} :D2 -d> D1 -D> D3.
+    Admitted.

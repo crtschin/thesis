@@ -89,7 +89,7 @@ Proof with eauto.
   intros. remember (substitute_lifted (| s |)).
 Admitted.
 
-Theorem D_sub : forall Γ τ σ
+Lemma D_sub : forall Γ τ σ
   (t : tm (σ::Γ) τ)
   (s : tm Γ σ),
   Dtm (substitute (| s |) t) =
