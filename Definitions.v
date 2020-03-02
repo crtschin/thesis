@@ -5,6 +5,7 @@ Require Import Strings.String.
 Require Import Relations.
 Require Import Logic.JMeq.
 Require Import Reals.
+Require Import Vector.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 
@@ -314,31 +315,29 @@ Proof. reflexivity. Qed.
 (*
   Evaluation (unfinished)
 *)
-(*
-Inductive value : forall {τ}, Closed τ -> Prop :=
-  | v_real : forall Γ r env,
-    value (closure Γ Real (const Γ r) env)
-  | v_tuple : forall Γ τ σ t1 t2 env,
-    value (closure Γ τ t1 env) ->
-    value (closure Γ σ t2 env) ->
-    value (closure Γ (τ × σ) (tuple Γ t1 t2) env)
-  | v_abs : forall Γ τ σ b env,
-    value (closure Γ (σ → τ) (abs Γ τ σ b) env)
+Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
+  | v_real : forall Γ r,
+    value (const Γ r)
+  | v_tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
+    value t1 ->
+    value t2 ->
+    value (tuple Γ t1 t2)
+  | v_abs : forall Γ τ σ b,
+    value (abs Γ τ σ b)
 .
 Hint Constructors value.
 
 Reserved Notation "t1 --> t2" (at level 40).
-Inductive step : forall {Γ Γ' τ}, Closed τ -> C -> Prop :=
+Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | ST_AppAbs : forall Γ τ σ t1 t1' t2 t2',
       t1 --> (abs Γ τ σ t1') ->
       t2 --> t2' ->
         (app Γ τ σ t1 t2) --> (substitute (| t2' |) t1')
-
   | ST_App1 : forall Γ τ σ t1 t1' t2,
       t1 --> t1' ->
         (app Γ τ σ t1 t2) --> (app Γ τ σ t1' t2)
 
-  | ST_App2 : forall Γ τ σ (v1 : Closed τ) t2 t2',
+  | ST_App2 : forall Γ τ σ (v1 : tm Γ (σ → τ)) t2 t2',
       value v1 ->
       t2 --> t2' ->
         (app Γ τ σ v1 t2) --> (app Γ τ σ v1 t2')
@@ -346,37 +345,37 @@ Inductive step : forall {Γ Γ' τ}, Closed τ -> C -> Prop :=
   (* Add *)
   | ST_Add1 : forall Γ t1 t1' t2,
       t1 --> t1' ->
-      (add [] t1 t2) --> (add [] t1' t2)
+      (add Γ t1 t2) --> (add Γ t1' t2)
   | ST_Add2 : forall Γ v1 t2 t2',
     value v1 ->
       t2 --> t2' ->
-      (add [] v1 t2) --> (add [] v1 t2')
+      (add Γ v1 t2) --> (add Γ v1 t2')
 
   | ST_Tuple : forall Γ τ σ t1 t1' t2 t2',
       t1 --> t1' ->
       t2 --> t2' ->
-      (@tuple [] τ σ t1 t2) --> (@tuple [] τ σ t1' t2')
+      (@tuple Γ τ σ t1 t2) --> (@tuple Γ τ σ t1' t2')
   | ST_FstTuple : forall Γ τ σ t1 t2,
-      (@first [] τ σ (@tuple [] τ σ t1 t2)) --> t1
+      (@first Γ τ σ (@tuple Γ τ σ t1 t2)) --> t1
   | ST_SndTuple : forall Γ τ σ t1 t2,
-      (@second [] τ σ (@tuple [] τ σ t1 t2)) --> t2
+      (@second Γ τ σ (@tuple Γ τ σ t1 t2)) --> t2
 where "t  -->  v" := (step t v).
 
 Definition deterministic {X : Type} (R : relation X) :=
   forall x y1 y2 : X, R x y1 -> R x y2 -> y1 = y2.
 
-Lemma determenistic_eval : forall τ,
-  deterministic (@eval τ).
+Lemma determenistic_eval : forall Γ τ,
+  deterministic (@step Γ τ).
 Proof with eauto.
   unfold deterministic.
   intros.
   generalize dependent y2.
-  induction H; intros; inversion H0; subst; clear H0...
-  { rewrite <- IHeval1. }
+  induction H.
+  { intros. inversion H1. admit. }
 Admitted.
 
 Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
-  ~ exists t', R t t'. *)
+  ~ exists t', R t t'.
 
 (*
   Adapted from Software Foundations vol.2
@@ -416,4 +415,4 @@ Proof with eauto.
   induction H; intros y2 H'; inversion H'; subst.
   - inversion H.
   Admitted.
-Qed. *)
+Qed.*)

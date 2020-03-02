@@ -139,3 +139,29 @@ Proof with eauto.
     pose proof (IHt Γ σ t H H') as Hr.
     simpl. rewrite Hr...
 Qed.
+
+Definition Dsub : forall {Γ Γ'}, sub Γ Γ' -> sub (Dctx Γ) (Dctx Γ').
+Proof with eauto.
+  intros. generalize dependent Γ.
+  induction Γ...
+  { induction Γ'...
+    simpl. intros. admit.
+    (* pose proof (tl_sub H).
+    pose proof (hd_sub H).
+    pose proof (IHΓ H0). simpl in *.
+    pose proof (cons_sub (Dtm H1) H2)...  *)
+    }
+  { intros. simpl.
+    pose proof (tl_sub H).
+    pose proof (hd_sub H).
+    pose proof (IHΓ H0). simpl in *.
+    pose proof (cons_sub (Dtm H1) H2)... }
+Admitted.
+
+Lemma D_subs : forall Γ Γ' τ
+  (t : tm Γ τ)
+  (s : sub Γ Γ'),
+  Dtm (substitute s t) =
+    substitute (Dsub s) (Dtm t).
+Proof with eauto.
+Admitted.

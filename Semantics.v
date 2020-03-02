@@ -80,8 +80,3 @@ Program Fixpoint S τ
           (fun x => functional_diffeology_app (f2 x) (g2 x)) ->
       f = f1 /\ g = f2
   end.
-
-
-Theorem one : forall Γ τ (t : Γ τ),
-  true = true.
-Proof.

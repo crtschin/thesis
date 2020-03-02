@@ -77,7 +77,7 @@ Local Open Scope R_scope.
 
   Definition smooth {K}
     {U V: NormedModule K} (f : U -> V) : Prop :=
-    forall K l, filterdiff f K l.
+    forall k l, filterdiff f k l.
 
   (* Various sets of functions *)
   Record constant_functions X Y := make_constant {
@@ -102,18 +102,19 @@ Local Open Scope R_scope.
     (smooth_constant_functions R1 R2)
     (at level 95, right associativity).
 
-  (* Definition plot {K} {X} {U : NormedModule K} (f : U -> X): Prop :=
+  (* Fixpoint plot {K} {X} {U : NormedModule K} (f : U -> X): Prop :=
     constant_function f \/
       (forall {V : NormedModule K}
         (g : V -> U),
-      smooth g). *)
+      smooth g /\ plot (f ∘ g)). *)
 
   Inductive plot : forall {K} {U : NormedModule K} {X}, (U -> X) -> Prop :=
     | const_plot :
       forall {K} {U : NormedModule K} {X} (f : U -> X),
+        constant_function f ->
         plot f
     | compose_plot :
-      forall {K} {U V: NormedModule K} {X} (f : V -sc> U) (p : U -> X),
+      forall {K} {U V: NormedModule K} {X} (f : V -> U) (p : U -> X),
         plot p ->
         plot (p ∘ f)
   .
@@ -149,12 +150,11 @@ Local Open Scope R_scope.
         forall K {U : NormedModule K}
           (f : U -> ()),
         plot f.
-      Proof.
-      Admitted.
-        (* intros. constructor.
+      Proof with eauto.
+        intros. constructor.
         exists tt. apply functional_extensionality.
         intros. remember (f x). induction u. reflexivity.
-      Qed. *)
+      Qed.
       Definition unit_diffeology := make_dsp unit unit_plots.
 
   (* Functional Diffeologies *)
@@ -207,13 +207,11 @@ Local Open Scope R_scope.
       Defined.
 
       Definition functional_diffeology_app :
-        forall {D1 D2 D3:DiffeoSp},
-          (D1 -D> (D2 -D> D3)) -> (D1 -D> D2) -> D1 -D> D3.
+        forall {D1 D2:DiffeoSp},
+          (D1 -D> D2) -> D1 -> D2.
       Proof with auto.
-        intros D1 D2 D3 f g.
-        inversion f as [f1 P1]. inversion g as [f2 P2].
-        exists (fun d => (f1 d) (f2 d) ).
-        pose proof (smooth_diffeological_app f2 f1 P2 P1)...
+        intros D1 D2 f g.
+        inversion f as [f1 P1]. apply (f1 g).
       Defined.
 
       Definition diffeological_smooth_abs :
@@ -276,9 +274,10 @@ Local Open Scope R_scope.
       exists (fun _ => d).
       unfold smooth_diffeological.
       intros. rewrite H.
-      split; unfold compose;
-        constructor; exists d...
-    Defined.
+      split. admit.
+      constructor. unfold compose.
+        exists d...
+    Admitted.
 
     Lemma smooth_diffeological_comp :
       forall {D1 D2 D3 : DiffeoSp} (f1 : D1 -> D2) (f2 : D2 -> D3),

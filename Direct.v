@@ -204,7 +204,7 @@ Definition der {X Y} (f : X -> Y) x := f x.
 Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
   := match τ with
      | Real => fun f g =>
-          (fun r => g r) = (fun r => (f r, der f r))
+          (fun r => g r) = (fun r => (f r, Derive f r))
      | σ × ρ => fun f g =>
         forall f1 f2 g1 g2,
           S σ f1 f2 ->
@@ -237,13 +237,22 @@ with substitute_closed {Γ Γ' τ} (s : sub Γ Γ') (c : Closed τ) : Closed τ 
 *)
 Lemma fundamental_lemma :
   forall Γ Γ' τ g
-    (t : tm Γ τ) (sb : sub Γ Γ'),
-  (forall σ (s : tm Γ' σ) f,
+    (t : tm Γ τ) (sb : sub Γ Γ') (dsb : sub (Dctx Γ) (Dctx Γ')),
+  Dtm (substitute sb t) = substitute dsb (Dtm t) ->
+  (forall σ (s : tm Γ σ) f,
     S σ (⟦ s ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm s ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
   S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g) (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
 Proof with quick.
-  intros. apply H.
-Qed.
+  intros Γ Γ' τ g t sb dsb sbEq H.
+  pose proof (H τ) as H'. clear H.
+  dependent induction τ; unfold compose in *.
+  { simpl in *. apply functional_extensionality.
+    intros. rewrite sbEq.
+    rewrite <- 2 denote_sub_commutes...
+    dependent induction t...
+    dependent induction v. simpl.
+    admit. }
+Admitted.
 
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real) f,
@@ -251,7 +260,7 @@ Lemma S_correct_R :
     (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) ->
   (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
   fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-    der (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
+    Derive (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
 Proof. quick. Qed.
 
 Lemma S_correct_prod :
@@ -259,8 +268,8 @@ Lemma S_correct_prod :
   S (τ × σ) (⟦ tuple _ t s ⟧ₜₘ ∘ denote_env ∘ f)
     (⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
   ⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
-  fun r => (⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r))),
-    der (fun x => ⟦ Dtm s ⟧ₜₘ (denote_env (Denv (f x)))) r).
+    fun r => (⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r))),
+              (⟦ Dtm s ⟧ₜₘ (denote_env (Denv (f r))))).
 Proof. quick. Qed.
 
 Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
@@ -270,13 +279,17 @@ Defined.
 
 Lemma shave_env_prod Γ τ (E : Env (τ :: Γ)) (c : Closed τ):
   denote_env E = (denote_closed c, denote_env (shave_env E)).
-Proof.
+Proof with quick.
+  dependent induction E.
+  erewrite IHE. reflexivity.
+  admit. admit.
 Admitted.
 
 Lemma shave_env_snd :
   forall Γ τ (f: R -> Env (τ :: Γ)) (x: R),
   (denote_env (shave_env (f x))) = (snd (denote_env (f x))).
 Proof.
+  admit.
 Admitted.
 
 Lemma well_typed_S :
@@ -284,18 +297,27 @@ Lemma well_typed_S :
     S τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ f)
       (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
 Proof with quick.
+  induction τ; unfold compose; simpl.
+  { intros. apply functional_extensionality. intros.
+    dependent induction t... dependent induction v...
+    remember (f x). admit. }
+  { intros. split; apply functional_extensionality...
+    admit. }
+  { intros. split; apply functional_extensionality...
+    admit. }
 Admitted.
 
 Theorem semantic_correct_R :
   forall Γ (t : tm Γ Real) (f : R -> Env Γ),
   ⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
     fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-              der (fun x =>⟦ t ⟧ₜₘ (denote_env (f x))) r).
+              Derive (fun x =>⟦ t ⟧ₜₘ (denote_env (f x))) r).
 Proof with quick.
   intros.
   pose proof (well_typed_S Γ Real t).
   pose proof (S_correct_R Γ t)...
 Qed.
+
 (* Theorem semantic_correct_Prod :
   forall Γ τ σ (t : tm Γ (τ × σ)) (f : R -> Env Γ),
   ⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
@@ -306,6 +328,7 @@ Proof with quick.
   pose proof (well_typed_S Γ (τ × σ) (tuple _ t s)).
   pose proof (S_correct_prod Γ (τ × σ))...
 Qed. *)
+
 Theorem semantic_correct_Prod :
   forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) (f : R -> Env Γ),
   ⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
