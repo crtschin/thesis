@@ -5,7 +5,6 @@ Require Import Strings.String.
 Require Import Relations.
 Require Import Logic.JMeq.
 Require Import Reals.
-Require Import Vector.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 
@@ -26,8 +25,7 @@ Notation "A → B" := (Arrow A B) (right associativity, at level 20).
     - From Mathematics to Abstract Machine by Swierstra, et al.
     - Strongly Typed Term Representations in Coq by Benton, et al.
  *)
-
-Notation Ctx := (list ty).
+Definition Ctx {x} := list x.
 
 Inductive Var {T} : list T -> T -> Type :=
   | Top : forall Γ τ, Var (τ::Γ) τ
@@ -62,11 +60,11 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
 
 (* Closed terms *)
 Inductive Closed : ty -> Type :=
-  | closure : forall Γ τ, tm Γ τ -> Env Γ -> Closed τ
-  | clapp : forall τ σ, Closed (σ → τ) -> Closed σ -> Closed τ
+  | closure : forall {Γ τ}, tm Γ τ -> Env Γ -> Closed τ
+  | clapp : forall {τ σ}, Closed (σ → τ) -> Closed σ -> Closed τ
   with Env : Ctx -> Type :=
   | env_nil : Env []
-  | env_cons : forall Γ τ, Closed τ -> Env Γ -> Env (τ::Γ)
+  | env_cons : forall {Γ τ}, Closed τ -> Env Γ -> Env (τ::Γ)
 .
 
 Scheme closed_env_rec_prop := Induction for Closed Sort Prop
@@ -123,14 +121,18 @@ Definition neuron :=
     with an expression with the same type typed in a different context.
     Effectively 'using up' one of the variables in the context.
 *)
-Definition sub Γ Γ' := forall (τ : ty), Var Γ τ -> tm Γ' τ.
-Definition ren Γ Γ' := forall (τ : ty), Var Γ τ -> Var Γ' τ.
+Definition ren {x y} (f : x -> y) Γ Γ'  :=
+  forall τ, Var (map f Γ) (f τ) -> Var (map f Γ') (f τ).
+Definition sub (f : ty -> ty) Γ Γ' :=
+  forall τ, Var (map f Γ) (f τ) -> tm (map f Γ') (f τ).
 
 (* Helper functions for defining substitutions on the i'th variable *)
-Definition id_sub {Γ} : sub Γ Γ := var Γ.
-Program Definition cons_sub {Γ Γ' τ}
-    (e: tm Γ' τ) (s: sub Γ Γ') : sub (τ::Γ) Γ'
-  := fun σ (x : Var (τ::Γ) σ) =>
+Program Definition id_sub {Γ} : sub Datatypes.id Γ Γ :=
+  var Γ.
+
+Program Definition cons_sub {Γ Γ' τ f}
+    (e: tm Γ' τ) (s: sub f Γ Γ') : sub f (τ::Γ) Γ'
+  := fun σ (x : Var (map f (τ::Γ)) (f σ)) =>
     match x with
     | Top _ _ => e
     | Pop _ _ _ v' => s σ v'
@@ -311,108 +313,3 @@ Notation "Γ ⊢ t ∷ τ" := (@has_type Γ τ t) (at level 70).
 Corollary has_type_refl Γ τ (t : tm Γ τ) :
   has_type t = τ.
 Proof. reflexivity. Qed.
-
-(*
-  Evaluation (unfinished)
-*)
-Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
-  | v_real : forall Γ r,
-    value (const Γ r)
-  | v_tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
-    value t1 ->
-    value t2 ->
-    value (tuple Γ t1 t2)
-  | v_abs : forall Γ τ σ b,
-    value (abs Γ τ σ b)
-.
-Hint Constructors value.
-
-Reserved Notation "t1 --> t2" (at level 40).
-Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
-  | ST_AppAbs : forall Γ τ σ t1 t1' t2 t2',
-      t1 --> (abs Γ τ σ t1') ->
-      t2 --> t2' ->
-        (app Γ τ σ t1 t2) --> (substitute (| t2' |) t1')
-  | ST_App1 : forall Γ τ σ t1 t1' t2,
-      t1 --> t1' ->
-        (app Γ τ σ t1 t2) --> (app Γ τ σ t1' t2)
-
-  | ST_App2 : forall Γ τ σ (v1 : tm Γ (σ → τ)) t2 t2',
-      value v1 ->
-      t2 --> t2' ->
-        (app Γ τ σ v1 t2) --> (app Γ τ σ v1 t2')
-
-  (* Add *)
-  | ST_Add1 : forall Γ t1 t1' t2,
-      t1 --> t1' ->
-      (add Γ t1 t2) --> (add Γ t1' t2)
-  | ST_Add2 : forall Γ v1 t2 t2',
-    value v1 ->
-      t2 --> t2' ->
-      (add Γ v1 t2) --> (add Γ v1 t2')
-
-  | ST_Tuple : forall Γ τ σ t1 t1' t2 t2',
-      t1 --> t1' ->
-      t2 --> t2' ->
-      (@tuple Γ τ σ t1 t2) --> (@tuple Γ τ σ t1' t2')
-  | ST_FstTuple : forall Γ τ σ t1 t2,
-      (@first Γ τ σ (@tuple Γ τ σ t1 t2)) --> t1
-  | ST_SndTuple : forall Γ τ σ t1 t2,
-      (@second Γ τ σ (@tuple Γ τ σ t1 t2)) --> t2
-where "t  -->  v" := (step t v).
-
-Definition deterministic {X : Type} (R : relation X) :=
-  forall x y1 y2 : X, R x y1 -> R x y2 -> y1 = y2.
-
-Lemma determenistic_eval : forall Γ τ,
-  deterministic (@step Γ τ).
-Proof with eauto.
-  unfold deterministic.
-  intros.
-  generalize dependent y2.
-  induction H.
-  { intros. inversion H1. admit. }
-Admitted.
-
-Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
-  ~ exists t', R t t'.
-
-(*
-  Adapted from Software Foundations vol.2
- *)
-(* Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
-  ~ exists t', R t t'.
-
-
-  Lemma value__normal : forall τ t, value [] τ t -> normal_form (eval τ) t.
-Proof with eauto.
-  intros τ t H; dependent induction H.
-  - intros [t H']. inversion H'.
-  - assert (@nil ty = []). reflexivity.
-    assert (t1 ~= t1). reflexivity.
-    assert (t2 ~= t2). reflexivity.
-    pose proof (IHvalue1 t1 H1 H2).
-    pose proof (IHvalue2 t2 H1 H3).
-    intros [t H']...
-    unfold normal_form, not in H4. unfold normal_form, not in H5.
-    apply H4.
-  - intros [t H']. inversion H'.
-Qed.
-
-
-Definition deterministic {X : Type} (R : relation X) :=
-  forall x y1 y2 : X, R x y1 -> R x y2 -> y1 = y2.
-
-Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
-  ~ exists t', R t t'.
-
-Theorem eval_deterministic : forall τ,
-  deterministic (eval τ).
-Proof with eauto.
-  unfold deterministic.
-  intros τ x y1 y2 H H'.
-  generalize dependent y2.
-  induction H; intros y2 H'; inversion H'; subst.
-  - inversion H.
-  Admitted.
-Qed.*)

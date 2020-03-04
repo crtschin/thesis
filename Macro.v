@@ -52,12 +52,12 @@ Program Fixpoint Dtm {Γ τ} (t : tm Γ τ) : tm (map Dt Γ) (Dt τ) :=
 Program Fixpoint Denv {Γ} (G : Env Γ) : Env (Dctx Γ) :=
   match G with
   | env_nil => env_nil
-  | env_cons Γ' τ c G' => env_cons (Dctx Γ') (Dt τ) (Dclosed c) (Denv G')
+  | env_cons c G' => env_cons (Dclosed c) (Denv G')
   end
 with Dclosed {τ} (c : Closed τ) : Closed (Dt τ) :=
   match c with
-  | closure Γ' τ t G' => closure (Dctx Γ') (Dt τ) (Dtm t) (Denv G')
-  | clapp τ σ c1 c2 => clapp (Dt τ) (Dt σ) (Dclosed c1) (Dclosed c2)
+  | closure t G' => closure (Dtm t) (Denv G')
+  | clapp c1 c2 => clapp (Dclosed c1) (Dclosed c2)
   end.
 
 Lemma Dt_lift_var : forall Γ τ, τ ∈ Γ -> (Dt τ) ∈ (map Dt Γ).

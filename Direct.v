@@ -311,7 +311,7 @@ Theorem semantic_correct_R :
   forall Γ (t : tm Γ Real) (f : R -> Env Γ),
   ⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
     fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-              Derive (fun x =>⟦ t ⟧ₜₘ (denote_env (f x))) r).
+      Derive (fun (x : R) => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
 Proof with quick.
   intros.
   pose proof (well_typed_S Γ Real t).

@@ -344,5 +344,5 @@ Local Open Scope R_scope.
       exists x0. subst. unfold compose. reflexivity.
     Qed.
 
-    Definition add_smooth {D1 D2 D3 : DiffeoSp} :D2 -d> D1 -D> D3.
+    Definition add_smooth : R_diffeology -d> R_diffeology -D> R_diffeology.
     Admitted.
