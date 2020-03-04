@@ -213,21 +213,9 @@ Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
             (g = fun r => (f2 r, g2 r))
      | σ → ρ => fun f g =>
         forall f1 f2 g1 g2 (s1 : S σ g1 g2),
-          S ρ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x)) ->
-          f = f1 /\ g = f2
+          f = f1 /\ g = f2 ->
+          S ρ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x))
      end.
-
-(* Program Fixpoint substitute_env {Γ Γ'} (s : sub Γ Γ') (E : Env Γ) : Env Γ' :=
-  match E with
-  | env_nil => env_nil
-  | env_cons Γ'' τ c E' => env_cons Γ' τ
-    (substitute_closed s c) (substitute_env s E')
-  end
-with substitute_closed {Γ Γ' τ} (s : sub Γ Γ') (c : Closed τ) : Closed τ :=
-  match c with
-  | closure Γ'' τ t E => closure Γ' τ (substitute s t) (substitute_env s E)
-  | clapp τ σ cf c => clapp τ σ (substitute_closed s cf) (substitute_closed s c)
-  end. *)
 
 (*
   Plain words:
@@ -237,21 +225,44 @@ with substitute_closed {Γ Γ' τ} (s : sub Γ Γ') (c : Closed τ) : Closed τ 
 *)
 Lemma fundamental_lemma :
   forall Γ Γ' τ g
-    (t : tm Γ τ) (sb : sub Γ Γ') (dsb : sub (Dctx Γ) (Dctx Γ')),
-  Dtm (substitute sb t) = substitute dsb (Dtm t) ->
-  (forall σ (s : tm Γ σ) f,
-    S σ (⟦ s ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm s ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
-  S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g) (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
+    (t : tm Γ τ) (sb : sub Γ Γ'),
+
+  (forall σ (v : Var Γ σ) f,
+    S σ (⟦ sb _ v ⟧ₜₘ ∘ denote_env ∘ f)
+      (⟦ Dtm (sb _ v) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
+
+  S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g)
+    (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
 Proof with quick.
-  intros Γ Γ' τ g t sb dsb sbEq H.
-  pose proof (H τ) as H'. clear H.
-  dependent induction τ; unfold compose in *.
-  { simpl in *. apply functional_extensionality.
+  intros Γ Γ' τ g t sb H.
+  (* pose proof (H τ) as H'. clear H. *)
+  dependent induction t; unfold compose in *.
+  { apply H. }
+  { specialize IHt1 with sb. specialize IHt2 with sb.
+    pose proof (IHt1 H) as IHt1'. clear IHt1.
+    pose proof (IHt2 H) as IHt2'. clear IHt2.
+    simpl in *.
+    pose proof
+      (IHt1'
+        (⟦ substitute sb t1 ⟧ₜₘ ∘ denote_env ∘ g)
+        (⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)
+        _ _ IHt2'). simpl in *.
+    assert ((fun x : R => ⟦ substitute sb t1 ⟧ₜₘ (denote_env (g x))) =
+      ⟦ substitute sb t1 ⟧ₜₘ ∘ denote_env ∘ g /\
+      (fun x : R => ⟦ Dtm (substitute sb t1) ⟧ₜₘ (denote_env (Denv (g x)))) =
+      ⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
+    { split... }
+    apply H0 in H1... }
+  { intros.
+    splits.
+    apply IHt.
+    }
+    (* simpl in *. apply functional_extensionality.
     intros. rewrite sbEq.
     rewrite <- 2 denote_sub_commutes...
     dependent induction t...
     dependent induction v. simpl.
-    admit. }
+    admit. } *)
 Admitted.
 
 Lemma S_correct_R :

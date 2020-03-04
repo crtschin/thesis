@@ -87,6 +87,12 @@ Definition multistep {Γ τ} := multi (@step Γ τ).
 Notation "t1 '-->*' t2" := (multistep t1 t2) (at level 40).
 Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
   ~ exists t', R t t'.
+(* Inductive neutral : forall {Γ τ} (t : tm Γ τ), Prop :=
+  | neutral_var : forall Γ τ v, neutral (var Γ τ v)
+  | neutral_first : forall Γ τ σ (t : tm Γ (τ × σ)), neutral (first Γ t)
+  | neutral_second : forall Γ τ σ (t : tm Γ (τ × σ)), neutral (second Γ t)
+  | neutral_app : forall Γ τ σ (t1 : tm Γ (σ → τ)) (t2 : tm Γ σ), neutral (app Γ τ σ t1 t2)
+. *)
 Notation step_normal_form := (normal_form step).
 
 Lemma value__normal : forall Γ τ (t : tm Γ τ), value t -> step_normal_form t.
@@ -247,19 +253,97 @@ Proof with quick.
     apply Hst. }
 Qed.
 
+Lemma multistep_preserves_R :
+  forall {Γ τ} (t t' : tm Γ τ), R τ t -> (t -->* t') -> R τ t'.
+Proof with quick.
+  intros Γ τ t t' H Hst.
+  dependent induction Hst...
+  apply IHHst. eapply step_preserves_R...
+Qed.
+
+Lemma step_preserves_R' :
+  forall {Γ τ} (t t' : tm Γ τ), R τ t' -> (t --> t') -> R τ t.
+Proof with quick.
+  intros Γ τ.
+  generalize dependent Γ.
+  dependent induction τ...
+  { split... destruct H as [Hh Ht]. clear Ht.
+    rewrite step_preserves_halting... }
+  { split; destruct H as [Hh Ht]...
+    rewrite step_preserves_halting...
+    eapply IHτ2... constructor... }
+  { split; destruct H as [Hh Ht]...
+    rewrite step_preserves_halting...
+    specialize Ht with r s.
+    destruct Ht as [Hst [Hvr [Hvs [Hr Hs]]]].
+    splits... econstructor... }
+Qed.
+
+Lemma multistep_preserves_R' :
+  forall {Γ τ} (t t' : tm Γ τ), R τ t' -> (t -->* t') -> R τ t.
+Proof with quick.
+  intros Γ τ t t' H Hst.
+  dependent induction Hst...
+  apply IHHst in H. eapply step_preserves_R'...
+Qed.
+
 Lemma subst_R :
   forall {Γ Γ' τ} (t : tm Γ τ) (s : sub Γ Γ') (e : Env Γ),
+    (forall σ (v : Var Γ σ), R σ (s σ v)) ->
     R τ (substitute s t).
 Proof with quick.
   intros Γ Γ' τ t s E.
-  remember (substitute s t) as t''.
+  (* remember (substitute s t) as t''. *)
   generalize dependent Γ.
-  dependent induction t''; intros Γ' t s E Heq...
-  { dependent induction τ...
-    split... unfold halts...
-    exists (var Γ Real v). split.
-    constructor.
-    admit. }
+  generalize dependent Γ'.
+  dependent induction t.
+  { (* Variables *)
+    intros. simpl. apply H. }
+  { (* App *)
+    intros. simpl.
+    pose proof (IHt1 s E H).
+    pose proof (IHt2 s E H).
+    simpl in H0. destruct H0 as [Hh H']... }
+  { (* Abs *)
+    intros sb E H. split.
+    { apply value_halts. constructor. }
+    { simpl. intros s Hrs.
+      pose proof (R_halts Hrs) as [s' [Hst Hs']].
+      pose proof (multistep_preserves_R s s') as H'.
+      pose proof (H' Hrs Hst) as H''. clear H'.
+      eapply multistep_preserves_R'...
+      admit. } }
+  { (* Const *)
+    intros... split... apply value_halts... }
+  { (* Add *)
+    intros.
+    pose proof (IHt1 s E H). clear IHt1.
+    pose proof (IHt2 s E H). clear IHt2.
+    inversion H0. clear H3.
+    inversion H1. clear H4.
+    unfold halts in *.
+    destruct H2 as [t1' [Hst1 Hv1]]. destruct H3 as [t2' [Hst2 Hv2]].
+    simpl (substitute s (add Γ t1 t2)).
+    pose proof (multistep_preserves_R _ _ H0 Hst1).
+    pose proof (multistep_preserves_R _ _ H1 Hst2).
+    eapply multistep_preserves_R'.
+    assert (R Real (add Γ' t1' t2')).
+    { admit. }
+    apply H4.
+    econstructor. apply ST_Add1. admit.
+    econstructor. apply ST_Add2. apply Hv1. admit.
+    econstructor. }
+  { intros.
+    pose proof (IHt1 s E H). clear IHt1.
+    pose proof (IHt2 s E H). clear IHt2.
+    simpl (substitute s (tuple Γ t1 t2)).
+    eapply multistep_preserves_R'.
+    { admit. }
+    { admit. } }
+  { intros. pose proof (IHt s E H).
+    simpl. apply H0. admit. }
+  { intros. pose proof (IHt s E H).
+    simpl. apply H0. admit. }
 Admitted.
 
 Theorem normalization :

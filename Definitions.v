@@ -121,18 +121,24 @@ Definition neuron :=
     with an expression with the same type typed in a different context.
     Effectively 'using up' one of the variables in the context.
 *)
-Definition ren {x y} (f : x -> y) Γ Γ'  :=
+Definition gren (f : ty -> ty) Γ Γ'  :=
   forall τ, Var (map f Γ) (f τ) -> Var (map f Γ') (f τ).
-Definition sub (f : ty -> ty) Γ Γ' :=
+Definition gsub (f : ty -> ty) Γ Γ' :=
   forall τ, Var (map f Γ) (f τ) -> tm (map f Γ') (f τ).
 
-(* Helper functions for defining substitutions on the i'th variable *)
-Program Definition id_sub {Γ} : sub Datatypes.id Γ Γ :=
-  var Γ.
+Definition ren (Γ Γ' : list ty) :=
+  (* gren Datatypes.id Γ Γ'. *)
+  forall τ, Var Γ τ -> Var Γ' τ.
+Definition sub (Γ Γ' : list ty) :=
+  (* gsub Datatypes.id Γ Γ'. *)
+  forall τ, Var Γ τ -> tm Γ' τ.
 
-Program Definition cons_sub {Γ Γ' τ f}
-    (e: tm Γ' τ) (s: sub f Γ Γ') : sub f (τ::Γ) Γ'
-  := fun σ (x : Var (map f (τ::Γ)) (f σ)) =>
+(* Helper functions for defining substitutions on the i'th variable *)
+Definition id_sub {Γ} : sub Γ Γ := var Γ.
+
+Program Definition cons_sub {Γ Γ' τ}
+    (e: tm Γ' τ) (s: sub Γ Γ') : sub (τ::Γ) Γ'
+  := fun σ (x : Var (τ::Γ) σ) =>
     match x with
     | Top _ _ => e
     | Pop _ _ _ v' => s σ v'
@@ -313,3 +319,15 @@ Notation "Γ ⊢ t ∷ τ" := (@has_type Γ τ t) (at level 70).
 Corollary has_type_refl Γ τ (t : tm Γ τ) :
   has_type t = τ.
 Proof. reflexivity. Qed.
+
+Fixpoint substitute_env {Γ Γ'} (s : sub Γ Γ') (E : Env Γ) : Env Γ'.
+  Admitted.
+  (* match E with
+  | env_nil => env_nil
+  | env_cons c E' => env_cons (substitute_closed s c) (substitute_env s E')
+  end
+with substitute_closed {Γ Γ' τ} (s : sub Γ Γ') (c : Closed τ) : Closed τ :=
+  match c with
+  | closure t E => closure (substitute s t) (substitute_env s E)
+  | clapp cf c => clapp (substitute_closed s cf) (substitute_closed s c)
+  end. *)

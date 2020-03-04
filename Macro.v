@@ -97,7 +97,7 @@ Lemma D_sub : forall Γ τ σ
 Proof with eauto.
   dependent induction t...
   - dependent induction v...
-  - assert (H: σ :: Γ = σ :: Γ). { reflexivity. }
+  - assert (H: σ :: Γ ~= σ :: Γ). { reflexivity. }
     assert (H': t1 ~= t1). { reflexivity. }
     assert (H'': t2 ~= t2). { reflexivity. }
     pose proof (IHt1 Γ σ t1 H H') as H1.
@@ -106,7 +106,7 @@ Proof with eauto.
     intros s. simpl.
     rewrite H1. rewrite H2.
     reflexivity.
-  - assert (H: σ0 :: σ :: Γ = σ0 :: σ :: Γ). { reflexivity. }
+  - assert (H: σ0 :: σ :: Γ ~= σ0 :: σ :: Γ). { reflexivity. }
     assert (H': t ~= t). { reflexivity. }
     pose proof (IHt (σ::Γ) σ0 t H H') as Ht.
     clear H H'.
@@ -117,24 +117,24 @@ Proof with eauto.
     { apply D_sub_lifted... }
     rewrite Hr...
   - intros. simpl.
-    assert (H: σ :: Γ = σ :: Γ). reflexivity.
+    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H1: t1 ~= t1). reflexivity.
     assert (H2: t2 ~= t2). reflexivity.
     pose proof (IHt1 Γ σ t1 H H1) as Ht1. rewrite -> Ht1.
     pose proof (IHt2 Γ σ t2 H H2) as Ht2. rewrite -> Ht2...
   - intros. simpl.
-    assert (H: σ :: Γ = σ :: Γ). reflexivity.
+    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H1: t1 ~= t1). reflexivity.
     assert (H2: t2 ~= t2). reflexivity.
     pose proof (IHt1 Γ σ t1 H H1) as Ht1. rewrite -> Ht1.
     pose proof (IHt2 Γ σ t2 H H2) as Ht2. rewrite -> Ht2...
   - intros.
-    assert (H: σ :: Γ = σ :: Γ). reflexivity.
+    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H': t ~= t). reflexivity.
     pose proof (IHt Γ σ t H H') as Hr.
     simpl. rewrite Hr...
   - intros.
-    assert (H: σ :: Γ = σ :: Γ). reflexivity.
+    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H': t ~= t). reflexivity.
     pose proof (IHt Γ σ t H H') as Hr.
     simpl. rewrite Hr...
