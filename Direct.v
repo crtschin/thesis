@@ -253,8 +253,7 @@ Proof with quick.
       ⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
     { split... }
     apply H0 in H1... }
-  { intros.
-    splits.
+  { quick. destruct H0. subst.
     apply IHt.
     }
     (* simpl in *. apply functional_extensionality.

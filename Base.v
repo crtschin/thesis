@@ -28,6 +28,9 @@ Logical Relations:
     Recursive and Quantified Types by Ahman
 
 Coq:
+- Coq:
+  + A short presentation of Coq by Bertot.
+  + Theorem proving support in programming language semantics by Bertot.
 - Denotational Semantics:
   + Some Domain Theory and Denotational Semantics in Coq by Benton, et al.
 - Well-scoped, well-typed debruijn indices in language:
