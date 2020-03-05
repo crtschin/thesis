@@ -91,15 +91,14 @@ Notation "t1 '-->*' t2" := (multistep t1 t2) (at level 40).
 Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
   ~ exists t', R t t'.
 Theorem multi_R : forall (X : Type) (R : relation X) (x y : X),
-    R x y -> (multi R) x y.
+  R x y -> (multi R) x y.
 Proof with quick. intros. econstructor... econstructor... Qed.
 Theorem multi_trans : forall {X : Type} {R : relation X} {x y z : X},
-      multi R x y -> multi R y z -> multi R x z.
-Proof with quick.
-  intros X R x y z G H.
-  induction G... apply multi_step with y...
-Qed.
+  multi R x y -> multi R y z -> multi R x z.
+Proof with quick. intros. induction H... apply multi_step with y... Qed.
 Notation step_normal_form := (normal_form step).
+Definition deterministic {X : Type} (R : relation X) :=
+  forall x y1 y2 : X, R x y1 -> R x y2 -> y1 = y2.
 
 Lemma value__normal : forall Γ τ (t : tm Γ τ), value t -> step_normal_form t.
 Proof with eauto.
@@ -118,9 +117,6 @@ Qed.
 Lemma app_congr : forall Γ τ σ t1 t2 t1' t2',
   t1 = t1' -> t2 = t2' -> app Γ τ σ t1 t2 = app Γ τ σ t1' t2'.
 Proof. intros. subst. auto. Qed.
-
-Definition deterministic {X : Type} (R : relation X) :=
-  forall x y1 y2 : X, R x y1 -> R x y2 -> y1 = y2.
 
 Lemma step_deterministic : forall Γ τ,
   deterministic (@step Γ τ).
@@ -193,25 +189,12 @@ Theorem preservation : forall Γ τ (t : tm Γ τ) t' ,
   (Γ ⊢ t ∷ τ) = (Γ ⊢ t' ∷ τ).
 Proof. reflexivity. Qed.
 
-(*
-Fixpoint R (T:ty) (t:tm) {struct T} : Prop :=
-  has_type empty t T /\ halts t /\
-  (match T with
-   | Bool  => True
-   | Arrow T1 T2 => (forall s, R T1 s -> R T2 (app t s))
-   | Prod T1 T2 =>
-        (exists r s, t -->* pair r s /\
-          value r /\
-          value s /\
-          R T1 r /\ R T2 s)
-   end).
-*)
 Program Fixpoint R τ {Γ} (t : tm Γ τ): Prop :=
   halts t /\
   (match τ with
    | Real => True
    | τ1 × τ2 =>
-      (forall (r : tm Γ τ1) (s : tm Γ τ2),
+      (exists (r : tm Γ τ1) (s : tm Γ τ2),
         t -->* tuple Γ r s /\
         value r /\
         value s /\
@@ -258,13 +241,13 @@ Proof with quick.
     constructor... }
   { quick. destruct H. split.
     apply (step_preserves_halting t t' H0)...
-    intros r s.
-    destruct (H1 r s) as [Hst [Hvr [Hvs [Hr Hs]]]].
-    clear H1. splits...
+    destruct H1 as [r [s H1]].
+    destruct H1 as [Hst [Hvr [Hvs [Hr Hs]]]].
+    exists r. exists s. splits...
     dependent destruction Hst.
     assert (value (tuple Γ r s))...
     apply value__normal in H1. contradiction H1. exists t'...
-    rewrite (step_deterministic Γ (τ1 × τ2) t t' y H0 H1).
+    rewrite (step_deterministic Γ (τ1 × τ2) t t' y H1 H0).
     apply Hst. }
 Qed.
 
@@ -289,8 +272,9 @@ Proof with quick.
     eapply IHτ2... constructor... }
   { split; destruct H as [Hh Ht]...
     rewrite step_preserves_halting...
-    specialize Ht with r s.
+    destruct Ht as [r [s Ht]].
     destruct Ht as [Hst [Hvr [Hvs [Hr Hs]]]].
+    exists r. exists s.
     splits... econstructor... }
 Qed.
 
@@ -302,11 +286,18 @@ Proof with quick.
   apply IHHst in H. eapply step_preserves_R'...
 Qed.
 
-Lemma R_subst_exist : forall Γ Γ' τ (t : tm Γ τ) (s : sub Γ Γ'),
-  exists (t' : tm Γ' τ), R τ (substitute s t) ->
-    (substitute s t) -->* t'.
+Lemma step__multistep : forall {Γ τ} {t t' : tm Γ τ},
+  t --> t' -> t -->* t'.
 Proof with quick.
-  intros. exists (substitute s t)... constructor.
+  intros. repeat econstructor...
+Qed.
+
+Lemma multistep_App2 : forall Γ τ σ (v : tm Γ (σ → τ)) (t t' : tm Γ σ),
+  value v -> (t -->* t') -> (app _ _ _ v t) -->* (app _ _ _ v t').
+Proof with quick.
+  intros. induction H0.
+  - constructor.
+  - eapply multi_step. apply ST_App2... assumption.
 Qed.
 
 Lemma multistep_Add1 : forall Γ (t t' : tm Γ Real) (t1 : tm Γ Real),
@@ -351,6 +342,29 @@ Proof with quick.
   - eapply multi_step. apply ST_Tuple2... assumption.
 Qed.
 
+Lemma multistep_First : forall Γ τ σ (t t' : tm Γ (τ × σ)),
+  (t -->* t') -> (first Γ t) -->* (first Γ t').
+Proof with quick.
+  intros. induction H.
+  - constructor.
+  - eapply multi_step. apply ST_Fst... assumption.
+Qed.
+
+Lemma multistep_Second : forall Γ τ σ (t t' : tm Γ (τ × σ)),
+  (t -->* t') -> (second Γ t) -->* (second Γ t').
+Proof with quick.
+  intros. induction H.
+  - constructor.
+  - eapply multi_step. apply ST_Snd... assumption.
+Qed.
+
+Lemma R_Tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
+  R (τ × σ) (tuple Γ t1 t2) -> R τ t1 /\ R σ t2.
+Proof with quick.
+  intros. destruct H as [Hh [r [s [Hst [Hvr [Hvs [Hrr Hrs]]]]]]].
+  simpl in *.
+Admitted.
+
 Lemma subst_R :
   forall {Γ Γ' τ} (t : tm Γ τ) (s : sub Γ Γ'),
     (forall σ (v : Var Γ σ), R σ (s σ v)) ->
@@ -373,10 +387,20 @@ Proof with quick.
     { apply value_halts. constructor. }
     { simpl. intros s Hrs.
       pose proof (R_halts Hrs) as [s' [Hst Hs']].
-      pose proof (multistep_preserves_R s s') as H'.
-      pose proof (H' Hrs Hst) as H''. clear H'.
-      eapply multistep_preserves_R'...
-      admit. } }
+      pose proof (multistep_preserves_R s s' Hrs Hst) as Hrs'.
+      (* assert
+        (exists v, app Γ' τ σ (abs Γ' τ σ
+          (substitute (substitute_lifted sb) t)) s -->* sb τ v). *)
+      eapply multistep_preserves_R'.
+      { apply IHt... apply H. }
+      { eapply multi_trans.
+        { apply multistep_App2... }
+        { eapply multi_step. apply ST_AppAbs...
+          admit.
+          (* rewrite <- app_sub_sub. *)
+          (* remember (compose_sub_sub (| s' |)
+            (substitute_lifted sb)) as sb'.
+          simpl.  *) } } } }
   { (* Const *)
     intros... split... apply value_halts... }
   { (* Add *)
@@ -405,29 +429,57 @@ Proof with quick.
     econstructor. }
   { (* Tuple *)
     intros.
-    pose proof (IHt1 s H) as H1. clear IHt1.
-    pose proof (IHt2 s H) as H2. clear IHt2.
+    pose proof (IHt1 s H) as H1; clear IHt1.
+    pose proof (IHt2 s H) as H2; clear IHt2.
+    pose proof (R_halts H1) as H1'; destruct H1' as [t1' [Hst1 Hv1]].
+    pose proof (R_halts H2) as H2'; destruct H2' as [t2' [Hst2 Hv2]].
+    pose proof (multistep_preserves_R _ _ H1 Hst1).
+    pose proof (multistep_preserves_R _ _ H2 Hst2).
     simpl (substitute s (tuple Γ t1 t2)).
-    pose proof (R_subst_exist Γ Γ' τ t1 s) as H1'; destruct H1'.
-    pose proof (R_subst_exist Γ Γ' σ t2 s) as H2'; destruct H2'.
-    pose proof (H0 H1). pose proof (H3 H2).
-    clear H0; clear H3.
-    assert (tuple _ (substitute s t1) (substitute s t2) -->* tuple _ x x0).
+    assert (tuple Γ' (substitute s t1) (substitute s t2) -->* tuple Γ' t1' t2').
     { eapply multi_trans.
-      - eapply multistep_Tuple1...
-      - eapply multistep_Tuple2...
-    }
-    eapply multistep_preserves_R'.
-
-    { admit. }
-    { admit. } }
+      { apply multistep_Tuple1... }
+      { apply multistep_Tuple2... } }
+    unfold R. fold R. split.
+    { unfold halts.
+      exists (tuple Γ' t1' t2')... }
+    { intros. exists t1'. exists t2'.
+      splits... } }
   { (* First *)
-    intros. pose proof (IHt s H).
-    simpl. apply H0. admit. }
+    intros. simpl.
+    pose proof (IHt s H) as H'.
+    pose proof (R_halts H'); destruct H0 as [t' [Hst Hvt]].
+    apply value_halts in Hvt.
+    unfold halts in Hvt; destruct Hvt as [t'' [Hst' Hvt']].
+    dependent induction Hvt'. clear IHHvt'1; clear IHHvt'2.
+    pose proof (multi_trans Hst Hst') as Hst''.
+    pose proof (multistep_preserves_R _ _ H' Hst'').
+    assert (Hst''': first Γ0 (substitute s t) -->* t1).
+    { eapply multi_trans.
+      { apply multistep_First... }
+      { econstructor. apply ST_FstTuple... constructor. } }
+    apply R_Tuple in H0.
+    eapply multistep_preserves_R'.
+    2: apply Hst'''.
+    apply H0. }
   { (* Second *)
-    intros. pose proof (IHt s H).
-    simpl. apply H0. admit. }
-Admitted.
+    intros. simpl.
+    pose proof (IHt s H) as H'.
+    pose proof (R_halts H'); destruct H0 as [t' [Hst Hvt]].
+    apply value_halts in Hvt.
+    unfold halts in Hvt; destruct Hvt as [t'' [Hst' Hvt']].
+    dependent induction Hvt'. clear IHHvt'1; clear IHHvt'2.
+    pose proof (multi_trans Hst Hst') as Hst''.
+    pose proof (multistep_preserves_R _ _ H' Hst'').
+    assert (Hst''': second Γ0 (substitute s t) -->* t2).
+    { eapply multi_trans.
+      { apply multistep_Second... }
+      { econstructor. apply ST_SndTuple... constructor. } }
+    apply R_Tuple in H0.
+    eapply multistep_preserves_R'.
+    2: apply Hst'''.
+    apply H0. }
+Qed.
 
 Theorem normalization :
   forall Γ τ (t : tm Γ τ) (e : Env Γ), halts t.
