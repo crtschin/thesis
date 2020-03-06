@@ -192,15 +192,27 @@ Proof with eauto.
 Qed.
 
 (* Defined in section 5 *)
-Record Gl := make_gl {
-  glτ : ty;
-  glσ : ty;
-  GlP : (R -> ⟦glτ⟧ₜ) -> (R -> ⟦glσ⟧ₜ) -> Prop;
+Record Gl τ σ := make_gl {
+  Gl_P : (R -> ⟦τ⟧ₜ) -> (R -> ⟦σ⟧ₜ) -> Prop;
 }.
-
-(* Placeholder for derivatives on nD *)
-Definition der {X Y} (f : X -> Y) x := f x.
-
+(*
+Fixpoint S τ : Gl τ (Dt τ)
+  := make_gl τ (Dt τ)
+    (match τ with
+     | Real => fun f g =>
+          (fun r => g r) = (fun r => (f r, Derive f r))
+     | σ × ρ => fun f g =>
+        forall f1 f2 g1 g2,
+          S σ f1 f2 ->
+          S ρ g1 g2 ->
+            (f = fun r => (f1 r, g1 r)) /\
+            (g = fun r => (f2 r, g2 r))
+     | σ → ρ => fun f g =>
+        forall f1 f2 g1 g2 (s1 : S σ g1 g2),
+          f = f1 /\ g = f2 ->
+          S ρ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x))
+     end).
+*)
 Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
   := match τ with
      | Real => fun f g =>
