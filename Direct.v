@@ -221,15 +221,13 @@ Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
           (forall (x : R), ex_derive f x) /\
             (fun r => g r) = (fun r => (f r, Derive f r))
      | σ × ρ => fun f g =>
-        exists f1 f2 g1 g2,
-          S σ f1 f2 ->
-          S ρ g1 g2 ->
+        exists f1 f2 g1 g2 (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
             (f = fun r => (f1 r, g1 r)) /\
             (g = fun r => (f2 r, g2 r))
      | σ → ρ => fun f g =>
-        forall f1 f2 g1 g2 (s1 : S σ g1 g2),
-          f = f1 /\ g = f2 ->
-          S ρ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x))
+        forall g1 g2,
+          S σ g1 g2 ->
+            S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x))
      end.
 
 Inductive instantiation : forall {Γ Γ'}, sub Γ Γ' -> Prop :=
@@ -250,6 +248,11 @@ Proof with quick.
   eta_expand.
 Admitted.
 
+Lemma S_cong : forall τ f1 f2 g1 g2,
+  S τ f1 f2 -> g1 = f1 -> g2 = f2 -> S τ g1 g2.
+Proof.
+intros. subst. assumption.
+Qed.
 
 (*
   Plain words:
@@ -270,31 +273,29 @@ Lemma fundamental_lemma :
     (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
 Proof with quick.
   intros Γ Γ' τ g t sb H.
+  generalize dependent Γ'.
   (* pose proof (H τ) as H'. clear H. *)
   dependent induction t; unfold compose in *.
   { (* Var *)
+    intros.
     dependent induction H. inversion v.
     dependent destruction v; subst... }
   { (* App *)
-    specialize IHt1 with sb. specialize IHt2 with sb.
-    pose proof (IHt1 H) as IHt1'. clear IHt1.
-    pose proof (IHt2 H) as IHt2'. clear IHt2.
+    intros.
+    specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
+    pose proof (IHt1 H) as IHt1'; clear IHt1.
+    pose proof (IHt2 H) as IHt2'; clear IHt2.
     simpl in *.
     pose proof
       (IHt1'
-        (⟦ substitute sb t1 ⟧ₜₘ ∘ denote_env ∘ g)
-        (⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)
-        _ _ IHt2'). simpl in *.
-    assert ((fun x : R => ⟦ substitute sb t1 ⟧ₜₘ (denote_env (g x))) =
-      ⟦ substitute sb t1 ⟧ₜₘ ∘ denote_env ∘ g /\
-      (fun x : R => ⟦ Dtm (substitute sb t1) ⟧ₜₘ (denote_env (Denv (g x)))) =
-      ⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
-    { split... }
-    apply H0 in H1... }
+        (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g)
+        (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)
+        IHt2') as H'... }
   { (* Abs *)
-    quick. destruct H0. subst.
+    simpl. intros.
     (* pose proof (IHt (compose_sub_sub (|t|)
         (substitute_lifted sb))) as H'. *)
+    (* destruct H0. subst. *)
     admit. }
   { (* Const *)
     quick. split.
@@ -303,8 +304,8 @@ Proof with quick.
     intros. rewrite Derive_const... }
   { (* Add *)
     simpl in *. intros.
-    pose proof (IHt1 sb H) as [Hex1 H1]; clear IHt1.
-    pose proof (IHt2 sb H) as [Hex2 H2]; clear IHt2.
+    pose proof (IHt1 Γ' g sb H) as [Hex1 H1]; clear IHt1.
+    pose proof (IHt2 Γ' g sb H) as [Hex2 H2]; clear IHt2.
     split.
     { intros.
       specialize Hex1 with x.
@@ -315,27 +316,38 @@ Proof with quick.
       eapply equal_f in H2; rewrite H2.
       apply injective_projections...
       rewrite Derive_plus... } }
-  { simpl. intros.
-    pose proof (IHt1 sb H) as H1'; clear IHt1.
-    pose proof (IHt2 sb H) as H2'; clear IHt2.
-    (* split; apply functional_extensionality... *)
-    admit. }
-  { specialize IHt with sb.
+  { (* Tuples *)
+    simpl. intros.
+    pose proof (IHt1 Γ' g sb H) as H1'; clear IHt1.
+    pose proof (IHt2 Γ' g sb H) as H2'; clear IHt2.
+    exists (⟦ substitute sb t1 ⟧ₜₘ ∘ denote_env ∘ g).
+    exists (⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
+    exists (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g).
+    exists (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)... }
+  { (* Projection 1 *)
+    intros.
+    specialize IHt with Γ' g sb.
     pose proof (IHt H) as IHt'; clear IHt.
     simpl in IHt'.
-    destruct IHt' as [f1 [f2 [g1 [g2 H']]]].
-    admit. }
-  { specialize IHt with sb.
+    destruct IHt' as [f1 [f2 [g1 [g2 [S1 [S2 [H1' H2']]]]]]]...
+    eapply S_cong; try (apply S1);
+    apply functional_extensionality_dep; intros;
+    pose proof (equal_f H1') as H1; clear H1';
+    pose proof (equal_f H2') as H2; clear H2'.
+    rewrite H1...
+    rewrite H2... }
+  { (* Projection 2 *)
+    intros.
+    specialize IHt with Γ' g sb.
     pose proof (IHt H) as IHt'; clear IHt.
     simpl in IHt'.
-    destruct IHt' as [f1 [f2 [g1 [g2 H']]]].
-    admit. }
-    (* simpl in *. apply functional_extensionality.
-    intros. rewrite sbEq.
-    rewrite <- 2 denote_sub_commutes...
-    dependent induction t...
-    dependent induction v. simpl.
-    admit. } *)
+    destruct IHt' as [f1 [f2 [g1 [g2 [S1 [S2 [H1' H2']]]]]]]...
+    eapply S_cong; try (apply S2);
+    apply functional_extensionality_dep; intros;
+    pose proof (equal_f H1') as H1; clear H1';
+    pose proof (equal_f H2') as H2; clear H2'.
+    rewrite H1...
+    rewrite H2... }
 Admitted.
 
 Lemma S_correct_R :
