@@ -135,7 +135,6 @@ Definition sub (Γ Γ' : list ty) :=
 
 (* Helper functions for defining substitutions on the i'th variable *)
 Definition id_sub {Γ} : sub Γ Γ := var Γ.
-
 Program Definition cons_sub {Γ Γ' τ}
     (e: tm Γ' τ) (s: sub Γ Γ') : sub (τ::Γ) Γ'
   := fun σ (x : Var (τ::Γ) σ) =>

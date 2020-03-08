@@ -287,16 +287,35 @@ Proof with quick.
 Qed.
 
 Inductive instantiation : forall {Γ Γ'}, sub Γ Γ' -> Prop :=
-  | inst_empty : forall Γ, @instantiation Γ Γ id_sub
+  | inst_empty : @instantiation [] [] id_sub
   | inst_const : forall Γ Γ' τ (t : tm Γ' τ) (s : sub Γ Γ'),
       value t -> R τ t ->
       instantiation s ->
       instantiation (cons_sub t s).
 
+Lemma subst_compose_cons :
+  forall Γ Γ' τ (t : tm Γ' τ) (s : sub Γ Γ'),
+    compose_sub_sub (|t|) (substitute_lifted s) =
+      (cons_sub t s).
+Proof with quick.
+  intros.
+  unfold compose_sub_sub.
+  eta_expand.
+Admitted.
+
 Lemma step__multistep : forall {Γ τ} {t t' : tm Γ τ},
   t --> t' -> t -->* t'.
 Proof with quick.
   intros. repeat econstructor...
+Qed.
+
+Lemma multistep_AppAbs : forall Γ τ σ (f : tm (σ::Γ) τ) (t t' : tm Γ σ),
+  value t' -> t -->* t' -> (app _ _ _ (abs _ _ _ f) t) -->* substitute (|t'|) f.
+Proof with quick.
+  intros. induction H0.
+  - econstructor; econstructor...
+  - eapply multi_step. eapply ST_App2...
+    apply IHmulti...
 Qed.
 
 Lemma multistep_App2 : forall Γ τ σ (v : tm Γ (σ → τ)) (t t' : tm Γ σ),
@@ -370,6 +389,7 @@ Lemma R_Tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
 Proof with quick.
   intros. destruct H as [Hh [r [s [Hst [Hvr [Hvs [Hrr Hrs]]]]]]].
   simpl in *.
+  split...
 Admitted.
 
 (* Definition shave_var {X Γ τ σ} (v : @Var X (σ::Γ) τ): @Var X Γ τ.
@@ -387,6 +407,11 @@ Lemma multistep_subst : forall Γ Γ' τ σ (t : tm (σ::Γ) τ)
         (fun (σ0 : ty) (v : σ0 ∈ σ :: Γ) => sb σ0 (shave_var v)) t).
 Admitted. *)
 
+(* Lemma subst_cons_sub_compose : forall Γ Γ' τ (s : tm Γ τ) (sb : sub Γ Γ'),
+  compose_sub_sub (| s |) sb =
+    cons_sub s sb.
+Admitted. *)
+
 Lemma subst_R :
   forall {Γ Γ' τ} (t : tm Γ τ) (s : sub Γ Γ'),
     instantiation s ->
@@ -400,9 +425,8 @@ Proof with quick.
   dependent induction t.
   { (* Variables *)
     intros. simpl.
-    dependent induction H.
-    unfold id_sub. inversion v.
-    dependent induction v... }
+    dependent induction H;
+      dependent induction v... }
   { (* App *)
     intros. simpl.
     pose proof (IHt1 s H).
@@ -414,17 +438,15 @@ Proof with quick.
     { simpl. intros s Hrs.
       pose proof (R_halts Hrs) as [s' [Hst Hs']].
       pose proof (multistep_preserves_R s s' Hrs Hst) as Hrs'.
-      (* assert
-        (exists v, app Γ' τ σ (abs Γ' τ σ
-          (substitute (substitute_lifted sb) t)) s -->* sb τ v). *)
-      admit. } }
-      (* eapply multistep_preserves_R'.
-      { apply IHt... admit. }
+      pose proof (IHt (compose_sub_sub (|s'|)
+        (substitute_lifted sb))) as H'.
+      simpl in H'.
+      eapply multistep_preserves_R'.
+      apply H'.
+      { rewrite -> subst_compose_cons. constructor... }
       { eapply multi_trans.
-        { apply multistep_App2... }
-        { eapply multi_step. apply ST_AppAbs...
-          rewrite <- app_sub_sub.
-          apply multistep_subst... } } } } *)
+        eapply multistep_AppAbs...
+        rewrite <- app_sub_sub. constructor. } } }
   { (* Const *)
     intros... split... apply value_halts... }
   { (* Add *)
@@ -506,10 +528,10 @@ Proof with quick.
 Admitted.
 
 Theorem normalization :
-  forall Γ τ (t : tm Γ τ) (e : Env Γ), halts t.
+  forall τ (t : tm [] τ), halts t.
 Proof.
   intros.
-  rewrite <- (app_sub_id Γ τ t).
+  rewrite <- (app_sub_id [] τ t).
   eapply (R_halts).
   eapply (subst_R t id_sub); eauto.
   constructor.

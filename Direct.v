@@ -10,6 +10,8 @@ Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
 Require Import Arith_base.
 Require Import Coquelicot.Derive.
+Require Import Coquelicot.Continuity.
+Require Import Coquelicot.Hierarchy.
 Import EqNotations.
 
 Require Import AD.Definitions.
@@ -213,12 +215,13 @@ Fixpoint S τ : Gl τ (Dt τ)
           S ρ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x))
      end).
 *)
-Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
+Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
   := match τ with
-     | Real => fun f g =>
-          (fun r => g r) = (fun r => (f r, Derive f r))
+     | Real => fun (f : R -> R) (g : R -> R * R) =>
+          (forall (x : R), ex_derive f x) /\
+            (fun r => g r) = (fun r => (f r, Derive f r))
      | σ × ρ => fun f g =>
-        forall f1 f2 g1 g2,
+        exists f1 f2 g1 g2,
           S σ f1 f2 ->
           S ρ g1 g2 ->
             (f = fun r => (f1 r, g1 r)) /\
@@ -228,6 +231,25 @@ Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
           f = f1 /\ g = f2 ->
           S ρ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x))
      end.
+
+Inductive instantiation : forall {Γ Γ'}, sub Γ Γ' -> Prop :=
+  | inst_empty : @instantiation [] [] id_sub
+  | inst_const : forall Γ Γ' (t : tm Γ' Real) (s : sub Γ Γ'),
+      (forall f, S Real (⟦t⟧ₜₘ ∘ denote_env ∘ f)
+        (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
+      instantiation s ->
+      instantiation (cons_sub t s).
+
+Lemma subst_compose_cons :
+  forall Γ Γ' τ (t : tm Γ' τ) (s : sub Γ Γ'),
+    compose_sub_sub (|t|) (substitute_lifted s) =
+      (cons_sub t s).
+Proof with quick.
+  intros.
+  unfold compose_sub_sub.
+  eta_expand.
+Admitted.
+
 
 (*
   Plain words:
@@ -239,9 +261,10 @@ Lemma fundamental_lemma :
   forall Γ Γ' τ g
     (t : tm Γ τ) (sb : sub Γ Γ'),
 
-  (forall σ (v : Var Γ σ) f,
+  instantiation sb ->
+  (* (forall σ (v : Var Γ σ) f,
     S σ (⟦ sb _ v ⟧ₜₘ ∘ denote_env ∘ f)
-      (⟦ Dtm (sb _ v) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
+      (⟦ Dtm (sb _ v) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) -> *)
 
   S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g)
     (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
@@ -249,8 +272,11 @@ Proof with quick.
   intros Γ Γ' τ g t sb H.
   (* pose proof (H τ) as H'. clear H. *)
   dependent induction t; unfold compose in *.
-  { apply H. }
-  { specialize IHt1 with sb. specialize IHt2 with sb.
+  { (* Var *)
+    dependent induction H. inversion v.
+    dependent destruction v; subst... }
+  { (* App *)
+    specialize IHt1 with sb. specialize IHt2 with sb.
     pose proof (IHt1 H) as IHt1'. clear IHt1.
     pose proof (IHt2 H) as IHt2'. clear IHt2.
     simpl in *.
@@ -265,9 +291,45 @@ Proof with quick.
       ⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
     { split... }
     apply H0 in H1... }
-  { quick. destruct H0. subst.
-    apply IHt.
-    }
+  { (* Abs *)
+    quick. destruct H0. subst.
+    (* pose proof (IHt (compose_sub_sub (|t|)
+        (substitute_lifted sb))) as H'. *)
+    admit. }
+  { (* Const *)
+    quick. split.
+    { intros. apply ex_derive_const. }
+    apply functional_extensionality.
+    intros. rewrite Derive_const... }
+  { (* Add *)
+    simpl in *. intros.
+    pose proof (IHt1 sb H) as [Hex1 H1]; clear IHt1.
+    pose proof (IHt2 sb H) as [Hex2 H2]; clear IHt2.
+    split.
+    { intros.
+      specialize Hex1 with x.
+      specialize Hex2 with x.
+      apply (ex_derive_plus _ _ _ Hex1 Hex2). }
+    { apply functional_extensionality...
+      eapply equal_f in H1; rewrite H1.
+      eapply equal_f in H2; rewrite H2.
+      apply injective_projections...
+      rewrite Derive_plus... } }
+  { simpl. intros.
+    pose proof (IHt1 sb H) as H1'; clear IHt1.
+    pose proof (IHt2 sb H) as H2'; clear IHt2.
+    (* split; apply functional_extensionality... *)
+    admit. }
+  { specialize IHt with sb.
+    pose proof (IHt H) as IHt'; clear IHt.
+    simpl in IHt'.
+    destruct IHt' as [f1 [f2 [g1 [g2 H']]]].
+    admit. }
+  { specialize IHt with sb.
+    pose proof (IHt H) as IHt'; clear IHt.
+    simpl in IHt'.
+    destruct IHt' as [f1 [f2 [g1 [g2 H']]]].
+    admit. }
     (* simpl in *. apply functional_extensionality.
     intros. rewrite sbEq.
     rewrite <- 2 denote_sub_commutes...
@@ -283,7 +345,7 @@ Lemma S_correct_R :
   (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
   fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
     Derive (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
-Proof. quick. Qed.
+Proof. intros. destruct H. quick. Qed.
 
 Lemma S_correct_prod :
   forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) f,
@@ -299,6 +361,7 @@ Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
   inversion G. assumption.
 Defined.
 
+(*
 Lemma shave_env_prod Γ τ (E : Env (τ :: Γ)) (c : Closed τ):
   denote_env E = (denote_closed c, denote_env (shave_env E)).
 Proof with quick.
@@ -312,52 +375,17 @@ Lemma shave_env_snd :
   (denote_env (shave_env (f x))) = (snd (denote_env (f x))).
 Proof.
   admit.
-Admitted.
-
-Lemma well_typed_S :
-  forall Γ τ (t : tm Γ τ) f,
-    S τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ f)
-      (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
-Proof with quick.
-  induction τ; unfold compose; simpl.
-  { intros. apply functional_extensionality. intros.
-    dependent induction t... dependent induction v...
-    remember (f x). admit. }
-  { intros. split; apply functional_extensionality...
-    admit. }
-  { intros. split; apply functional_extensionality...
-    admit. }
-Admitted.
+Admitted. *)
 
 Theorem semantic_correct_R :
-  forall Γ (t : tm Γ Real) (f : R -> Env Γ),
-  ⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
+  forall (t : tm [] Real) (f : R -> Env []),
+  (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) =
     fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
       Derive (fun (x : R) => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
 Proof with quick.
   intros.
-  pose proof (well_typed_S Γ Real t).
-  pose proof (S_correct_R Γ t)...
-Qed.
-
-(* Theorem semantic_correct_Prod :
-  forall Γ τ σ (t : tm Γ (τ × σ)) (f : R -> Env Γ),
-  ⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
-    fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-              der (fun x =>⟦ t ⟧ₜₘ (denote_env (f x))) r).
-Proof with quick.
-  intros.
-  pose proof (well_typed_S Γ (τ × σ) (tuple _ t s)).
-  pose proof (S_correct_prod Γ (τ × σ))...
-Qed. *)
-
-Theorem semantic_correct_Prod :
-  forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) (f : R -> Env Γ),
-  ⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
-    fun r => (⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r))),
-              (⟦ Dtm s ⟧ₜₘ (denote_env (Denv (f r))))).
-Proof with quick.
-  intros.
-  pose proof (well_typed_S Γ (τ × σ) (tuple _ t s)).
-  pose proof (S_correct_prod Γ (τ × σ))...
+  rewrite <- (app_sub_id [] Real t).
+  apply S_correct_R.
+  apply (fundamental_lemma _ _ _ _ t id_sub).
+  constructor.
 Qed.
