@@ -11,3 +11,4 @@ Require Import Arith_base.
 Ltac quick := simpl in *; intros; eauto.
 Ltac splits := repeat try split.
 Ltac eta_expand := repeat (apply functional_extensionality_dep; intros).
+Ltac admitted := repeat admit.

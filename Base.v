@@ -11,6 +11,14 @@ Require Import Program.Equality.
 Open Scope R_scope.
 
 (*
+Notational conventions:
+  capital greeks for typing environment
+  lowercase greeks for types
+  lowercase latin for terms
+
+Functional extensionality is oft used and the derivate is defined axiomatically
+
+
 Literature:
 
 Main paper:
@@ -33,6 +41,7 @@ Coq:
   + Theorem proving support in programming language semantics by Bertot.
 - Denotational Semantics:
   + Some Domain Theory and Denotational Semantics in Coq by Benton, et al.
+  + General Recursion Using Co-Inductive Types by Capretta.
 - Well-scoped, well-typed debruijn indices in language:
   + Strongly Typed Term Representations in Coq by Benton, et al.
   + Type-Preserving Renaming and Substitution by McBride.
@@ -51,9 +60,4 @@ Automatic Differentiation:
 
 Mathematics:
 - An Introduction To Diffeology by Zemmour.
-
-Notational conventions:
-  capital greeks for typing environment
-  lowercase greeks for types
-  lowercase latin for terms
 *)

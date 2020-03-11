@@ -17,6 +17,7 @@ Import EqNotations.
 Require Import AD.Definitions.
 Require Import AD.Macro.
 Require Import AD.Tactics.
+(* Require Import AD.Tangent. *)
 
 Local Open Scope program_scope.
 Local Open Scope R_scope.
@@ -79,7 +80,6 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
 where "⟦ t ⟧ₜₘ" := (denote_tm t).
 
 Definition constant {X} (x : X) {Y} {F : X -> Y -> X} := F x.
-(* Compute ((denote_tm (Dtm ex_plus) tt) (id, constant 1) (id, constant 0)). *)
 
 Fixpoint denote_env {Γ} (G : Env Γ) : ⟦ Γ ⟧ₜₓ :=
   match G with
@@ -141,10 +141,10 @@ Lemma denote_ren_pop_elim : forall Γ τ (ctx : ⟦ τ :: Γ ⟧ₜₓ),
 Proof with eauto.
   induction Γ; simpl; intros...
   { induction ctx. simpl. induction b... }
-  { induction ctx as [T G].
-    apply injective_projections... simpl.
-    unfold tl_ren... simpl.
-    rewrite <- IHΓ. simpl. admit. }
+  { apply injective_projections... simpl.
+    unfold tl_ren...
+    rewrite <- IHΓ.
+    admit. }
 Admitted.
 
 Lemma denote_shift_elim : forall Γ τ σ (t : tm Γ τ) ctx x,
@@ -286,17 +286,17 @@ Proof with quick.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2.
     simpl in *.
-    pose proof
-      (IHt1'
-        (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g)
-        (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)
-        IHt2') as H'... }
+    apply IHt1'... }
   { (* Abs *)
-    simpl. intros.
-    (* pose proof (IHt (compose_sub_sub (|t|)
-        (substitute_lifted sb))) as H'. *)
+    simpl; intros.
+    dependent induction H.
+    { rewrite lift_sub_id.
+      rewrite app_sub_id. admit. }
+    (* pose proof (IHt _ _
+      (compose_sub_sub (substitute_lifted id_sub)
+      id_sub)) as H'. *)
     (* destruct H0. subst. *)
-    admit. }
+    admitted. }
   { (* Const *)
     quick. split.
     { intros. apply ex_derive_const. }
@@ -372,22 +372,6 @@ Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
   induction Γ. constructor.
   inversion G. assumption.
 Defined.
-
-(*
-Lemma shave_env_prod Γ τ (E : Env (τ :: Γ)) (c : Closed τ):
-  denote_env E = (denote_closed c, denote_env (shave_env E)).
-Proof with quick.
-  dependent induction E.
-  erewrite IHE. reflexivity.
-  admit. admit.
-Admitted.
-
-Lemma shave_env_snd :
-  forall Γ τ (f: R -> Env (τ :: Γ)) (x: R),
-  (denote_env (shave_env (f x))) = (snd (denote_env (f x))).
-Proof.
-  admit.
-Admitted. *)
 
 Theorem semantic_correct_R :
   forall (t : tm [] Real) (f : R -> Env []),

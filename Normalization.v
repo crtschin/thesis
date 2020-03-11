@@ -13,8 +13,10 @@ From AD Require Import Definitions.
 From AD Require Import Tactics.
 
 (*
-  Evaluation (unfinished)
-    Will follow about the same line as the normalization proof in software foundations vol.2
+  Strong Normalization
+
+  Will follow about the same line as the normalization proof in software
+    foundations vol.2
   Also used as a reference is:
     Proofs And Types by Jean-Yves Girard.
 *)
@@ -384,14 +386,6 @@ Proof with quick.
   - eapply multi_step. apply ST_Snd... assumption.
 Qed.
 
-Lemma R_Tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
-  R (τ × σ) (tuple Γ t1 t2) -> R τ t1 /\ R σ t2.
-Proof with quick.
-  intros. destruct H as [Hh [r [s [Hst [Hvr [Hvs [Hrr Hrs]]]]]]].
-  simpl in *.
-  split...
-Admitted.
-
 (* Definition shave_var {X Γ τ σ} (v : @Var X (σ::Γ) τ): @Var X Γ τ.
 Proof with quick.
   induction (σ::Γ). inversion v.
@@ -419,14 +413,14 @@ Lemma subst_R :
     R τ (substitute s t).
 Proof with quick.
   intros Γ Γ' τ t s.
-  (* remember (substitute s t) as t''. *)
   generalize dependent Γ.
   generalize dependent Γ'.
   dependent induction t.
   { (* Variables *)
     intros. simpl.
-    dependent induction H;
-      dependent induction v... }
+    dependent induction H.
+    { inversion v. }
+    { dependent induction v... } }
   { (* App *)
     intros. simpl.
     pose proof (IHt1 s H).
@@ -496,35 +490,33 @@ Proof with quick.
     pose proof (IHt s H) as H'.
     pose proof (R_halts H'); destruct H0 as [t' [Hst Hvt]].
     apply value_halts in Hvt.
-    unfold halts in Hvt; destruct Hvt as [t'' [Hst' Hvt']].
-    dependent induction Hvt'. clear IHHvt'1; clear IHHvt'2.
-    pose proof (multi_trans Hst Hst') as Hst''.
-    pose proof (multistep_preserves_R _ _ H' Hst'').
-    assert (Hst''': first Γ0 (substitute s t) -->* t1).
+    pose proof H' as H''.
+    simpl in H'. destruct H' as [Hh He].
+    destruct He as [Hr [Hs [Hsst [Hvr [Hvs [Hrr Hrs]]]]]].
+    pose proof (multistep_preserves_R _ _ H'' Hsst).
+    assert (Hst''': first Γ' (substitute s t) -->* Hr).
     { eapply multi_trans.
-      { apply multistep_First... }
+      { apply multistep_First. apply Hsst. }
       { econstructor. apply ST_FstTuple... constructor. } }
-    apply R_Tuple in H0.
     eapply multistep_preserves_R'.
     2: apply Hst'''.
-    apply H0. }
+    induction τ... }
   { (* Second *)
     intros. simpl.
     pose proof (IHt s H) as H'.
     pose proof (R_halts H'); destruct H0 as [t' [Hst Hvt]].
     apply value_halts in Hvt.
-    unfold halts in Hvt; destruct Hvt as [t'' [Hst' Hvt']].
-    dependent induction Hvt'. clear IHHvt'1; clear IHHvt'2.
-    pose proof (multi_trans Hst Hst') as Hst''.
-    pose proof (multistep_preserves_R _ _ H' Hst'').
-    assert (Hst''': second Γ0 (substitute s t) -->* t2).
+    pose proof H' as H''.
+    simpl in H'. destruct H' as [Hh He].
+    destruct He as [Hr [Hs [Hsst [Hvr [Hvs [Hrr Hrs]]]]]].
+    pose proof (multistep_preserves_R _ _ H'' Hsst).
+    assert (Hst''': second Γ' (substitute s t) -->* Hs).
     { eapply multi_trans.
-      { apply multistep_Second... }
+      { apply multistep_Second. apply Hsst. }
       { econstructor. apply ST_SndTuple... constructor. } }
-    apply R_Tuple in H0.
     eapply multistep_preserves_R'.
     2: apply Hst'''.
-    apply H0. }
+    induction τ... }
 Admitted.
 
 Theorem normalization :
