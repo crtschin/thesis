@@ -4,8 +4,8 @@ Definitions.vo Definitions.glob Definitions.v.beautified: Definitions.v
 Definitions.vio: Definitions.v
 Diffeology.vo Diffeology.glob Diffeology.v.beautified: Diffeology.v Tactics.vo Definitions.vo Macro.vo
 Diffeology.vio: Diffeology.v Tactics.vio Definitions.vio Macro.vio
-Direct.vo Direct.glob Direct.v.beautified: Direct.v Definitions.vo Macro.vo Tactics.vo Tangent.vo
-Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Tangent.vio
+Direct.vo Direct.glob Direct.v.beautified: Direct.v Definitions.vo Macro.vo Tactics.vo
+Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio
 Macro.vo Macro.glob Macro.v.beautified: Macro.v Definitions.vo
 Macro.vio: Macro.v Definitions.vio
 Normalization.vo Normalization.glob Normalization.v.beautified: Normalization.v Definitions.vo Tactics.vo

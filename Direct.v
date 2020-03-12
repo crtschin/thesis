@@ -225,27 +225,30 @@ Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
             (f = fun r => (f1 r, g1 r)) /\
             (g = fun r => (f2 r, g2 r))
      | σ → ρ => fun f g =>
-        forall g1 g2,
-          S σ g1 g2 ->
-            S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x))
+        forall g1 g2 (sσ : S σ g1 g2),
+          S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x))
      end.
 
-Inductive instantiation : forall {Γ Γ'}, sub Γ Γ' -> Prop :=
-  | inst_empty : @instantiation [] [] id_sub
-  | inst_const : forall Γ Γ' (t : tm Γ' Real) (s : sub Γ Γ'),
-      (forall f, S Real (⟦t⟧ₜₘ ∘ denote_env ∘ f)
+Inductive instantiation :
+  forall {Γ Γ'}, sub Γ Γ' -> (R -> Env Γ') -> Prop :=
+  | inst_empty : forall f, @instantiation [] [] id_sub f
+  | inst_const : forall Γ Γ' (t : tm Γ' Real) (s : sub Γ Γ') (f : R -> Env Γ'),
+      instantiation s f ->
+      (S Real (⟦t⟧ₜₘ ∘ denote_env ∘ f)
         (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
-      instantiation s ->
-      instantiation (cons_sub t s).
+      instantiation (cons_sub t s) f.
 
-Lemma subst_compose_cons :
-  forall Γ Γ' τ (t : tm Γ' τ) (s : sub Γ Γ'),
-    compose_sub_sub (|t|) (substitute_lifted s) =
-      (cons_sub t s).
+Lemma subst_shift_refl :
+  forall Γ Γ' τ σ (v : τ ∈ Γ) (s : tm Γ' σ) (sb : sub Γ Γ'),
+    substitute (| s |) (shift (sb τ v)) = sb τ v.
 Proof with quick.
   intros.
+  remember (sb τ v).
+  dependent induction t.
+  (* dependent induction H. subst.
+  apply IHinstantiation...
   unfold compose_sub_sub.
-  eta_expand.
+  eta_expand. *)
 Admitted.
 
 Lemma S_cong : forall τ f1 f2 g1 g2,
@@ -264,7 +267,7 @@ Lemma fundamental_lemma :
   forall Γ Γ' τ g
     (t : tm Γ τ) (sb : sub Γ Γ'),
 
-  instantiation sb ->
+  instantiation sb g ->
   (* (forall σ (v : Var Γ σ) f,
     S σ (⟦ sb _ v ⟧ₜₘ ∘ denote_env ∘ f)
       (⟦ Dtm (sb _ v) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) -> *)
@@ -285,13 +288,15 @@ Proof with quick.
     specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2.
-    simpl in *.
-    apply IHt1'... }
+    simpl in *. apply IHt1'... }
   { (* Abs *)
-    simpl; intros.
-    dependent induction H.
+    simpl. intros.
+    pose proof (IHt Γ' g).
+    dependent destruction H; subst.
     { rewrite lift_sub_id.
-      rewrite app_sub_id. admit. }
+      rewrite app_sub_id.
+      (* rewrite app_sub_id. *)
+      admit. }
     (* pose proof (IHt _ _
       (compose_sub_sub (substitute_lifted id_sub)
       id_sub)) as H'. *)

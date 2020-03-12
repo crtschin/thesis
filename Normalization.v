@@ -295,14 +295,17 @@ Inductive instantiation : forall {Γ Γ'}, sub Γ Γ' -> Prop :=
       instantiation s ->
       instantiation (cons_sub t s).
 
-Lemma subst_compose_cons :
-  forall Γ Γ' τ (t : tm Γ' τ) (s : sub Γ Γ'),
-    compose_sub_sub (|t|) (substitute_lifted s) =
-      (cons_sub t s).
+Lemma subst_shift_refl :
+  forall Γ Γ' τ σ (v : τ ∈ Γ) (s : tm Γ' σ) (sb : sub Γ Γ'),
+    substitute (| s |) (shift (sb τ v)) = sb τ v.
 Proof with quick.
   intros.
+  remember (sb τ v).
+  dependent induction t.
+  (* dependent induction H. subst.
+  apply IHinstantiation...
   unfold compose_sub_sub.
-  eta_expand.
+  eta_expand. *)
 Admitted.
 
 Lemma step__multistep : forall {Γ τ} {t t' : tm Γ τ},
@@ -432,15 +435,21 @@ Proof with quick.
     { simpl. intros s Hrs.
       pose proof (R_halts Hrs) as [s' [Hst Hs']].
       pose proof (multistep_preserves_R s s' Hrs Hst) as Hrs'.
-      pose proof (IHt (compose_sub_sub (|s'|)
-        (substitute_lifted sb))) as H'.
+      pose proof (IHt (cons_sub s' sb)) as H'.
       simpl in H'.
       eapply multistep_preserves_R'.
       apply H'.
-      { rewrite -> subst_compose_cons. constructor... }
+      { constructor... }
       { eapply multi_trans.
         eapply multistep_AppAbs...
-        rewrite <- app_sub_sub. constructor. } } }
+        rewrite <- app_sub_sub.
+        assert
+          (H'': (compose_sub_sub (| s' |) (substitute_lifted sb)) = cons_sub s' sb).
+        { unfold compose_sub_sub.
+          repeat (apply functional_extensionality_dep; intros).
+          dependent induction x0...
+          erewrite subst_shift_refl... }
+        rewrite H''. constructor. } } }
   { (* Const *)
     intros... split... apply value_halts... }
   { (* Add *)
