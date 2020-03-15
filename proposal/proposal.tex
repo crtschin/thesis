@@ -1,0 +1,94 @@
+\documentclass[10pt,a4paper,msc]{article}
+% \usepackage[margin=1in]{geometry}
+\usepackage{amsthm}
+\usepackage{todo}
+\usepackage{amsmath}
+\usepackage{showkeys}
+\usepackage[
+backend=biber,
+bibstyle=ieee,
+citestyle=ieee,
+sorting=ynt,
+hyperref=true,
+backref=true
+]{biblatex}
+\addbibresource{refs.bib}
+\usepackage[hidelinks]{hyperref}
+
+\title{Formalization of the Denotation Semantics of
+    \\ Automatic Differentiation in Coq
+    \\ Project Proposal
+}
+\author{Curtis Chin Jen Sem \\ (5601118)}
+\date{April 2020}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+AI and machine learning research has sparked a lot of new interest in recent times due to its many applications and ability to solve very difficult problems. One of the principle techniques in practice is the use of gradient descent, which tries optimize some problem by trying to calculate the local minimum of a differentiable function.
+
+This is regularly done using a technique called Automatic Differentiation. There has been a recent surge of interest in formulating languages for defining automatic differentiable functions. This could have many benefits such as both applying many of the established high and low level optimizations known in programming languages research, ease defining functions for use in a gradient descent optimization through higher order functions and correctness through the use of a possible type system.
+
+We aim to formalize an extendable proof of an implementation of automatic differentiation on a simply typed lambda calculus in the Coq proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future. Our formalization is based on a recent proof by Stanton Huot, and Vak\"{a}r\ref. They proved, using a denotational model of diffeological spaces, that their forward mode emulating macro is correct when applied to a simply typed lambda calculus with products, co-products and inductive types.
+\todo*
+
+% Ideally?:
+% Contributing an extendable proof of a simply typed lambda calculus
+% On which both the correctness of optimizations and language
+% extensions could be proven
+
+\section{Background}
+
+\subsection{Automatic Differentiation}
+
+% http://jmlr.org/papers/volume18/17-468/17-468.pdf
+
+One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function. The idea being to use the gradient in the gradient descent algorithm\ref. Automatic is a generalization of backpropogation. Automatic differentiation has a long and rich history, where its purpose is to calculate the derivative of a function, or in other words, calculate the derivative of function described by an arbitrary program\ref. So the semantics which one would normally expect in programming language is extended with relevant concepts such as derivative values and the chain rule.
+
+Automatic or algorithmic differentiation is beneficial over other methods of automatically calculating the derivatives of functions such as numerical differentiation or symbolic differentiation due to its balance between speed and computational complexity. There are two main modes of automatic differentiation which I will both discuss. These are namely forward and reverse mode AD. In this paper we will prove the semantics of a forward mode AD algorithm correct. The algorithm being a very simple macro on the syntax of a simply typed lambda calculus.
+\todo*
+
+\subsection{Coq}
+
+Coq is a proof assistant created by Thierry Coquand as an implementation of his calculus of constructions type theory\ref. In the 30 years since it has been released, research has contributed to extending the proof assistant with additional features such as inductive and co-inductive data types\ref, GADTs\ref and advanced modular constructions for organizing immense proofs\ref.
+
+The core of calculus of constructions is based on constructive logic and so many of the laws known in classical logic are not present. Examples include the law of the excluded middle, $\forall A, A \vee \neg A$, or the law of functional extensionality, $\forall x, f(x) = g(x) \rightarrow f = g$. They can, however, be safely added to Coq without making its logic inconsistent. Due to its usefulness in proving propositions over functions, we will make use of functional extensionality in Coq.
+
+When defining a simply typed lambda calculus in Coq, one is free to define it using an intrinsic or extrinsic formulation.
+\todo*
+
+\subsection{Denotation Semantics}
+% A formal semantics of programming language: An introduction
+
+The notion of denotational semantics, created by Dana Scott and Christopher Strachey\ref, tries to find underlying mathematical objects able to explain the properties of programming languages. Their original search for a solution for lambda calculi led them to well-known concepts such as partial orderings and least fixed points. In this model, programs are interpreted as partial functions and computation by taking fixpoint of such functions. Non-termination on the other hand is symbolized by a value bottom that is lower in the ordering relation than any other element. This search for an underlying mathematical foundation for languages is also known as domain theory.
+
+In this specific case, we try to find a satisfactory model we can use to show that our implementation of forward mode automatic differentiation is correct when applied to a simply typed lambda calculus.
+
+\todo*
+
+\section{Preliminary Results}
+\todo*
+
+\subsection{Preliminary Proof}
+\todo*
+
+\subsection{Proof Extension}
+\todo*
+
+\section{Timetable and Planning}
+\todo*
+
+\subsection{Deadlines}
+\todo*
+
+\subsection{Fill in missing holes}
+\todo*
+
+\subsection{Generalize prototype for variants and inductive types}
+\todo*
+
+\printbibliography
+\end{document}

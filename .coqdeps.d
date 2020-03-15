@@ -1,7 +1,7 @@
 Base.vo Base.glob Base.v.beautified: Base.v
 Base.vio: Base.v
-Definitions.vo Definitions.glob Definitions.v.beautified: Definitions.v
-Definitions.vio: Definitions.v
+Definitions.vo Definitions.glob Definitions.v.beautified: Definitions.v Tactics.vo
+Definitions.vio: Definitions.v Tactics.vio
 Diffeology.vo Diffeology.glob Diffeology.v.beautified: Diffeology.v Tactics.vo Definitions.vo Macro.vo
 Diffeology.vio: Diffeology.v Tactics.vio Definitions.vio Macro.vio
 Direct.vo Direct.glob Direct.v.beautified: Direct.v Definitions.vo Macro.vo Tactics.vo
@@ -12,8 +12,6 @@ Normalization.vo Normalization.glob Normalization.v.beautified: Normalization.v 
 Normalization.vio: Normalization.v Definitions.vio Tactics.vio
 Semantics.vo Semantics.glob Semantics.v.beautified: Semantics.v Definitions.vo Macro.vo Diffeology.vo
 Semantics.vio: Semantics.v Definitions.vio Macro.vio Diffeology.vio
-Substitution.vo Substitution.glob Substitution.v.beautified: Substitution.v Definitions.vo
-Substitution.vio: Substitution.v Definitions.vio
 Tactics.vo Tactics.glob Tactics.v.beautified: Tactics.v
 Tactics.vio: Tactics.v
 Tangent.vo Tangent.glob Tangent.v.beautified: Tangent.v

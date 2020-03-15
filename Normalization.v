@@ -30,7 +30,7 @@ Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
   | v_abs : forall Γ τ σ b,
     value (abs Γ τ σ b)
 .
-Hint Constructors value.
+Hint Constructors value : ad.
 
 Reserved Notation "t1 --> t2" (at level 40).
 Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
@@ -101,9 +101,10 @@ Proof with quick. intros. induction H... apply multi_step with y... Qed.
 Notation step_normal_form := (normal_form step).
 Definition deterministic {X : Type} (R : relation X) :=
   forall x y1 y2 : X, R x y1 -> R x y2 -> y1 = y2.
+Definition halts {Γ τ} (t:tm Γ τ) : Prop := exists t', t -->* t' /\  value t'.
 
 Lemma value__normal : forall Γ τ (t : tm Γ τ), value t -> step_normal_form t.
-Proof with eauto.
+Proof with quick.
   intros Γ τ.
   induction τ;
     intros t Hv [t' Hstep];
@@ -127,8 +128,7 @@ Proof with quick.
   intros Γ τ t t' t'' H1 H2.
   generalize dependent t''.
   dependent induction H1;
-    intros t'' H2; dependent destruction H2.
-  { dependent destruction H... }
+    intros t'' H2; dependent destruction H2...
   { dependent induction H;
     dependent destruction H2... }
   { apply value__normal in H. contradiction H. exists t2'... }
@@ -138,7 +138,6 @@ Proof with quick.
   { apply value__normal in H0. contradiction H0. exists t2'... }
   { apply value__normal in H. contradiction H. exists t1'... }
   { rewrite (IHstep t2'0 H2)... }
-  { reflexivity. }
   { assert (H': value (const Γ v1)). constructor.
     apply value__normal in H'. contradiction H'. exists t1'... }
   { assert (H': value (const Γ v2)). constructor.
@@ -162,7 +161,6 @@ Proof with quick.
   { dependent destruction H2...
     apply value__normal in H. contradiction H. exists t1'0...
     apply value__normal in H0. contradiction H0. exists t2'... }
-  { reflexivity. }
   { rewrite (IHstep t1'0 H2)... }
   { dependent destruction H1...
     apply value__normal in H. contradiction H. exists t1'0...
@@ -170,13 +168,9 @@ Proof with quick.
   { dependent destruction H2...
     apply value__normal in H. contradiction H. exists t1'0...
     apply value__normal in H0. contradiction H0. exists t2'... }
-  { reflexivity. }
 Qed.
 
-Definition halts {Γ τ} (t:tm Γ τ) : Prop := exists t', t -->* t' /\  value t'.
-
 (** A trivial fact: *)
-
 Lemma value_halts : forall Γ τ (v : tm Γ τ), value v -> halts v.
 Proof.
   intros Γ τ v H. unfold halts.
@@ -184,12 +178,6 @@ Proof.
   apply multi_refl.
   assumption.
 Qed.
-
-(* What would be preservation if it was needed *)
-Theorem preservation : forall Γ τ (t : tm Γ τ) t' ,
-  t --> t' ->
-  (Γ ⊢ t ∷ τ) = (Γ ⊢ t' ∷ τ).
-Proof. reflexivity. Qed.
 
 Program Fixpoint R τ {Γ} (t : tm Γ τ): Prop :=
   halts t /\
@@ -224,7 +212,7 @@ Proof.
    rewrite (step_deterministic Γ τ t t' y ST H). exists t''. split; assumption.
  - (* <- *)
   intros [t'0 [STM V]].
-  exists t'0. split; eauto.
+  exists t'0. split; quick.
   econstructor; eassumption.
 Qed.
 
@@ -294,19 +282,6 @@ Inductive instantiation : forall {Γ Γ'}, sub Γ Γ' -> Prop :=
       value t -> R τ t ->
       instantiation s ->
       instantiation (cons_sub t s).
-
-Lemma subst_shift_refl :
-  forall Γ Γ' τ σ (v : τ ∈ Γ) (s : tm Γ' σ) (sb : sub Γ Γ'),
-    substitute (| s |) (shift (sb τ v)) = sb τ v.
-Proof with quick.
-  intros.
-  remember (sb τ v).
-  dependent induction t.
-  (* dependent induction H. subst.
-  apply IHinstantiation...
-  unfold compose_sub_sub.
-  eta_expand. *)
-Admitted.
 
 Lemma step__multistep : forall {Γ τ} {t t' : tm Γ τ},
   t --> t' -> t -->* t'.
@@ -389,30 +364,9 @@ Proof with quick.
   - eapply multi_step. apply ST_Snd... assumption.
 Qed.
 
-(* Definition shave_var {X Γ τ σ} (v : @Var X (σ::Γ) τ): @Var X Γ τ.
-Proof with quick.
-  induction (σ::Γ). inversion v.
-  inversion v... subst. apply IHl.
-Admitted.
-
-Lemma multistep_subst : forall Γ Γ' τ σ (t : tm (σ::Γ) τ)
-  (sb : sub Γ Γ') (s' : tm Γ' σ),
-    value s' ->
-      (substitute
-        (compose_sub_sub (| s' |) (substitute_lifted sb)) t) -->*
-      (substitute
-        (fun (σ0 : ty) (v : σ0 ∈ σ :: Γ) => sb σ0 (shave_var v)) t).
-Admitted. *)
-
-(* Lemma subst_cons_sub_compose : forall Γ Γ' τ (s : tm Γ τ) (sb : sub Γ Γ'),
-  compose_sub_sub (| s |) sb =
-    cons_sub s sb.
-Admitted. *)
-
 Lemma subst_R :
   forall {Γ Γ' τ} (t : tm Γ τ) (s : sub Γ Γ'),
     instantiation s ->
-    (* (forall σ (v : Var Γ σ), R σ (s σ v)) -> *)
     R τ (substitute s t).
 Proof with quick.
   intros Γ Γ' τ t s.
@@ -456,10 +410,8 @@ Proof with quick.
     intros.
     pose proof (IHt1 s H) as P1; clear IHt1.
     pose proof (IHt2 s H) as P2; clear IHt2.
-    inversion P1 as [P1' P1'']; clear P1''.
-    inversion P2 as [P2' P2'']; clear P2''.
-    unfold halts in *.
-    destruct P1' as [t1' [Hst1 Hv1]]. destruct P2' as [t2' [Hst2 Hv2]].
+    inversion P1 as [[t1' [Hst1 Hv1]] P1'']; clear P1''.
+    inversion P2 as [[t2' [Hst2 Hv2]] P2'']; clear P2''.
     simpl (substitute s (add Γ t1 t2)).
     pose proof (multistep_preserves_R _ _ P1 Hst1).
     pose proof (multistep_preserves_R _ _ P2 Hst2).
@@ -480,8 +432,8 @@ Proof with quick.
     intros.
     pose proof (IHt1 s H) as H1; clear IHt1.
     pose proof (IHt2 s H) as H2; clear IHt2.
-    pose proof (R_halts H1) as H1'; destruct H1' as [t1' [Hst1 Hv1]].
-    pose proof (R_halts H2) as H2'; destruct H2' as [t2' [Hst2 Hv2]].
+    pose proof (R_halts H1) as [t1' [Hst1 Hv1]].
+    pose proof (R_halts H2) as [t2' [Hst2 Hv2]].
     pose proof (multistep_preserves_R _ _ H1 Hst1).
     pose proof (multistep_preserves_R _ _ H2 Hst2).
     simpl (substitute s (tuple Γ t1 t2)).
@@ -499,10 +451,9 @@ Proof with quick.
     pose proof (IHt s H) as H'.
     pose proof (R_halts H'); destruct H0 as [t' [Hst Hvt]].
     apply value_halts in Hvt.
-    pose proof H' as H''.
-    simpl in H'. destruct H' as [Hh He].
+    pose proof H' as [Hh He].
     destruct He as [Hr [Hs [Hsst [Hvr [Hvs [Hrr Hrs]]]]]].
-    pose proof (multistep_preserves_R _ _ H'' Hsst).
+    pose proof (multistep_preserves_R _ _ H' Hsst).
     assert (Hst''': first Γ' (substitute s t) -->* Hr).
     { eapply multi_trans.
       { apply multistep_First. apply Hsst. }
@@ -513,12 +464,11 @@ Proof with quick.
   { (* Second *)
     intros. simpl.
     pose proof (IHt s H) as H'.
-    pose proof (R_halts H'); destruct H0 as [t' [Hst Hvt]].
+    pose proof (R_halts H') as [t' [Hst Hvt]].
     apply value_halts in Hvt.
-    pose proof H' as H''.
-    simpl in H'. destruct H' as [Hh He].
+    pose proof H' as [Hh He].
     destruct He as [Hr [Hs [Hsst [Hvr [Hvs [Hrr Hrs]]]]]].
-    pose proof (multistep_preserves_R _ _ H'' Hsst).
+    pose proof (multistep_preserves_R _ _ H' Hsst).
     assert (Hst''': second Γ' (substitute s t) -->* Hs).
     { eapply multi_trans.
       { apply multistep_Second. apply Hsst. }
@@ -526,7 +476,7 @@ Proof with quick.
     eapply multistep_preserves_R'.
     2: apply Hst'''.
     induction τ... }
-Admitted.
+Qed.
 
 Theorem normalization :
   forall τ (t : tm [] τ), halts t.
@@ -534,6 +484,6 @@ Proof.
   intros.
   rewrite <- (app_sub_id [] τ t).
   eapply (R_halts).
-  eapply (subst_R t id_sub); eauto.
+  eapply (subst_R t id_sub); quick.
   constructor.
 Qed.

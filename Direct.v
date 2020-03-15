@@ -92,6 +92,12 @@ with denote_closed {τ} (c : Closed τ) : ⟦ τ ⟧ₜ :=
   | clapp τ' σ c1 c2 => (denote_closed c1) (denote_closed c2)
   end.
 
+Fixpoint denote_env' {Γ} (G : Env' Γ) : ⟦ Γ ⟧ₜₓ :=
+  match G with
+  | env'_nil => tt
+  | env'_cons Γ' τ t G' => (denote_tm t tt, denote_env' G')
+  end.
+
 Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   match Γ with
   | [] => fun s ctx => tt
@@ -118,7 +124,7 @@ Qed.
 
 Lemma denote_ren_commutes :
   forall Γ Γ' τ (t : tm Γ τ) (r : ren Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
-    ⟦ t ⟧ₜₘ (denote_ren r ctx) = ⟦rename r t ⟧ₜₘ ctx.
+    ⟦ t ⟧ₜₘ (denote_ren r ctx) = ⟦ rename r t ⟧ₜₘ ctx.
 Proof with eauto.
   intros. generalize dependent Γ'.
   induction t; intros...
@@ -136,30 +142,18 @@ Proof with eauto.
   { simpl. rewrite IHt... }
 Qed.
 
-Lemma denote_ren_pop_elim : forall Γ τ (ctx : ⟦ τ :: Γ ⟧ₜₓ),
-  denote_ren (fun (ρ : ty) (y : ρ ∈ Γ) => Pop Γ ρ τ y) ctx = snd ctx.
+Lemma denote_shift_elim : forall Γ τ σ (t : tm Γ τ) ctx (x : ⟦ σ ⟧ₜ),
+    ⟦ t ⟧ₜₘ ctx = ⟦ shift t ⟧ₜₘ (x, ctx).
 Proof with eauto.
-  induction Γ; simpl; intros...
-  { induction ctx. simpl. induction b... }
-  { apply injective_projections... simpl.
-    unfold tl_ren...
-    rewrite <- IHΓ.
-    admit. }
-Admitted.
-
-Lemma denote_shift_elim : forall Γ τ σ (t : tm Γ τ) ctx x,
-  ⟦ t ⟧ₜₘ ctx = ⟦ shift (σ:=σ) t ⟧ₜₘ (x, ctx).
-Proof with eauto.
-  induction t; intros; simpl...
-  { rewrite IHt1 with (x:=x).
-    rewrite IHt2 with (x:=x)... }
-  { apply functional_extensionality. intros.
-    rewrite <- denote_ren_commutes. simpl.
-    rewrite <- denote_ren_elim. rewrite denote_ren_pop_elim... }
-  { erewrite IHt1. erewrite IHt2... }
-  { erewrite IHt1. erewrite IHt2... }
-  { erewrite IHt... }
-  { erewrite IHt... }
+  unfold shift. intros.
+  rewrite <- denote_ren_commutes...
+  pose proof denote_ren_elim.
+  specialize H with Γ Γ σ (fun t x => x) x ctx.
+  unfold tl_ren in H.
+  simpl in H. rewrite <- H.
+  fold (@id_ren Γ).
+  rewrite denote_ren_commutes...
+  rewrite app_ren_id...
 Qed.
 
 Lemma denote_sub_elim : forall Γ Γ' τ
@@ -176,21 +170,15 @@ Qed.
 Lemma denote_sub_commutes :
   forall Γ Γ' τ (t : tm Γ τ) (s : sub Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
     ⟦ t ⟧ₜₘ (denote_sub s ctx) = ⟦ substitute s t ⟧ₜₘ ctx.
-Proof with eauto.
+Proof with quick.
   intros. generalize dependent Γ'.
-  induction t; intros...
+  induction t; intros; rewrites...
   { simpl. induction v...
     intros. simpl. rewrite IHv... }
-  { simpl. rewrite IHt1. rewrite IHt2... }
-  { specialize IHt with (s:=substitute_lifted s).
-    simpl in IHt. rewrite -> substitute_abs.
-    simpl. apply functional_extensionality.
-    intros. rewrite <- IHt. simpl.
+  { specialize IHt with (s:=substitute_lifted s)...
+    apply functional_extensionality...
+    rewrite <- IHt...
     erewrite denote_sub_elim... }
-  { simpl. rewrite IHt1. rewrite IHt2... }
-  { simpl. rewrite IHt1. rewrite IHt2... }
-  { simpl. rewrite IHt... }
-  { simpl. rewrite IHt... }
 Qed.
 
 (* Defined in section 5 *)
@@ -217,45 +205,31 @@ Fixpoint S τ : Gl τ (Dt τ)
 *)
 Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
   := match τ with
-     | Real => fun (f : R -> R) (g : R -> R * R) =>
-          (forall (x : R), ex_derive f x) /\
-            (fun r => g r) = (fun r => (f r, Derive f r))
-     | σ × ρ => fun f g =>
-        exists f1 f2 g1 g2 (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
-            (f = fun r => (f1 r, g1 r)) /\
-            (g = fun r => (f2 r, g2 r))
-     | σ → ρ => fun f g =>
-        forall g1 g2 (sσ : S σ g1 g2),
-          S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x))
-     end.
+    | Real => fun (f : R -> R) (g : R -> R * R) =>
+      (forall (x : R), ex_derive f x) /\
+        (fun r => g r) = (fun r => (f r, Derive f r))
+    | σ × ρ => fun f g =>
+      exists f1 f2 g1 g2 (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
+        (f = fun r => (f1 r, g1 r)) /\
+        (g = fun r => (f2 r, g2 r))
+    | σ → ρ => fun f g =>
+      (* ?? *)
+      forall g1 g2 (sσ : S σ g1 g2),
+        S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x))
+    end.
 
 Inductive instantiation :
-  forall {Γ Γ'}, sub Γ Γ' -> (R -> Env Γ') -> Prop :=
-  | inst_empty : forall f, @instantiation [] [] id_sub f
-  | inst_const : forall Γ Γ' (t : tm Γ' Real) (s : sub Γ Γ') (f : R -> Env Γ'),
+  forall {Γ Γ'}, sub Γ Γ' -> (R -> Env' Γ') -> Prop :=
+  | inst_empty : forall {f}, @instantiation [] [] id_sub f
+  | inst_cons : forall {Γ Γ'} {t : tm Γ' Real} {s : sub Γ Γ'} {f : R -> Env' Γ'},
       instantiation s f ->
-      (S Real (⟦t⟧ₜₘ ∘ denote_env ∘ f)
-        (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
+      (S Real (⟦t⟧ₜₘ ∘ denote_env' ∘ f)
+        (⟦Dtm t⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ f)) ->
       instantiation (cons_sub t s) f.
-
-Lemma subst_shift_refl :
-  forall Γ Γ' τ σ (v : τ ∈ Γ) (s : tm Γ' σ) (sb : sub Γ Γ'),
-    substitute (| s |) (shift (sb τ v)) = sb τ v.
-Proof with quick.
-  intros.
-  remember (sb τ v).
-  dependent induction t.
-  (* dependent induction H. subst.
-  apply IHinstantiation...
-  unfold compose_sub_sub.
-  eta_expand. *)
-Admitted.
 
 Lemma S_cong : forall τ f1 f2 g1 g2,
   S τ f1 f2 -> g1 = f1 -> g2 = f2 -> S τ g1 g2.
-Proof.
-intros. subst. assumption.
-Qed.
+Proof. intros. subst. assumption. Qed.
 
 (*
   Plain words:
@@ -263,17 +237,12 @@ Qed.
     assignment in the context is in the relation S, applying the substitutions
     to the term t is also in the relation S.
 *)
-Lemma fundamental_lemma :
-  forall Γ Γ' τ g
+Lemma fundamental :
+  forall Γ Γ' τ f
     (t : tm Γ τ) (sb : sub Γ Γ'),
-
-  instantiation sb g ->
-  (* (forall σ (v : Var Γ σ) f,
-    S σ (⟦ sb _ v ⟧ₜₘ ∘ denote_env ∘ f)
-      (⟦ Dtm (sb _ v) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) -> *)
-
-  S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g)
-    (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
+  instantiation sb f ->
+  S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env' ∘ f)
+    (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ f).
 Proof with quick.
   intros Γ Γ' τ g t sb H.
   generalize dependent Γ'.
@@ -290,18 +259,17 @@ Proof with quick.
     pose proof (IHt2 H) as IHt2'; clear IHt2.
     simpl in *. apply IHt1'... }
   { (* Abs *)
-    simpl. intros.
-    pose proof (IHt Γ' g).
-    dependent destruction H; subst.
-    { rewrite lift_sub_id.
-      rewrite app_sub_id.
-      (* rewrite app_sub_id. *)
-      admit. }
-    (* pose proof (IHt _ _
-      (compose_sub_sub (substitute_lifted id_sub)
-      id_sub)) as H'. *)
-    (* destruct H0. subst. *)
-    admitted. }
+    quick.
+    dependent induction H.
+    (* eapply S_cong; try apply IHt.
+  2:apply functional_extensionality...
+  2:rewrite <- 2 denote_sub_commutes.
+  3:apply functional_extensionality...
+    pose proof (inst_cons H sσ).
+    dependent induction H.
+    rewrite lift_sub_id...
+    rewrite app_sub_id... *)
+    admit. }
   { (* Const *)
     quick. split.
     { intros. apply ex_derive_const. }
@@ -325,10 +293,10 @@ Proof with quick.
     simpl. intros.
     pose proof (IHt1 Γ' g sb H) as H1'; clear IHt1.
     pose proof (IHt2 Γ' g sb H) as H2'; clear IHt2.
-    exists (⟦ substitute sb t1 ⟧ₜₘ ∘ denote_env ∘ g).
-    exists (⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
-    exists (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g).
-    exists (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)... }
+    exists (⟦ substitute sb t1 ⟧ₜₘ ∘ denote_env' ∘ g).
+    exists (⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ g).
+    exists (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env' ∘ g).
+    exists (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ g)... }
   { (* Projection 1 *)
     intros.
     specialize IHt with Γ' g sb.
@@ -373,11 +341,6 @@ Lemma S_correct_prod :
               (⟦ Dtm s ⟧ₜₘ (denote_env (Denv (f r))))).
 Proof. quick. Qed.
 
-Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
-  induction Γ. constructor.
-  inversion G. assumption.
-Defined.
-
 Theorem semantic_correct_R :
   forall (t : tm [] Real) (f : R -> Env []),
   (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) =
@@ -387,6 +350,6 @@ Proof with quick.
   intros.
   rewrite <- (app_sub_id [] Real t).
   apply S_correct_R.
-  apply (fundamental_lemma _ _ _ _ t id_sub).
+  apply (fundamental _ _ _ _ t id_sub).
   constructor.
 Qed.

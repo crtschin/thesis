@@ -60,6 +60,12 @@ with Dclosed {τ} (c : Closed τ) : Closed (Dt τ) :=
   | clapp c1 c2 => clapp (Dclosed c1) (Dclosed c2)
   end.
 
+Program Fixpoint Denv' {Γ} (G : Env' Γ) : Env' (Dctx Γ) :=
+  match G with
+  | env'_nil => env'_nil
+  | env'_cons c G' => env'_cons (Dtm c) (Denv' G')
+  end.
+
 Lemma Dt_lift_var : forall Γ τ, τ ∈ Γ -> (Dt τ) ∈ (map Dt Γ).
 Proof with eauto.
   intros Γ τ H. induction H; constructor. assumption.
