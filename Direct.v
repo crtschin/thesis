@@ -5,7 +5,6 @@ Require Import Strings.String.
 Require Import Relations.
 Require Import Logic.JMeq.
 Require Import Reals.
-Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
 Require Import Arith_base.
@@ -213,8 +212,15 @@ Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
         (f = fun r => (f1 r, g1 r)) /\
         (g = fun r => (f2 r, g2 r))
     | σ → ρ => fun f g =>
-      (* ?? *)
-      forall g1 g2 (sσ : S σ g1 g2),
+      (* In the proof sσ is opaque, I only have access to the resulting
+        denotated functions g1 and g2 not the term g1 and g2 are created from.
+      *)
+      (* exists Γ, *)
+      (* Γ h (t : tm Γ σ)  *)
+      forall g1 g2
+        (sσ : S σ g1 g2),
+        (* g1 = (⟦t⟧ₜₘ ∘ denote_env' ∘ h) ->
+        g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ h) -> *)
         S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x))
     end.
 
@@ -229,7 +235,7 @@ Inductive instantiation :
 
 Lemma S_cong : forall τ f1 f2 g1 g2,
   S τ f1 f2 -> g1 = f1 -> g2 = f2 -> S τ g1 g2.
-Proof. intros. subst. assumption. Qed.
+Proof. intros; subst; assumption. Qed.
 
 (*
   Plain words:
@@ -256,11 +262,33 @@ Proof with quick.
     intros.
     specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
-    pose proof (IHt2 H) as IHt2'; clear IHt2.
-    simpl in *. apply IHt1'... }
+    pose proof (IHt2 H) as IHt2'; clear IHt2...
+    (* destruct IHt1' as [Γ'' IHt1']. *)
+    eapply IHt1'...
+    { apply functional_extensionality... unfold compose... }
+    { unfold compose... } }
   { (* Abs *)
-    quick.
+    quick; subst...
+
     dependent induction H.
+    { rewrite lift_sub_id.
+      rewrite 1 app_sub_id.
+      eapply (IHt).
+      admit. }
+    { admit. }
+
+    eapply (IHt Γ' g (cons_sub t0 sb)).
+
+    exists Γ'...
+    pose proof (IHt Γ' g (cons_sub t0 sb)); subst.
+    dependent induction H.
+    { rewrite lift_sub_id.
+      rewrite 1 app_sub_id.
+      admit. }
+    { admit. }
+    apply H2.
+    apply IHt.
+
     (* eapply S_cong; try apply IHt.
   2:apply functional_extensionality...
   2:rewrite <- 2 denote_sub_commutes.
@@ -268,8 +296,7 @@ Proof with quick.
     pose proof (inst_cons H sσ).
     dependent induction H.
     rewrite lift_sub_id...
-    rewrite app_sub_id... *)
-    admit. }
+    rewrite app_sub_id... *) }
   { (* Const *)
     quick. split.
     { intros. apply ex_derive_const. }

@@ -14,12 +14,11 @@ Open Scope type_scope.
 Parameter Derived :
   forall {X : Type}, X -> Prop.
 
-Axiom T : forall X Y (f : X -> Y), Derived (X -> Y).
-Parameter Tx : forall {X Y} (f : X -> Y) (x : X), T f.
-Axiom T_fun : forall {X Y : Type} (f : X -> Y),
-  T f = (T X -> T Y).
-Axiom T_prod : forall {X Y W V : Type},
-  T (X, Y) = @pair W V (T X) (T Y).
+Axiom T : forall X (x : X), Derived x.
+(* Axiom T_fun : forall {X Y : Type} (f : X -> Y),
+  T f = (T X -> T Y). *)
+Axiom T_prod : forall {X Y W V : Type} (p : X * Y),
+  T p = pair (T (fst p)) (T (snd p)).
 Axiom T_sum : forall {X Y: Type},
   T (sum X Y) = sum (T X) (T Y).
 Axiom T_comp : forall {X Y Z W V} (f : X -> Y) (g : Y -> Z),

@@ -34,6 +34,7 @@ Hint Constructors value : ad.
 
 Reserved Notation "t1 --> t2" (at level 40).
 Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
+  (* Base STLC *)
   | ST_AppAbs : forall Γ τ σ t1' v2,
     value v2 ->
       (app Γ τ σ (abs Γ τ σ t1') v2) --> (substitute (| v2 |) t1')
@@ -390,7 +391,6 @@ Proof with quick.
       pose proof (R_halts Hrs) as [s' [Hst Hs']].
       pose proof (multistep_preserves_R s s' Hrs Hst) as Hrs'.
       pose proof (IHt (cons_sub s' sb)) as H'.
-      simpl in H'.
       eapply multistep_preserves_R'.
       apply H'.
       { constructor... }
@@ -398,7 +398,8 @@ Proof with quick.
         eapply multistep_AppAbs...
         rewrite <- app_sub_sub.
         assert
-          (H'': (compose_sub_sub (| s' |) (substitute_lifted sb)) = cons_sub s' sb).
+          (H'': (compose_sub_sub (| s' |) (substitute_lifted sb))
+            = cons_sub s' sb).
         { unfold compose_sub_sub.
           repeat (apply functional_extensionality_dep; intros).
           dependent induction x0...

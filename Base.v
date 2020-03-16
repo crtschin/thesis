@@ -10,6 +10,11 @@ Require Import Program.Equality.
 
 (*
 Questions:
+(* Equations *)
+(* Opaque substitute_lifted *)
+(* Sum types *)
+
+
 - I make use of functions (R -> Env Γ) in statements about the relation as the
   relations are over (R -> ⟦ τ ⟧ₜ), per the paper, and terms have the
   denotation (⟦Γ⟧ₜₓ -> ⟦ τ ⟧ₜ). The missing chain I fill with (Env Γ -> ⟦Γ⟧ₜₓ).
@@ -21,6 +26,10 @@ Questions:
   I tried to formulate this as the inductive data type "instantation" that
   essentially requires a substitution to be build such that every element being
   applied is of type Real and in the relation. I think this is also in the paper as the requirement (x_1 : real, ..., x_n : real ⊢ t : real).
+
+- I've been using closed expressions and empty contexts interchangeably,
+  considering using a variable requires a corresponding proof in the context I
+  don't think this is a problem?
 
 Notational conventions:
   capital greeks for typing environment
