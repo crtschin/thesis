@@ -11,11 +11,13 @@ Require Import Arith_base.
 Require Import Coquelicot.Derive.
 Require Import Coquelicot.Continuity.
 Require Import Coquelicot.Hierarchy.
+Require Import Equations.Equations.
 Import EqNotations.
 
 Require Import AD.Definitions.
 Require Import AD.Macro.
 Require Import AD.Tactics.
+Require Import AD.Normalization.
 (* Require Import AD.Tangent. *)
 
 Local Open Scope program_scope.
@@ -44,6 +46,7 @@ Fixpoint denote_t τ : Set :=
   | Real => R
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
+  | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ
   end
 where "⟦ τ ⟧ₜ" := (denote_t τ).
 
@@ -75,6 +78,14 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
   | tuple σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx)
   | first σ ρ t => fun ctx => fst (⟦t⟧ₜₘ ctx)
   | second σ ρ t => fun ctx => snd (⟦t⟧ₜₘ ctx)
+
+  | case τ σ ρ e c1 c2 => fun ctx =>
+    match (⟦e⟧ₜₘ ctx) with
+    | Datatypes.inl x => (⟦c1⟧ₜₘ ctx) x
+    | Datatypes.inr x => (⟦c2⟧ₜₘ ctx) x
+    end
+  | inl τ σ e => fun ctx => Datatypes.inl (⟦e⟧ₜₘ ctx)
+  | inr τ σ e => fun ctx => Datatypes.inr (⟦e⟧ₜₘ ctx)
   end
 where "⟦ t ⟧ₜₘ" := (denote_tm t).
 
@@ -139,6 +150,9 @@ Proof with eauto.
   { simpl. rewrite IHt1. rewrite IHt2... }
   { simpl. rewrite IHt... }
   { simpl. rewrite IHt... }
+  { simpl. rewrite IHt1. rewrite IHt2... rewrite IHt3... }
+  { simpl. rewrite IHt... }
+  { simpl. rewrite IHt... }
 Qed.
 
 Lemma denote_shift_elim : forall Γ τ σ (t : tm Γ τ) ctx (x : ⟦ σ ⟧ₜ),
@@ -180,10 +194,54 @@ Proof with quick.
     erewrite denote_sub_elim... }
 Qed.
 
+Lemma denote_sub_id : forall Γ τ (t : tm Γ τ) (ctx : ⟦ Γ ⟧ₜₓ),
+  ⟦ t ⟧ₜₘ (denote_sub id_sub ctx) = ⟦ t ⟧ₜₘ ctx.
+Proof with quick.
+  intros.
+  rewrite denote_sub_commutes...
+  rewrite app_sub_id...
+Qed.
+
+Lemma denote_sub_tl : forall Γ Γ' τ (sb : sub (τ::Γ) Γ')
+    (ctx : ⟦ Γ' ⟧ₜₓ),
+  denote_sub (tl_sub sb) ctx = snd (denote_sub sb ctx).
+Proof. quick. Qed.
+
+Lemma denote_sub_id' : forall Γ (ctx : ⟦ Γ ⟧ₜₓ),
+  denote_sub id_sub ctx = ctx.
+Proof with quick.
+  intros Γ. intros.
+  dependent induction Γ.
+  { destruct ctx... }
+  { destruct ctx as [x ctx]...
+    unfold denote_sub.
+    unfold id_sub.
+    (* pose proof (IHΓ Γ eq_refl JMeq_refl). *)
+    apply injective_projections...
+    rewrite denote_sub_tl.
+    rewrite IHΓ...
+    unfold id_sub.
+    simpl. admit. }
+Admitted.
+
+Lemma denote_sub_cons : forall Γ τ σ s
+    (t : tm (σ :: Γ) τ) (ctx : ⟦ Γ ⟧ₜₓ),
+  ⟦ t ⟧ₜₘ (⟦ s ⟧ₜₘ ctx, ctx) = ⟦ substitute (| s |) t ⟧ₜₘ ctx.
+Proof with quick.
+  intros. unfold id_sub.
+  rewrite <- denote_sub_commutes...
+  unfold hd_sub...
+  unfold tl_sub...
+  assert (id_sub = (fun (σ0 : ty) (x : σ0 ∈ Γ) => var Γ σ0 x)).
+  { unfold id_sub. apply functional_extensionality_dep... }
+  rewrite <- H; clear H.
+  rewrite denote_sub_id'...
+Qed.
+
 (* Defined in section 5 *)
-Record Gl τ σ := make_gl {
+(* Record Gl τ σ := make_gl {
   Gl_P : (R -> ⟦τ⟧ₜ) -> (R -> ⟦σ⟧ₜ) -> Prop;
-}.
+}. *)
 (*
 Fixpoint S τ : Gl τ (Dt τ)
   := make_gl τ (Dt τ)
@@ -221,7 +279,31 @@ Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
         g1 = (⟦t⟧ₜₘ ∘ denote_env' ∘ h) ->
         g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ h) ->
         S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x))
+    | σ <+> ρ => fun f g =>
+      forall g1 g2 h1 h2 x,
+      S σ g1 g2 ->
+      S ρ h1 h2 ->
+        (match f x with
+        | Datatypes.inl s => s = g1 x
+        | Datatypes.inr r => r = h1 x
+        end) /\
+        (match g x with
+        | Datatypes.inl s => s = g2 x
+        | Datatypes.inr r => r = h2 x
+        end)
     end.
+
+Theorem Soundness : forall Γ τ (t t' : tm Γ τ),
+  (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
+Proof with quick.
+  intros.
+  dependent induction H...
+  rewrite <- IHmulti.
+  dependent induction H;
+    extensionality ctx; quick;
+    try (erewrite IHstep; constructor).
+  rewrite denote_sub_cons...
+Qed.
 
 (*
 Inductive instantiation :
@@ -291,7 +373,7 @@ Proof with quick.
     destruct IHt1' as [Γ'' [h IHt1']].
     eapply IHt1'...
     admit.
-
+    admit.
     (* specialize IHt1' with
       (⟦ t ⟧ₜₘ ∘ denote_env' ∘ h)
       (⟦ Dtm t ⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ h).
@@ -392,6 +474,9 @@ Proof with quick.
     pose proof (equal_f H2') as H2; clear H2'.
     rewrite H1...
     rewrite H2... }
+  { (* Case *)
+    intros. simpl.
+  }
 Admitted.
 
 Lemma S_correct_R :

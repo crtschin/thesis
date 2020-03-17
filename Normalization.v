@@ -9,8 +9,8 @@ Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 Require Reals.
 
-From AD Require Import Definitions.
 From AD Require Import Tactics.
+From AD Require Import Definitions.
 
 (*
   Strong Normalization
@@ -91,14 +91,14 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       e --> e' ->
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e' t1 t2)
   | ST_Case1 : forall Γ τ σ ρ (t2 : tm Γ (σ → ρ))
-        (t1 t1' : tm Γ (τ → ρ)) (e e' : tm Γ (τ ! σ)),
+        (t1 t1' : tm Γ (τ → ρ)) (e e' : tm Γ (τ <+> σ)),
       (* (@inl Γ τ σ e --> @inl Γ τ σ e') -> *)
       (* (@inl Γ τ σ e --> @inl Γ τ σ e') -> *)
       value e ->
       (t1 --> t1') ->
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e t1' t2)
   | ST_Case2 : forall Γ τ σ ρ (t2 t2' : tm Γ (σ → ρ))
-        (t1 : tm Γ (τ → ρ)) (e e' : tm Γ (τ ! σ)),
+        (t1 : tm Γ (τ → ρ)) (e e' : tm Γ (τ <+> σ)),
       (* (@inr Γ τ σ e --> @inr Γ τ σ e') -> *)
       (* value e' -> *)
       (* (@inr Γ τ σ e --> @inr Γ τ σ e') -> *)
@@ -128,25 +128,25 @@ where "t  -->  v" := (step t v).
 
 (* From software foundations vol.2 *)
 Definition relation (X : Type) := X -> X -> Prop.
-Inductive multi {X : Type} (R : relation X) : relation X :=
-  | multi_refl : forall {x : X}, multi R x x
+Inductive multi {X : Type} (Rel : relation X) : relation X :=
+  | multi_refl : forall {x : X}, multi Rel x x
   | multi_step : forall {x y z : X},
-      R x y ->
-      multi R y z ->
-      multi R x z.
+      Rel x y ->
+      multi Rel y z ->
+      multi Rel x z.
 Definition multistep {Γ τ} := multi (@step Γ τ).
 Notation "t1 '-->*' t2" := (multistep t1 t2) (at level 40).
-Definition normal_form {X : Type} (R : relation X) (t : X) : Prop :=
-  ~ exists t', R t t'.
-Theorem multi_R : forall (X : Type) (R : relation X) (x y : X),
-  R x y -> (multi R) x y.
+Definition normal_form {X : Type} (Rel : relation X) (t : X) : Prop :=
+  ~ exists t', Rel t t'.
+Theorem multi_R : forall (X : Type) (Rel : relation X) (x y : X),
+  Rel x y -> (multi Rel) x y.
 Proof with quick. intros. econstructor... econstructor... Qed.
-Theorem multi_trans : forall {X : Type} {R : relation X} {x y z : X},
-  multi R x y -> multi R y z -> multi R x z.
+Theorem multi_trans : forall {X : Type} {Rel : relation X} {x y z : X},
+  multi Rel x y -> multi Rel y z -> multi Rel x z.
 Proof with quick. intros. induction H... apply multi_step with y... Qed.
 Notation step_normal_form := (normal_form step).
-Definition deterministic {X : Type} (R : relation X) :=
-  forall x y1 y2 : X, R x y1 -> R x y2 -> y1 = y2.
+Definition deterministic {X : Type} (Rel : relation X) :=
+  forall x y1 y2 : X, Rel x y1 -> Rel x y2 -> y1 = y2.
 Definition halts {Γ τ} (t:tm Γ τ) : Prop := exists t', t -->* t' /\  value t'.
 
 Lemma value__normal : forall Γ τ (t : tm Γ τ), value t -> step_normal_form t.
@@ -245,7 +245,7 @@ Proof.
   assumption.
 Qed.
 
-Program Fixpoint R τ {Γ} (t : tm Γ τ): Prop :=
+Program Fixpoint Rel τ {Γ} (t : tm Γ τ): Prop :=
   halts t /\
   (match τ with
    | Real => True
@@ -254,21 +254,21 @@ Program Fixpoint R τ {Γ} (t : tm Γ τ): Prop :=
         t -->* tuple Γ r s /\
         value r /\
         value s /\
-        R τ1 r /\ R τ2 s)
+        Rel τ1 r /\ Rel τ2 s)
    | τ1 → τ2 =>
-      (forall (s : tm Γ τ1), R τ1 s -> R τ2 (app Γ τ2 τ1 t s))
-   | τ1 ! τ2 =>
+      (forall (s : tm Γ τ1), Rel τ1 s -> Rel τ2 (app Γ τ2 τ1 t s))
+   | τ1 <+> τ2 =>
       ((exists (r : tm Γ τ1),
-        t -->* @inl Γ τ1 τ2 r /\ value r /\ R τ1 r) \/
+        t -->* @inl Γ τ1 τ2 r /\ value r /\ Rel τ1 r) \/
       (exists (s : tm Γ τ2),
-        t -->* @inr Γ τ1 τ2 s /\ value s /\ R τ2 s))
+        t -->* @inr Γ τ1 τ2 s /\ value s /\ Rel τ2 s))
    end).
 
-Lemma R_halts : forall {Γ τ} {t : tm Γ τ}, R τ t -> halts t.
+Lemma R_halts : forall {Γ τ} {t : tm Γ τ}, Rel τ t -> halts t.
 Proof.
   intros.
   dependent destruction τ;
-    unfold R in H; inversion H; assumption.
+    unfold Rel in H; inversion H; assumption.
 Qed.
 
 Lemma step_preserves_halting :
@@ -288,7 +288,7 @@ Proof.
 Qed.
 
 Lemma step_preserves_R :
-  forall {Γ τ} (t t' : tm Γ τ), R τ t -> (t --> t') -> R τ t'.
+  forall {Γ τ} (t t' : tm Γ τ), Rel τ t -> (t --> t') -> Rel τ t'.
 Proof with quick.
   intros Γ τ.
   generalize dependent Γ.
@@ -327,7 +327,7 @@ Proof with quick.
 Qed.
 
 Lemma multistep_preserves_R :
-  forall {Γ τ} (t t' : tm Γ τ), R τ t -> (t -->* t') -> R τ t'.
+  forall {Γ τ} (t t' : tm Γ τ), Rel τ t -> (t -->* t') -> Rel τ t'.
 Proof with quick.
   intros Γ τ t t' H Hst.
   dependent induction Hst...
@@ -335,7 +335,7 @@ Proof with quick.
 Qed.
 
 Lemma step_preserves_R' :
-  forall {Γ τ} (t t' : tm Γ τ), R τ t' -> (t --> t') -> R τ t.
+  forall {Γ τ} (t t' : tm Γ τ), Rel τ t' -> (t --> t') -> Rel τ t.
 Proof with quick.
   intros Γ τ.
   generalize dependent Γ.
@@ -363,7 +363,7 @@ Proof with quick.
 Qed.
 
 Lemma multistep_preserves_R' :
-  forall {Γ τ} (t t' : tm Γ τ), R τ t' -> (t -->* t') -> R τ t.
+  forall {Γ τ} (t t' : tm Γ τ), Rel τ t' -> (t -->* t') -> Rel τ t.
 Proof with quick.
   intros Γ τ t t' H Hst.
   dependent induction Hst...
@@ -373,7 +373,7 @@ Qed.
 Inductive instantiation : forall {Γ Γ'}, sub Γ Γ' -> Prop :=
   | inst_empty : @instantiation [] [] id_sub
   | inst_const : forall Γ Γ' τ (t : tm Γ' τ) (s : sub Γ Γ'),
-      value t -> R τ t ->
+      value t -> Rel τ t ->
       instantiation s ->
       instantiation (cons_sub t s).
 
@@ -521,7 +521,7 @@ Qed.
 Lemma subst_R :
   forall {Γ Γ' τ} (t : tm Γ τ) (s : sub Γ Γ'),
     instantiation s ->
-    R τ (substitute s t).
+    Rel τ (substitute s t).
 Proof with quick.
   intros Γ Γ' τ t s.
   generalize dependent Γ.
@@ -595,7 +595,7 @@ Proof with quick.
     { eapply multi_trans.
       { apply multistep_Tuple1... }
       { apply multistep_Tuple2... } }
-    unfold R. fold R. split.
+    unfold Rel. fold Rel. split.
     { unfold halts.
       exists (tuple Γ' t1' t2')... }
     { intros. exists t1'. exists t2'.
@@ -670,7 +670,7 @@ Proof with quick.
     destruct H' as [t' [Hst Hv]].
     split...
     { econstructor.
-      split... apply multistep_Inl...}
+      split... apply multistep_Inl... }
     { left. exists t'.
       splits...
       apply multistep_Inl...

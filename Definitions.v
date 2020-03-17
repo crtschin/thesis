@@ -21,7 +21,7 @@ Inductive ty : Type :=
 .
 
 Notation "A × B" := (Prod A B) (left associativity, at level 90).
-Notation "A ! B" := (Sum A B) (left associativity, at level 90).
+Notation "A <+> B" := (Sum A B) (left associativity, at level 90).
 Notation "A → B" := (Arrow A B) (right associativity, at level 20).
 
 (* STLC with well-typed well-scoped debruijn *)
@@ -36,6 +36,8 @@ Inductive Var {T : Type} : list T -> T -> Type :=
   | Top : forall Γ τ, Var (τ::Γ) τ
   | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ
 .
+Derive Signature for Var.
+
 
 Notation "x ∈ Γ" := (Var Γ x) (at level 75).
 
@@ -62,12 +64,12 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | first : forall {τ σ}, tm Γ (τ × σ) -> tm Γ τ
   | second : forall {τ σ}, tm Γ (τ × σ) -> tm Γ σ
 
-  | case : forall {τ σ ρ}, tm Γ (τ ! σ) ->
+  | case : forall {τ σ ρ}, tm Γ (τ <+> σ) ->
     tm Γ (τ → ρ) ->
     tm Γ (σ → ρ) ->
     tm Γ ρ
-  | inl : forall {τ σ}, tm Γ τ -> tm Γ (τ ! σ)
-  | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ ! σ)
+  | inl : forall {τ σ}, tm Γ τ -> tm Γ (τ <+> σ)
+  | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
 (* Closed terms *)
@@ -164,6 +166,9 @@ Program Definition cons_sub {Γ Γ' τ}
     | Top _ _ => e
     | Pop _ _ _ v' => s σ v'
     end.
+(* Equations cons_sub {Γ Γ' τ} (e: tm Γ' τ) (s: sub Γ Γ') : sub (τ::Γ) Γ' :=
+cons_sub e s τ (Top _ _) := e;
+cons_sub e s σ (Pop _ _ _ v) := s _ v. *)
 
 Notation "| a ; .. ; b |" :=
   (cons_sub a  .. ( cons_sub b id_sub) .. )

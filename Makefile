@@ -40,7 +40,7 @@ CAMLFLAGS         := $(COQMF_CAMLFLAGS)
 HASNATDYNLINK     := $(COQMF_HASNATDYNLINK)
 OCAMLWARN         := $(COQMF_WARN)
 
-CoqMakefile.conf: 
+CoqMakefile.conf:
 	coq_makefile -Q . AD Base.v Definitions.v Diffeology.v Direct.v Macro.v Normalization.v Semantics.v Tactics.v Tangent.v
 
 # This file can be created by the user to hook into double colon rules or
@@ -395,7 +395,7 @@ quick2vo:
 	$(HIDE)make -j $(J) quick
 	$(HIDE)VIOFILES=$$(for vofile in $(VOFILES); do \
 	  viofile="$$(echo "$$vofile" | sed "s/\.vo$$/.vio/")"; \
-	  if [ "$$vofile" -ot "$$viofile" -o ! -e "$$vofile" ]; then printf "$$viofile "; fi; \
+	  if [ "$$vofile" -ot "$$viofile" -o ++ -e "$$vofile" ]; then printf "$$viofile "; fi; \
 	done); \
 	echo "VIO2VO: $$VIOFILES"; \
 	if [ -n "$$VIOFILES" ]; then \
@@ -470,7 +470,7 @@ beautify: $(BEAUTYFILES)
 
 install:
 	$(HIDE)code=0; for f in $(FILESTOINSTALL); do\
-	 if ! [ -f "$$f" ]; then >&2 echo $$f does not exist; code=1; fi \
+	 if ++ [ -f "$$f" ]; then >&2 echo $$f does not exist; code=1; fi \
 	done; exit $$code
 	$(HIDE)for f in $(FILESTOINSTALL); do\
 	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`";\

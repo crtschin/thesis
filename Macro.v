@@ -20,7 +20,7 @@ Fixpoint Dt τ : ty :=
   | Real => Real × Real
   | t1 × t2 => Dt t1 × Dt t2
   | t1 → t2 => Dt t1 → Dt t2
-  | t1 ! t2 => Dt t1 ! Dt t2
+  | t1 <+> t2 => Dt t1 <+> Dt t2
   end.
 
 Definition Dctx Γ : Ctx := map Dt Γ.
