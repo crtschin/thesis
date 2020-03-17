@@ -13,7 +13,8 @@ Questions:
 (* Equations *)
 (* Opaque substitute_lifted *)
 (* Sum types *)
-
+(* Denotational instantiation *)
+(* Use D_sub? *)
 
 - I make use of functions (R -> Env Γ) in statements about the relation as the
   relations are over (R -> ⟦ τ ⟧ₜ), per the paper, and terms have the

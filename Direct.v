@@ -215,27 +215,52 @@ Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
       (* In the proof sσ is opaque, I only have access to the resulting
         denotated functions g1 and g2 not the term g1 and g2 are created from.
       *)
-      (* exists Γ, *)
-      (* Γ h (t : tm Γ σ)  *)
-      forall g1 g2
-        (sσ : S σ g1 g2),
-        (* g1 = (⟦t⟧ₜₘ ∘ denote_env' ∘ h) ->
-        g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ h) -> *)
+      exists Γ h,
+      forall (t : tm Γ σ),
+      forall g1 g2 (sσ : S σ g1 g2),
+        g1 = (⟦t⟧ₜₘ ∘ denote_env' ∘ h) ->
+        g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ h) ->
         S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x))
     end.
+
+(*
+Inductive instantiation :
+  forall {Γ Γ'}, (⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ) -> Prop :=
+  | inst_empty : @instantiation [] [] (denote_sub id_sub)
+  | inst_cons : forall {Γ Γ' τ} {sb : sub Γ Γ'} {g1 g2},
+      instantiation (denote_sub sb) ->
+      (S τ g1 g2) ->
+      instantiation (denote_sub (substitute_lifted (τ:=τ) sb)).
+*)
 
 Inductive instantiation :
   forall {Γ Γ'}, sub Γ Γ' -> (R -> Env' Γ') -> Prop :=
   | inst_empty : forall {f}, @instantiation [] [] id_sub f
-  | inst_cons : forall {Γ Γ'} {t : tm Γ' Real} {s : sub Γ Γ'} {f : R -> Env' Γ'},
+  | inst_cons : forall {Γ Γ' τ} {t : tm Γ' τ} {s : sub Γ Γ'} {f : R -> Env' Γ'},
       instantiation s f ->
-      (S Real (⟦t⟧ₜₘ ∘ denote_env' ∘ f)
+      (S τ (⟦t⟧ₜₘ ∘ denote_env' ∘ f)
         (⟦Dtm t⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ f)) ->
       instantiation (cons_sub t s) f.
 
 Lemma S_cong : forall τ f1 f2 g1 g2,
   S τ f1 f2 -> g1 = f1 -> g2 = f2 -> S τ g1 g2.
 Proof. intros; subst; assumption. Qed.
+
+Lemma S_substitute_lifted :
+  forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (sb: sub Γ Γ') g g1 g2,
+  S σ g1 g2 ->
+  (exists (s : tm Γ' σ), S τ
+    (⟦substitute (cons_sub s sb) t⟧ₜₘ ∘ denote_env' ∘ g)
+    (⟦Dtm (substitute (cons_sub s sb) t) ⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ g)) ->
+  S τ
+    (fun r => ⟦substitute (substitute_lifted (τ:=σ) sb) t⟧ₜₘ
+      (g1 r, (denote_env' (g r))))
+    (fun r => ⟦Dtm (substitute (substitute_lifted (τ:=σ) sb) t) ⟧ₜₘ
+      (g2 r, (denote_env' (Denv' (g r))))).
+Proof with quick.
+  quick...
+  destruct H0 as [s H'].
+Admitted.
 
 (*
   Plain words:
@@ -256,29 +281,48 @@ Proof with quick.
   dependent induction t; unfold compose in *.
   { (* Var *)
     intros.
-    dependent induction H. inversion v.
+    dependent induction H... inversion v.
     dependent destruction v; subst... }
   { (* App *)
     intros.
     specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2...
-    (* destruct IHt1' as [Γ'' IHt1']. *)
+    destruct IHt1' as [Γ'' [h IHt1']].
     eapply IHt1'...
-    { apply functional_extensionality... unfold compose... }
-    { unfold compose... } }
-  { (* Abs *)
-    quick; subst...
+    admit.
 
+    (* specialize IHt1' with
+      (⟦ t ⟧ₜₘ ∘ denote_env' ∘ h)
+      (⟦ Dtm t ⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ h).
+    apply IHt1'. *)
+    (* admit. *)
+    (* destruct IHt1' as [Γ'' IHt1']. *)
+    (* eapply IHt1'...
+    { apply functional_extensionality... unfold compose... }
+    { unfold compose... }  *)
+    }
+  { (* Abs *)
+    quick; subst.
+    exists Γ'; exists g...
+    apply S_substitute_lifted...
+    exists t0.
+    apply IHt.
+    constructor; subst...
+
+    (* exists (cons_sub t0 sb).
+    pose proof (inst_cons H sσ).
+    constructor... *)
+
+    (* unfold compose...
     dependent induction H.
     { rewrite lift_sub_id.
       rewrite 1 app_sub_id.
-      eapply (IHt).
+      pose proof (IHt [] f (|t0|)).
       admit. }
-    { admit. }
+    { admit. } *)
 
-    eapply (IHt Γ' g (cons_sub t0 sb)).
-
+    (* eapply (IHt Γ' g (cons_sub t0 sb)).
     exists Γ'...
     pose proof (IHt Γ' g (cons_sub t0 sb)); subst.
     dependent induction H.
@@ -287,7 +331,7 @@ Proof with quick.
       admit. }
     { admit. }
     apply H2.
-    apply IHt.
+    apply IHt. *)
 
     (* eapply S_cong; try apply IHt.
   2:apply functional_extensionality...

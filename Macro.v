@@ -20,6 +20,7 @@ Fixpoint Dt τ : ty :=
   | Real => Real × Real
   | t1 × t2 => Dt t1 × Dt t2
   | t1 → t2 => Dt t1 → Dt t2
+  | t1 ! t2 => Dt t1 ! Dt t2
   end.
 
 Definition Dctx Γ : Ctx := map Dt Γ.
@@ -47,6 +48,13 @@ Program Fixpoint Dtm {Γ τ} (t : tm Γ τ) : tm (map Dt Γ) (Dt τ) :=
   | tuple _ t1 t2 => tuple _ (Dtm t1) (Dtm t2)
   | first _ p => first _ (Dtm p)
   | second _ p => second _ (Dtm p)
+
+  | case _ e c1 c2 =>
+      case _ (Dtm e)
+        (Dtm c1)
+        (Dtm c2)
+  | inl _ e => inl _ (Dtm e)
+  | inr _ e => inr _ (Dtm e)
   end.
 
 Program Fixpoint Denv {Γ} (G : Env Γ) : Env (Dctx Γ) :=
@@ -144,4 +152,23 @@ Proof with eauto.
     assert (H': t ~= t). reflexivity.
     pose proof (IHt Γ σ t H H') as Hr.
     simpl. rewrite Hr...
+  - intros. simpl.
+    assert (H: σ :: Γ ~= σ :: Γ). { reflexivity. }
+    assert (H': t1 ~= t1). { reflexivity. }
+    assert (H'': t2 ~= t2). { reflexivity. }
+    assert (H''': t3 ~= t3). { reflexivity. }
+    pose proof (IHt1 Γ σ t1 H H').
+    pose proof (IHt2 Γ σ t2 H H'').
+    pose proof (IHt3 Γ σ t3 H H''').
+    rewrite H0; rewrite H1; rewrite H2...
+  - intros. simpl.
+    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
+    assert (H': t ~= t). reflexivity.
+    pose proof (IHt Γ σ t H H') as Hr.
+    rewrite Hr...
+  - intros. simpl.
+    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
+    assert (H': t ~= t). reflexivity.
+    pose proof (IHt Γ σ t H H') as Hr.
+    rewrite Hr...
 Qed.

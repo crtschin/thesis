@@ -17,9 +17,11 @@ Inductive ty : Type :=
   | Real : ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
+  | Sum  : ty -> ty -> ty
 .
 
 Notation "A × B" := (Prod A B) (left associativity, at level 90).
+Notation "A ! B" := (Sum A B) (left associativity, at level 90).
 Notation "A → B" := (Arrow A B) (right associativity, at level 20).
 
 (* STLC with well-typed well-scoped debruijn *)
@@ -30,12 +32,12 @@ Notation "A → B" := (Arrow A B) (right associativity, at level 20).
  *)
 Definition Ctx {x} := list x.
 
-Inductive Var {T} : list T -> T -> Type :=
+Inductive Var {T : Type} : list T -> T -> Type :=
   | Top : forall Γ τ, Var (τ::Γ) τ
   | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ
 .
 
-Notation "x ∈ C" := (Var C x) (at level 75).
+Notation "x ∈ Γ" := (Var Γ x) (at level 75).
 
 Inductive tm (Γ : Ctx) : ty -> Type :=
   (* Base STLC *)
@@ -59,6 +61,13 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
     tm Γ (τ × σ)
   | first : forall {τ σ}, tm Γ (τ × σ) -> tm Γ τ
   | second : forall {τ σ}, tm Γ (τ × σ) -> tm Γ σ
+
+  | case : forall {τ σ ρ}, tm Γ (τ ! σ) ->
+    tm Γ (τ → ρ) ->
+    tm Γ (σ → ρ) ->
+    tm Γ ρ
+  | inl : forall {τ σ}, tm Γ τ -> tm Γ (τ ! σ)
+  | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ ! σ)
 .
 
 (* Closed terms *)
@@ -179,16 +188,27 @@ Program Definition rename_lifted {Γ Γ' τ} (r : ren Γ Γ')
 
 Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   match t with
+  (* STLC *)
   | var _ _ v => var _ _ (r _ v)
   | app _ _ _ t1 t2 => app _ _ _ (rename r t1) (rename r t2)
   | abs _ _ _ f => abs _ _ _ (rename (rename_lifted r) f)
 
+  (* Reals *)
   | const _ r => const _ r
   | add _ t1 t2 => add _ (rename r t1) (rename r t2)
 
+  (* Products *)
   | tuple _ t1 t2 => tuple _ (rename r t1) (rename r t2)
   | first _ p => first _ (rename r p)
   | second _ p => second _ (rename r p)
+
+  (* Sums *)
+  | case _ e c1 c2 =>
+      case _ (rename r e)
+        (rename r c1)
+        (rename r c2)
+  | inl _ e => inl _ (rename r e)
+  | inr _ e => inr _ (rename r e)
   end.
 
 Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
@@ -203,16 +223,27 @@ Program Definition substitute_lifted {Γ Γ' τ} (s : sub Γ Γ')
 
 Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   match t with
+  (* STLC *)
   | var _ _ v => s _ v
   | app _ _ _ t1 t2 => app _ _ _ (substitute s t1) (substitute s t2)
   | abs _ _ _ f => abs _ _ _ (substitute (substitute_lifted s) f)
 
+  (* Reals *)
   | const _ r => const _ r
   | add _ t1 t2 => add _ (substitute s t1) (substitute s t2)
 
+  (* Products *)
   | tuple _ t1 t2 => tuple  _ (substitute s t1) (substitute s t2)
   | first _ p => first _ (substitute s p)
   | second _ p => second _ (substitute s p)
+
+  (* Sums *)
+  | case _ e c1 c2 =>
+      case _ (substitute s e)
+        (substitute s c1)
+        (substitute s c2)
+  | inl _ e => inl _ (substitute s e)
+  | inr _ e => inr _ (substitute s e)
   end.
 
 (*
