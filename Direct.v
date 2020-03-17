@@ -481,31 +481,31 @@ Admitted.
 
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real) f,
-  S Real (fun r => (⟦ t ⟧ₜₘ (denote_env (f r))))
-    (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) ->
-  (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
-  fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-    Derive (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
+  S Real (fun r => (⟦ t ⟧ₜₘ (denote_env' (f r))))
+    (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env' (Denv' (f r)))) ->
+  (⟦ Dtm t ⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ f) =
+  fun r => (⟦ t ⟧ₜₘ (denote_env' (f r)),
+    Derive (fun x => ⟦ t ⟧ₜₘ (denote_env' (f x))) r).
 Proof. intros. destruct H. quick. Qed.
 
 Lemma S_correct_prod :
   forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) f,
-  S (τ × σ) (⟦ tuple _ t s ⟧ₜₘ ∘ denote_env ∘ f)
-    (⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
-  ⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
-    fun r => (⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r))),
-              (⟦ Dtm s ⟧ₜₘ (denote_env (Denv (f r))))).
+  S (τ × σ) (⟦ tuple _ t s ⟧ₜₘ ∘ denote_env' ∘ f)
+    (⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ f) ->
+  ⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ f =
+    fun r => (⟦ Dtm t ⟧ₜₘ (denote_env' (Denv' (f r))),
+              (⟦ Dtm s ⟧ₜₘ (denote_env' (Denv' (f r))))).
 Proof. quick. Qed.
 
 Theorem semantic_correct_R :
-  forall (t : tm [] Real) (f : R -> Env []),
-  (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) =
-    fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-      Derive (fun (x : R) => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
+  forall (t : tm [] Real) (f : R -> Env' []),
+  (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env' (Denv' (f r)))) =
+    fun r => (⟦ t ⟧ₜₘ (denote_env' (f r)),
+      Derive (fun (x : R) => ⟦ t ⟧ₜₘ (denote_env' (f x))) r).
 Proof with quick.
   intros.
   rewrite <- (app_sub_id [] Real t).
   apply S_correct_R.
-  apply (fundamental _ _ _ _ t id_sub).
+  apply (fundamental [] [] Real f t id_sub).
   constructor.
 Qed.
