@@ -264,11 +264,15 @@ Proof with quick.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2...
     (* destruct IHt1' as [Γ'' IHt1']. *)
-    eapply IHt1'...
+    (* eapply IHt1'...
     { apply functional_extensionality... unfold compose... }
-    { unfold compose... } }
+    { unfold compose... }  *)
+    }
   { (* Abs *)
     quick; subst...
+    Opaque substitute_lifted.
+    Opaque S.
+    eapply IHt.
 
     dependent induction H.
     { rewrite lift_sub_id.
@@ -277,7 +281,7 @@ Proof with quick.
       admit. }
     { admit. }
 
-    eapply (IHt Γ' g (cons_sub t0 sb)).
+    (* eapply (IHt Γ' g (cons_sub t0 sb)). *)
 
     exists Γ'...
     pose proof (IHt Γ' g (cons_sub t0 sb)); subst.
