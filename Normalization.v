@@ -90,20 +90,30 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | ST_Case : forall Γ τ σ ρ e e' t1 t2,
       e --> e' ->
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e' t1 t2)
-  | ST_Case1 : forall Γ τ σ ρ t2 t1 t1' e,
+  | ST_Case1 : forall Γ τ σ ρ (t2 : tm Γ (σ → ρ))
+        (t1 t1' : tm Γ (τ → ρ)) (e e' : tm Γ (τ ! σ)),
+      (* (@inl Γ τ σ e --> @inl Γ τ σ e') -> *)
+      (* (@inl Γ τ σ e --> @inl Γ τ σ e') -> *)
       value e ->
       (t1 --> t1') ->
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e t1' t2)
-  | ST_Case2 : forall Γ τ σ ρ t1 t2 t2' e,
+  | ST_Case2 : forall Γ τ σ ρ (t2 t2' : tm Γ (σ → ρ))
+        (t1 : tm Γ (τ → ρ)) (e e' : tm Γ (τ ! σ)),
+      (* (@inr Γ τ σ e --> @inr Γ τ σ e') -> *)
+      (* value e' -> *)
+      (* (@inr Γ τ σ e --> @inr Γ τ σ e') -> *)
       value e ->
+      value t1 ->
       (t2 --> t2') ->
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e t1 t2')
   | ST_CaseInl : forall Γ τ σ ρ t2 t1' (e : tm Γ τ),
       value e ->
       value t1' ->
+      value t2 ->
       (@case Γ τ σ ρ (inl Γ e) t1' t2) --> (app Γ ρ τ t1' e)
   | ST_CaseInr : forall Γ τ σ ρ t1 t2' (e : tm Γ σ),
       value e ->
+      value t1 ->
       value t2' ->
       (@case Γ τ σ ρ (inr Γ e) t1 t2') --> (app Γ ρ σ t2' e)
 
@@ -159,6 +169,9 @@ Lemma app_congr : forall Γ τ σ t1 t2 t1' t2',
   t1 = t1' -> t2 = t2' -> app Γ τ σ t1 t2 = app Γ τ σ t1' t2'.
 Proof. intros; subst; auto. Qed.
 
+Ltac value_contradiction H :=
+  (apply value__normal in H; contradiction H; quick).
+
 Lemma step_deterministic : forall Γ τ,
   deterministic (@step Γ τ).
 Proof with quick.
@@ -166,54 +179,61 @@ Proof with quick.
   intros Γ τ t t' t'' H1 H2.
   generalize dependent t''.
   dependent induction H1;
-    intros t'' H2; dependent destruction H2; try erewrite IHstep...
+    intros t'' H2; dependent destruction H2;
+      try erewrite IHstep...
   { dependent induction H;
     dependent destruction H2... }
-  { apply value__normal in H. contradiction H. exists t2'... }
+  { value_contradiction H. }
   { dependent induction H1... }
-  { apply value__normal in H. contradiction H. exists t1'... }
-  { apply value__normal in H0. contradiction H0. exists t2'... }
-  { apply value__normal in H. contradiction H. exists t1'... }
+  { value_contradiction H. }
+  { value_contradiction H0. }
+  { value_contradiction H. }
   { assert (H': value (const Γ v1)). constructor.
-    apply value__normal in H'. contradiction H'. exists t1'... }
+    value_contradiction H'. }
   { assert (H': value (const Γ v2)). constructor.
-    apply value__normal in H'. contradiction H'. exists t2'... }
+    value_contradiction H'. }
   { assert (H': value (const Γ v1)). constructor.
-    apply value__normal in H'. contradiction H'. exists t1'... }
-  { apply value__normal in H. contradiction H. exists t1'... }
+    value_contradiction H'. }
+  { value_contradiction H. }
   { assert (H': value (const Γ v2)). constructor.
-    apply value__normal in H'. contradiction H'. exists t2'... }
-  { apply value__normal in H. contradiction H. exists t1'... }
-  { apply value__normal in H. contradiction H. exists t1'... }
-  { apply value__normal in H. contradiction H. exists t1'... }
-  { dependent destruction H1...
-    apply value__normal in H. contradiction H. exists t1'0...
-    apply value__normal in H2. contradiction H2. exists t2'... }
+    value_contradiction H'. }
+  { value_contradiction H. }
+  { value_contradiction H. }
+  { value_contradiction H. }
+  { dependent destruction H1.
+    value_contradiction H.
+    value_contradiction H2. }
   { dependent destruction H2...
-    apply value__normal in H. contradiction H. exists t1'0...
-    apply value__normal in H0. contradiction H0. exists t2'... }
+    value_contradiction H.
+    value_contradiction H0. }
   { dependent destruction H1...
-    apply value__normal in H. contradiction H. exists t1'0...
-    apply value__normal in H2. contradiction H2. exists t2'... }
+    value_contradiction H.
+    value_contradiction H2. }
   { dependent destruction H2...
-    apply value__normal in H. contradiction H. exists t1'0...
-    apply value__normal in H0. contradiction H0. exists t2'... }
-  { apply value__normal in H. contradiction H. exists e'... }
-  { apply value__normal in H. contradiction H. exists e'... }
-  { dependent destruction H1.
-    apply value__normal in H. contradiction H. exists t1'... }
-  { dependent destruction H1.
-    apply value__normal in H. contradiction H. exists t1'... }
-  { apply value__normal in H. contradiction H. exists e'... }
-  { dependent induction H0.
-    erewrite IHstep... }
-    dependent destruction H1.
-    apply value__normal in H. contradiction H. exists t1'... }
-  { dependent destruction H1.
-    apply value__normal in H. contradiction H. exists t1'... }
-
-  { dependent destruction H2.
-    apply value__normal in H. contradiction H. exists t1'... }
+    value_contradiction H.
+    value_contradiction H0. }
+  { value_contradiction H. }
+  { value_contradiction H. }
+  { assert (value (@inl Γ τ σ e0)). constructor...
+    value_contradiction H3. }
+  { assert (value (@inr Γ τ σ e0)). constructor...
+    value_contradiction H3. }
+  { value_contradiction H. }
+  { value_contradiction H2. }
+  { value_contradiction H2. }
+  { value_contradiction H2. }
+  { value_contradiction H. }
+  { value_contradiction H0. }
+  { value_contradiction H4. }
+  { value_contradiction H4. }
+  { assert (value (@inl Γ τ σ e)). constructor...
+    value_contradiction H3. }
+  { value_contradiction H0. }
+  { value_contradiction H1. }
+  { assert (value (@inr Γ τ σ e)). constructor...
+    value_contradiction H3. }
+  { value_contradiction H0. }
+  { value_contradiction H1. }
 Qed.
 
 (** A trivial fact: *)
@@ -238,9 +258,10 @@ Program Fixpoint R τ {Γ} (t : tm Γ τ): Prop :=
    | τ1 → τ2 =>
       (forall (s : tm Γ τ1), R τ1 s -> R τ2 (app Γ τ2 τ1 t s))
    | τ1 ! τ2 =>
-      (exists (r : tm Γ τ1) (s : tm Γ τ2),
-        t -->* @inl Γ τ1 τ2 r /\ value r /\ R τ1 r \/
-        t -->* @inr Γ τ1 τ2 s /\ value s /\ R τ2 s)
+      ((exists (r : tm Γ τ1),
+        t -->* @inl Γ τ1 τ2 r /\ value r /\ R τ1 r) \/
+      (exists (s : tm Γ τ2),
+        t -->* @inr Γ τ1 τ2 s /\ value s /\ R τ2 s))
    end).
 
 Lemma R_halts : forall {Γ τ} {t : tm Γ τ}, R τ t -> halts t.
@@ -288,23 +309,21 @@ Proof with quick.
     assert (value (tuple Γ r s))...
     apply value__normal in H1. contradiction H1...
     erewrite step_deterministic... }
-  { quick. destruct H as [Hh [r [s H]]].
+  { quick. destruct H as [Hh H].
     split... eapply (step_preserves_halting t t')...
-    exists r; exists s.
-    dependent destruction H.
-    { left. destruct H as [Ht [Hvr Hrr]].
+    destruct H; destruct H as [x [Ht [Hv Hr]]].
+    { left. exists x.
       splits...
-      assert (value (@inl Γ τ1 τ2 r))...
+      assert (value (@inl Γ τ1 τ2 x))...
       dependent destruction Ht.
       apply value__normal in H. contradiction H...
       erewrite step_deterministic... }
-    { right. destruct H as [Ht [Hvr Hrr]].
+    { right. exists x.
       splits...
-      assert (value (@inr Γ τ1 τ2 s))...
+      assert (value (@inr Γ τ1 τ2 x))...
       dependent destruction Ht.
       apply value__normal in H. contradiction H...
-      erewrite step_deterministic... }
-  }
+      erewrite step_deterministic... } }
 Qed.
 
 Lemma multistep_preserves_R :
@@ -334,13 +353,12 @@ Proof with quick.
     splits... econstructor... }
   { split; destruct H as [Hh Ht]...
     rewrite step_preserves_halting...
-    destruct Ht as [r [s Ht]].
-    exists r; exists s.
     destruct Ht as [Ht | Ht];
-      destruct Ht as [Ht [Hv Hr]].
-    { left. splits...
+      destruct Ht as [x [Ht [Hv Hr]]].
+    { left. exists x.
+      splits...
       econstructor... }
-    { right. splits...
+    { right. exists x. splits...
       econstructor... } }
 Qed.
 
@@ -448,13 +466,56 @@ Proof with quick.
   - eapply multi_step. apply ST_Case... assumption.
 Qed.
 
-Lemma multistep_CaseInl : forall Γ τ σ ρ e c1 c1' c2,
-  value e -> value c1' -> (c1 -->* c1') ->
-    (@case Γ τ σ ρ (inl Γ e) c1 c2) -->* (app Γ ρ τ c1' e).
+Lemma multistep_Case1 : forall Γ τ σ ρ e c1 c1' c2,
+  value e -> (c1 -->* c1') -> (@case Γ τ σ ρ e c1 c2) -->* (@case Γ τ σ ρ e c1' c2).
+Proof with quick.
+  intros. induction H0.
+  - constructor.
+  - eapply multi_step. apply ST_Case1... assumption.
+Qed.
+
+Lemma multistep_Case2 : forall Γ τ σ ρ e c1 c2 c2',
+  value e -> value c1 -> (c2 -->* c2') -> (@case Γ τ σ ρ e c1 c2) -->* (@case Γ τ σ ρ e c1 c2').
 Proof with quick.
   intros. induction H1.
-  - econstructor. apply ST_CaseInl...
-  - eapply multi_step. apply ST_Case... assumption.
+  - constructor.
+  - eapply multi_step. apply ST_Case2... assumption.
+Qed.
+
+Lemma multistep_CaseInl : forall Γ τ σ ρ e c1 c2,
+  value e -> value c1 -> value c2 ->
+    (@case Γ τ σ ρ (inl Γ e) c1 c2) -->* (@app Γ ρ τ c1 e).
+Proof with quick.
+  intros. econstructor...
+  - apply ST_CaseInl...
+  - constructor.
+Qed.
+
+Lemma multistep_CaseInr : forall Γ τ σ ρ e c1 c2,
+  value e -> value c1 -> value c2 ->
+    (@case Γ τ σ ρ (inr Γ e) c1 c2) -->* (@app Γ ρ σ c2 e).
+Proof with quick.
+  intros. econstructor...
+  - apply ST_CaseInr...
+  - constructor.
+Qed.
+
+Lemma multistep_Inl : forall Γ τ σ e e',
+  (e -->* e') ->
+    (@inl Γ τ σ e) -->* (@inl Γ τ σ e').
+Proof with quick.
+  intros. induction H...
+  - constructor.
+  - econstructor. apply ST_Inl... assumption.
+Qed.
+
+Lemma multistep_Inr : forall Γ τ σ e e',
+  (e -->* e') ->
+    (@inr Γ τ σ e) -->* (@inr Γ τ σ e').
+Proof with quick.
+  intros. induction H...
+  - constructor.
+  - econstructor. apply ST_Inr... assumption.
 Qed.
 
 Lemma subst_R :
@@ -571,25 +632,61 @@ Proof with quick.
     induction τ... }
   { (* Case *)
     intros. simpl.
-    pose proof (IHt1 s H); clear IHt1.
-    pose proof (R_halts H0) as [e' [Hste Hve]].
-    dependent induction Hve.
+    pose proof (IHt1 s H) as IHt1'; clear IHt1.
+    pose proof (IHt2 s H) as IHt2'; clear IHt2.
+    pose proof (IHt3 s H) as IHt3'; clear IHt3.
+    (* pose proof (R_halts H0) as [e' [Hste Hve]]. *)
+    pose proof (R_halts IHt2') as [t2' [Hst2 Hv2]].
+    pose proof (R_halts IHt3') as [t3' [Hst3 Hv3]].
+    (* pose proof (multistep_preserves_R _ _ H0 Hste). *)
+    pose proof (multistep_preserves_R _ _ IHt2' Hst2) as H2'.
+    pose proof (multistep_preserves_R _ _ IHt3' Hst3) as H3'.
+    (* dependent induction Hve; clear IHHve. *)
+    simpl in IHt1'.
+    destruct IHt1' as [Hh IHt1']; destruct IHt1' as [IHt1'|IHt1'];
+      destruct IHt1' as [x [Hstep [Hv Hr]]].
     { eapply multistep_preserves_R'.
-      2:
-
-    }
-    pose proof (multistep_preserves_R _ _ H0 Hste).
-
-    pose proof (IHt2 s H); clear IHt2.
-    pose proof (IHt3 s H); clear IHt3.
-    pose proof (R_halts H1) as [t1' [Hst1 Hv1]].
-    pose proof (R_halts H2) as [t2' [Hst2 Hv2]].
-    pose proof (multistep_preserves_R _ _ H1 Hst1).
-    pose proof (multistep_preserves_R _ _ H2 Hst2).
-
-
-    2: eapply multi_trans.
-  }
+    2:{ apply multistep_Case... }
+      eapply multistep_preserves_R'.
+    2:{ apply multistep_Case1... }
+      eapply multistep_preserves_R'.
+    2:{ apply multistep_Case2... }
+      eapply multistep_preserves_R'.
+    2:{ apply multistep_CaseInl... }
+      destruct H2' as [Hh2 Hs2]. simpl in Hs2... }
+    { eapply multistep_preserves_R'.
+    2:{ apply multistep_Case... }
+      eapply multistep_preserves_R'.
+    2:{ apply multistep_Case1... }
+      eapply multistep_preserves_R'.
+    2:{ apply multistep_Case2... }
+      eapply multistep_preserves_R'.
+    2:{ apply multistep_CaseInr... }
+      destruct H3' as [Hh3 Hs3]. simpl in Hs3... } }
+  { (* Inl *)
+    intros.
+    pose proof (IHt s H) as H'.
+    apply R_halts in H'.
+    destruct H' as [t' [Hst Hv]].
+    split...
+    { econstructor.
+      split... apply multistep_Inl...}
+    { left. exists t'.
+      splits...
+      apply multistep_Inl...
+      eapply multistep_preserves_R... } }
+  { (* Inr *)
+    intros.
+    pose proof (IHt s H) as H'.
+    apply R_halts in H'.
+    destruct H' as [t' [Hst Hv]].
+    split...
+    { econstructor.
+      split... apply multistep_Inr... }
+    { right. exists t'.
+      splits...
+      apply multistep_Inr...
+      eapply multistep_preserves_R... } }
 Qed.
 
 Theorem normalization :
