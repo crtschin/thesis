@@ -9,7 +9,9 @@ Require Import Logic.JMeq.
 Require Import Arith.PeanoNat.
 Require Import Program.Equality.
 
+From Equations Require Import Equations.
 From AD Require Import Definitions.
+From AD Require Import Tactics.
 
 Open Scope R_scope.
 
@@ -31,47 +33,30 @@ Fixpoint Dv {Γ τ} (v: τ ∈ Γ) : (Dt τ) ∈ (map Dt Γ) :=
   | Pop Γ τ σ t => Pop (map Dt Γ) (Dt τ) (Dt σ) (Dv t)
   end.
 
-Program Fixpoint Dtm {Γ τ} (t : tm Γ τ) : tm (map Dt Γ) (Dt τ) :=
-  match t with
-  | var _ _ v => var (map Dt Γ) (Dt τ) (Dv v)
-  | app _ _ _ t1 t2 => app _ _ _ (Dtm t1) (Dtm t2)
-  | abs _ _ _ f => abs _ _ _ (Dtm f)
+Equations Dtm {Γ τ} (t : tm Γ τ) : tm (map Dt Γ) (Dt τ) :=
+Dtm (Γ:=Γ) (τ:=τ) (var Γ τ v) := var _ _ (Dv v);
+Dtm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) := app _ _ _ (Dtm t1) (Dtm t2);
+Dtm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm f);
+Dtm (Γ:=Γ) (τ:=τ) (const Γ r) := tuple _ (const _ r) (const _ 0);
+Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm t1 := {
+  Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 with Dtm t2 := {
+    Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 d2 :=
+      tuple _
+        (add _ (first _ d1) (first _ d2))
+        (add _ (second _ d1) (second _ d2))
+  }
+};
+Dtm (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) := tuple _ (Dtm t1) (Dtm t2);
+Dtm (Γ:=Γ) (τ:=τ) (first Γ p) := first _ (Dtm p);
+Dtm (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm p);
+Dtm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm e) (Dtm c1) (Dtm c2);
+Dtm (Γ:=Γ) (τ:=τ) (inl Γ e) := inl _ (Dtm e);
+Dtm (Γ:=Γ) (τ:=τ) (inr Γ e) := inr _ (Dtm e).
 
-  | const _ r => tuple _ (const _ r) (const _ 0)
-  | add _ t1 t2 =>
-    let d1 := (Dtm t1) in
-    let d2 := (Dtm t2) in
-    tuple _
-      (add _ (first _ d1) (first _ d2))
-      (add _ (second _ d1) (second _ d2))
-
-  | tuple _ t1 t2 => tuple _ (Dtm t1) (Dtm t2)
-  | first _ p => first _ (Dtm p)
-  | second _ p => second _ (Dtm p)
-
-  | case _ e c1 c2 =>
-      case _ (Dtm e)
-        (Dtm c1)
-        (Dtm c2)
-  | inl _ e => inl _ (Dtm e)
-  | inr _ e => inr _ (Dtm e)
-  end.
-
-Program Fixpoint Denv {Γ} (G : Env Γ) : Env (Dctx Γ) :=
+Fixpoint Denv {Γ} (G : Env Γ) : Env (Dctx Γ) :=
   match G with
   | env_nil => env_nil
-  | env_cons c G' => env_cons (Dclosed c) (Denv G')
-  end
-with Dclosed {τ} (c : Closed τ) : Closed (Dt τ) :=
-  match c with
-  | closure t G' => closure (Dtm t) (Denv G')
-  | clapp c1 c2 => clapp (Dclosed c1) (Dclosed c2)
-  end.
-
-Program Fixpoint Denv' {Γ} (G : Env' Γ) : Env' (Dctx Γ) :=
-  match G with
-  | env'_nil => env'_nil
-  | env'_cons c G' => env'_cons (Dtm c) (Denv' G')
+  | env_cons c G => env_cons (Dtm c) (Denv G)
   end.
 
 Lemma Dt_lift_var : forall Γ τ, τ ∈ Γ -> (Dt τ) ∈ (map Dt Γ).
@@ -92,23 +77,12 @@ Lemma D_type_sub : forall Γ τ σ
     has_type (substitute (| Dtm s |) (Dtm t)).
 Proof. trivial. Qed.
 
-Lemma D_sub_lifted : forall Γ τ σ ρ
-  (t : tm (ρ::σ::Γ) τ)
-  (s : tm Γ σ),
-  (forall r : tm (σ :: Γ) ρ,
-     Dtm (substitute (| r |) t) = substitute (| Dtm r |) (Dtm t)) ->
-  Dtm (substitute (substitute_lifted (| s |)) t) =
-    substitute (substitute_lifted (| Dtm s |)) (Dtm t).
-Proof with eauto.
-  intros. remember (substitute_lifted (| s |)).
-Admitted.
-
 Lemma D_sub : forall Γ τ σ
   (t : tm (σ::Γ) τ)
   (s : tm Γ σ),
   Dtm (substitute (| s |) t) =
     substitute (| Dtm s |) (Dtm t).
-Proof with eauto.
+Proof with quick.
   dependent induction t...
   - dependent induction v...
   - assert (H: σ :: Γ ~= σ :: Γ). { reflexivity. }
@@ -117,41 +91,41 @@ Proof with eauto.
     pose proof (IHt1 Γ σ t1 H H') as H1.
     pose proof (IHt2 Γ σ t2 H H'') as H2.
     clear H H' H''.
-    intros s. simpl.
-    rewrite H1. rewrite H2.
-    reflexivity.
+    simp Dtm. rewrite H1. rewrite H2...
   - assert (H: σ0 :: σ :: Γ ~= σ0 :: σ :: Γ). { reflexivity. }
     assert (H': t ~= t). { reflexivity. }
     pose proof (IHt (σ::Γ) σ0 t H H') as Ht.
-    clear H H'.
-    intros s. simpl. simpl (Dtm (abs (σ :: Γ) τ σ0 t)).
+    clear H H' IHt.
+    simp Dtm... fold (map Dt Γ).
     assert (Hr :
       Dtm (substitute (substitute_lifted (| s |)) t) =
       substitute (substitute_lifted (| Dtm s |)) (Dtm t)).
-    { apply D_sub_lifted... }
+    { admit. }
     rewrite Hr...
   - intros. simpl.
     assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H1: t1 ~= t1). reflexivity.
     assert (H2: t2 ~= t2). reflexivity.
+    simp Dtm.
     pose proof (IHt1 Γ σ t1 H H1) as Ht1. rewrite -> Ht1.
     pose proof (IHt2 Γ σ t2 H H2) as Ht2. rewrite -> Ht2...
   - intros. simpl.
     assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H1: t1 ~= t1). reflexivity.
     assert (H2: t2 ~= t2). reflexivity.
+    simp Dtm.
     pose proof (IHt1 Γ σ t1 H H1) as Ht1. rewrite -> Ht1.
     pose proof (IHt2 Γ σ t2 H H2) as Ht2. rewrite -> Ht2...
   - intros.
     assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H': t ~= t). reflexivity.
     pose proof (IHt Γ σ t H H') as Hr.
-    simpl. rewrite Hr...
+    simpl. simp Dtm. rewrite Hr...
   - intros.
     assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H': t ~= t). reflexivity.
     pose proof (IHt Γ σ t H H') as Hr.
-    simpl. rewrite Hr...
+    simpl. simp Dtm. rewrite Hr...
   - intros. simpl.
     assert (H: σ :: Γ ~= σ :: Γ). { reflexivity. }
     assert (H': t1 ~= t1). { reflexivity. }
@@ -160,15 +134,15 @@ Proof with eauto.
     pose proof (IHt1 Γ σ t1 H H').
     pose proof (IHt2 Γ σ t2 H H'').
     pose proof (IHt3 Γ σ t3 H H''').
-    rewrite H0; rewrite H1; rewrite H2...
+    simp Dtm. rewrite H0; rewrite H1; rewrite H2...
   - intros. simpl.
     assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H': t ~= t). reflexivity.
     pose proof (IHt Γ σ t H H') as Hr.
-    rewrite Hr...
+    simp Dtm. rewrite Hr...
   - intros. simpl.
     assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
     assert (H': t ~= t). reflexivity.
     pose proof (IHt Γ σ t H H') as Hr.
-    rewrite Hr...
-Qed.
+    simp Dtm. rewrite Hr...
+Admitted.

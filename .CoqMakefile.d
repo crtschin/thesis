@@ -10,9 +10,9 @@ Diffeology.vos Diffeology.vok Diffeology.required_vos: Diffeology.v Tactics.vos 
 Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Normalization.vo
 Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Normalization.vio
 Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Normalization.vos
-Macro.vo Macro.glob Macro.v.beautified Macro.required_vo: Macro.v Definitions.vo
-Macro.vio: Macro.v Definitions.vio
-Macro.vos Macro.vok Macro.required_vos: Macro.v Definitions.vos
+Macro.vo Macro.glob Macro.v.beautified Macro.required_vo: Macro.v Definitions.vo Tactics.vo
+Macro.vio: Macro.v Definitions.vio Tactics.vio
+Macro.vos Macro.vok Macro.required_vos: Macro.v Definitions.vos Tactics.vos
 Normalization.vo Normalization.glob Normalization.v.beautified Normalization.required_vo: Normalization.v Tactics.vo Definitions.vo
 Normalization.vio: Normalization.v Tactics.vio Definitions.vio
 Normalization.vos Normalization.vok Normalization.required_vos: Normalization.v Tactics.vos Definitions.vos

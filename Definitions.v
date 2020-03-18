@@ -73,24 +73,13 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
 .
 
 (* Closed terms *)
-Inductive Closed : ty -> Type :=
+(* Inductive Closed : ty -> Type :=
   | closure : forall {Γ τ}, tm Γ τ -> Env Γ -> Closed τ
   | clapp : forall {τ σ}, Closed (σ → τ) -> Closed σ -> Closed τ
   with Env : Ctx -> Type :=
   | env_nil : Env []
   | env_cons : forall {Γ τ}, Closed τ -> Env Γ -> Env (τ::Γ)
 .
-
-Inductive Env' : Ctx -> Type :=
-  | env'_nil : Env' []
-  | env'_cons : forall {Γ τ}, tm [] τ -> Env' Γ -> Env' (τ::Γ)
-.
-
-Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
-  induction Γ. constructor.
-  inversion G. assumption.
-Defined.
-
 Scheme closed_env_rec_prop := Induction for Closed Sort Prop
   with env_closed_rec_prop := Induction for Env Sort Prop.
 
@@ -98,8 +87,19 @@ Scheme closed_env_rec_set := Induction for Closed Sort Set
   with env_closed_rec_set := Induction for Env Sort Set.
 
 Scheme closed_env_rec := Induction for Closed Sort Type
-  with env_closed_rec := Induction for Env Sort Type.
+  with env_closed_rec := Induction for Env Sort Type. *)
 (* End Closed terms *)
+
+Inductive Env : Ctx -> Type :=
+  | env_nil : Env []
+  | env_cons : forall {Γ τ}, tm [] τ -> Env Γ -> Env (τ::Γ)
+.
+
+Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
+  induction Γ. constructor.
+  inversion G. assumption.
+Defined.
+
 
 (* Examples *)
 Definition ex_id :=
