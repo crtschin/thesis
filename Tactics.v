@@ -10,3 +10,4 @@ Ltac rewrites := (
   intros; simpl;
     repeat (match goal with | [H:context[_=_] |- _] => rewrite H end);
     auto).
+Ltac simp f := (autorewrite with f).

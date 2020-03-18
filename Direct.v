@@ -163,7 +163,12 @@ Proof with eauto.
   pose proof denote_ren_elim.
   specialize H with Γ Γ σ (fun t x => x) x ctx.
   unfold tl_ren in H.
-  simpl in H. rewrite <- H.
+  assert (H':
+    (fun (σ0 : ty) (x : σ0 ∈ Γ) =>
+       rename_lifted (fun (t : ty) (x0 : t ∈ Γ) => x0) σ0 (Pop Γ σ0 σ x)) =
+    (fun (ρ : ty) (x0 : ρ ∈ Γ) => Pop Γ ρ σ x0)).
+  { apply functional_extensionality_dep... }
+  rewrite <- H'. rewrite <- H.
   fold (@id_ren Γ).
   rewrite denote_ren_commutes...
   rewrite app_ren_id...
@@ -175,8 +180,8 @@ Lemma denote_sub_elim : forall Γ Γ' τ
 Proof with eauto.
   induction Γ; intros...
   intros. specialize IHΓ with (s := (tl_sub s)).
-  simpl. rewrite IHΓ with (x := x). simpl.
-  unfold hd_sub. unfold tl_sub. simpl.
+  simpl. rewrite IHΓ with (x := x).
+  unfold hd_sub. unfold tl_sub. simp substitute_lifted.
   erewrite denote_shift_elim...
 Qed.
 
@@ -230,11 +235,13 @@ Lemma denote_sub_cons : forall Γ τ σ s
 Proof with quick.
   intros. unfold id_sub.
   rewrite <- denote_sub_commutes...
-  unfold hd_sub...
-  unfold tl_sub...
-  assert (id_sub = (fun (σ0 : ty) (x : σ0 ∈ Γ) => var Γ σ0 x)).
-  { unfold id_sub. apply functional_extensionality_dep... }
-  rewrite <- H; clear H.
+  unfold hd_sub; unfold tl_sub...
+  simp cons_sub.
+  assert (H:
+    (fun (σ0 : ty) (x : σ0 ∈ Γ) => cons_sub s (var Γ) σ0 (Pop Γ σ0 σ x)) =
+    id_sub).
+  { apply functional_extensionality_dep... }
+  rewrite H; clear H.
   rewrite denote_sub_id'...
 Qed.
 
@@ -242,25 +249,8 @@ Qed.
 (* Record Gl τ σ := make_gl {
   Gl_P : (R -> ⟦τ⟧ₜ) -> (R -> ⟦σ⟧ₜ) -> Prop;
 }. *)
-(*
-Fixpoint S τ : Gl τ (Dt τ)
-  := make_gl τ (Dt τ)
-    (match τ with
-     | Real => fun f g =>
-          (fun r => g r) = (fun r => (f r, Derive f r))
-     | σ × ρ => fun f g =>
-        forall f1 f2 g1 g2,
-          S σ f1 f2 ->
-          S ρ g1 g2 ->
-            (f = fun r => (f1 r, g1 r)) /\
-            (g = fun r => (f2 r, g2 r))
-     | σ → ρ => fun f g =>
-        forall f1 f2 g1 g2 (s1 : S σ g1 g2),
-          f = f1 /\ g = f2 ->
-          S ρ (fun x => f1 x (g1 x)) (fun x => f2 x (g2 x))
-     end).
-*)
-Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
+
+(* Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
   := match τ with
     | Real => fun (f : R -> R) (g : R -> R * R) =>
       (forall (x : R), ex_derive f x) /\
@@ -291,7 +281,34 @@ Program Fixpoint S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop
         | Datatypes.inl s => s = g2 x
         | Datatypes.inr r => r = h2 x
         end)
-    end.
+    end. *)
+
+Equations S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
+S Real f g := (forall (x : R), ex_derive f x) /\
+  (fun r => g r) = (fun r => (f r, Derive f r));
+S (σ × ρ) f g :=
+  exists f1 f2 g1 g2 (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
+    (f = fun r => (f1 r, g1 r)) /\
+    (g = fun r => (f2 r, g2 r));
+S (σ → ρ) f g :=
+  exists Γ h,
+  forall (t : tm Γ σ),
+  forall g1 g2 (sσ : S σ g1 g2),
+    g1 = (⟦t⟧ₜₘ ∘ denote_env' ∘ h) ->
+    g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env' ∘ Denv' ∘ h) ->
+    S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x));
+S (σ <+> ρ) f g :=
+  forall g1 g2 h1 h2 x,
+    S σ g1 g2 ->
+    S ρ h1 h2 ->
+      (match f x with
+      | Datatypes.inl s => s = g1 x
+      | Datatypes.inr r => r = h1 x
+      end) /\
+      (match g x with
+      | Datatypes.inl s => s = g2 x
+      | Datatypes.inr r => r = h2 x
+      end).
 
 Theorem Soundness : forall Γ τ (t t' : tm Γ τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
@@ -340,8 +357,6 @@ Lemma S_substitute_lifted :
     (fun r => ⟦Dtm (substitute (substitute_lifted (τ:=σ) sb) t) ⟧ₜₘ
       (g2 r, (denote_env' (Denv' (g r))))).
 Proof with quick.
-  quick...
-  destruct H0 as [s H'].
 Admitted.
 
 (*
@@ -364,7 +379,8 @@ Proof with quick.
   { (* Var *)
     intros.
     dependent induction H... inversion v.
-    dependent destruction v; subst... }
+    dependent destruction v; subst...
+    simp cons_sub. }
   { (* App *)
     intros.
     specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.

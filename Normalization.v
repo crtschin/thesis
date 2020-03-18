@@ -9,6 +9,7 @@ Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 Require Reals.
 
+From Equations Require Import Equations.
 From AD Require Import Tactics.
 From AD Require Import Definitions.
 
@@ -245,7 +246,22 @@ Proof.
   assumption.
 Qed.
 
-Program Fixpoint Rel τ {Γ} (t : tm Γ τ): Prop :=
+Equations Rel {Γ} τ (t : tm Γ τ): Prop :=
+Rel Real t := halts t;
+Rel (τ1 × τ2) t := halts t /\ (exists (r : tm Γ τ1) (s : tm Γ τ2),
+  t -->* tuple Γ r s /\
+  value r /\
+  value s /\
+  Rel τ1 r /\ Rel τ2 s);
+Rel (τ1 → τ2) t := halts t /\
+  (forall (s : tm Γ τ1), Rel τ1 s -> Rel τ2 (app Γ τ2 τ1 t s));
+Rel (τ1 <+> τ2) t := halts t /\
+  ((exists (r : tm Γ τ1),
+    t -->* @inl Γ τ1 τ2 r /\ value r /\ Rel τ1 r) \/
+  (exists (s : tm Γ τ2),
+    t -->* @inr Γ τ1 τ2 s /\ value s /\ Rel τ2 s)).
+
+(* Program Fixpoint Rel {Γ} τ (t : tm Γ τ): Prop :=
   halts t /\
   (match τ with
    | Real => True
@@ -262,19 +278,19 @@ Program Fixpoint Rel τ {Γ} (t : tm Γ τ): Prop :=
         t -->* @inl Γ τ1 τ2 r /\ value r /\ Rel τ1 r) \/
       (exists (s : tm Γ τ2),
         t -->* @inr Γ τ1 τ2 s /\ value s /\ Rel τ2 s))
-   end).
+   end). *)
 
 Lemma R_halts : forall {Γ τ} {t : tm Γ τ}, Rel τ t -> halts t.
 Proof.
   intros.
-  dependent destruction τ;
-    unfold Rel in H; inversion H; assumption.
+  dependent elimination τ; simp Rel in H;
+    inversion H; assumption.
 Qed.
 
 Lemma step_preserves_halting :
   forall {Γ τ} (t t' : tm Γ τ), (t --> t') -> (halts t <-> halts t').
 Proof.
- intros Γ τ t t' ST.  unfold halts.
+ intros Γ τ t t' ST. unfold halts.
  split.
  - (* -> *)
   intros [t'' [STM V]].
@@ -287,20 +303,32 @@ Proof.
   econstructor; eassumption.
 Qed.
 
+Lemma multistep_preserves_halting :
+  forall {Γ τ} (t t' : tm Γ τ), (t -->* t') -> (halts t <-> halts t').
+Proof with quick.
+  intros Γ τ t t' ST.
+  split.
+  - induction ST...
+    apply (step_preserves_halting _ _ H) in H0.
+    apply IHST in H0...
+  - induction ST...
+    apply IHST in H0...
+    apply (step_preserves_halting _ _ H) in H0...
+Qed.
+
 Lemma step_preserves_R :
   forall {Γ τ} (t t' : tm Γ τ), Rel τ t -> (t --> t') -> Rel τ t'.
 Proof with quick.
   intros Γ τ.
   generalize dependent Γ.
-  dependent induction τ.
-  { split... destruct H.
-    apply (step_preserves_halting t t' H0)... }
-  { quick. split; destruct H.
-    eapply (step_preserves_halting t t')...
-    intros. pose proof (H1 s H2).
-    eapply IHτ2...
-    constructor... }
-  { quick. destruct H. split.
+  dependent induction τ; simp Rel in *...
+  { apply (step_preserves_halting t t' H0)... }
+  { split; destruct H...
+    { eapply (step_preserves_halting t t')... }
+    { pose proof (H1 s H2).
+      eapply IHτ2...
+      constructor... } }
+  { destruct H. split.
     eapply (step_preserves_halting t t')...
     destruct H1 as [r [s H1]].
     destruct H1 as [Hst [Hvr [Hvs [Hr Hs]]]].
@@ -309,7 +337,7 @@ Proof with quick.
     assert (value (tuple Γ r s))...
     apply value__normal in H1. contradiction H1...
     erewrite step_deterministic... }
-  { quick. destruct H as [Hh H].
+  { destruct H as [Hh H].
     split... eapply (step_preserves_halting t t')...
     destruct H; destruct H as [x [Ht [Hv Hr]]].
     { left. exists x.
@@ -340,9 +368,10 @@ Proof with quick.
   intros Γ τ.
   generalize dependent Γ.
   dependent induction τ...
-  { split... destruct H as [Hh Ht]. clear Ht.
+  { simp Rel in *.
     rewrite step_preserves_halting... }
-  { split; destruct H as [Hh Ht]...
+  { simp Rel in *.
+    split; destruct H as [Hh Ht]...
     rewrite step_preserves_halting...
     eapply IHτ2... constructor... }
   { split; destruct H as [Hh Ht]...
@@ -526,19 +555,17 @@ Proof with quick.
   intros Γ Γ' τ t s.
   generalize dependent Γ.
   generalize dependent Γ'.
-  dependent induction t.
+  dependent induction t; simpl; intros sb H.
   { (* Variables *)
-    intros. simpl.
     dependent induction H.
     { inversion v. }
-    { dependent induction v... } }
+    { dependent induction v; simp cons_sub... } }
   { (* App *)
-    intros. simpl.
-    pose proof (IHt1 s H).
-    pose proof (IHt2 s H).
-    simpl in H0. destruct H0 as [Hh H']... }
+    pose proof (IHt1 sb H).
+    pose proof (IHt2 sb H).
+    simp Rel in H0. destruct H0 as [Hh H']... }
   { (* Abs *)
-    intros sb H. split.
+    simp Rel. split.
     { apply value_halts. constructor. }
     { simpl. intros s Hrs.
       pose proof (R_halts Hrs) as [s' [Hst Hs']].
@@ -555,21 +582,23 @@ Proof with quick.
             = cons_sub s' sb).
         { unfold compose_sub_sub.
           repeat (apply functional_extensionality_dep; intros).
-          dependent induction x0...
+          dependent destruction x0...
+          simp substitute_lifted cons_sub.
           erewrite subst_shift_refl... }
         rewrite H''. constructor. } } }
   { (* Const *)
-    intros... split... apply value_halts... }
+    simp Rel. apply value_halts... }
   { (* Add *)
     intros.
-    pose proof (IHt1 s H) as P1; clear IHt1.
-    pose proof (IHt2 s H) as P2; clear IHt2.
-    inversion P1 as [[t1' [Hst1 Hv1]] P1'']; clear P1''.
-    inversion P2 as [[t2' [Hst2 Hv2]] P2'']; clear P2''.
-    simpl (substitute s (add Γ t1 t2)).
+    pose proof (IHt1 sb H) as P1; clear IHt1.
+    pose proof (IHt2 sb H) as P2; clear IHt2.
+    pose proof P1 as P1'; pose proof P2 as P2'.
+    simp Rel in P1'; simp Rel in P2'.
+    inversion P1 as [t1' [Hst1 Hv1]].
+    inversion P2 as [t2' [Hst2 Hv2]].
     pose proof (multistep_preserves_R _ _ P1 Hst1).
     pose proof (multistep_preserves_R _ _ P2 Hst2).
-    assert (add Γ' (substitute s t1) (substitute s t2)
+    assert (add Γ' (substitute sb t1) (substitute sb t2)
       -->* add Γ' t1' t2').
     { eapply multi_trans.
       { eapply multistep_Add1... }
@@ -579,36 +608,35 @@ Proof with quick.
     pose proof (multi_trans H2 H3).
     eapply multistep_preserves_R'.
     2: eassumption.
-    simpl. splits...
+    simp Rel.
     unfold halts in *. exists (const Γ' x). splits...
     econstructor. }
   { (* Tuple *)
     intros.
-    pose proof (IHt1 s H) as H1; clear IHt1.
-    pose proof (IHt2 s H) as H2; clear IHt2.
+    pose proof (IHt1 sb H) as H1; clear IHt1.
+    pose proof (IHt2 sb H) as H2; clear IHt2.
     pose proof (R_halts H1) as [t1' [Hst1 Hv1]].
     pose proof (R_halts H2) as [t2' [Hst2 Hv2]].
     pose proof (multistep_preserves_R _ _ H1 Hst1).
     pose proof (multistep_preserves_R _ _ H2 Hst2).
-    simpl (substitute s (tuple Γ t1 t2)).
-    assert (tuple Γ' (substitute s t1) (substitute s t2) -->* tuple Γ' t1' t2').
+    assert (tuple Γ' (substitute sb t1) (substitute sb t2) -->* tuple Γ' t1' t2').
     { eapply multi_trans.
       { apply multistep_Tuple1... }
       { apply multistep_Tuple2... } }
-    unfold Rel. fold Rel. split.
+    simp Rel. split.
     { unfold halts.
       exists (tuple Γ' t1' t2')... }
     { intros. exists t1'. exists t2'.
       splits... } }
   { (* First *)
     intros. simpl.
-    pose proof (IHt s H) as H'.
+    pose proof (IHt sb H) as H'.
     pose proof (R_halts H'); destruct H0 as [t' [Hst Hvt]].
     apply value_halts in Hvt.
     pose proof H' as [Hh He].
     destruct He as [Hr [Hs [Hsst [Hvr [Hvs [Hrr Hrs]]]]]].
     pose proof (multistep_preserves_R _ _ H' Hsst).
-    assert (Hst''': first Γ' (substitute s t) -->* Hr).
+    assert (Hst''': first Γ' (substitute sb t) -->* Hr).
     { eapply multi_trans.
       { apply multistep_First. apply Hsst. }
       { econstructor. apply ST_FstTuple... constructor. } }
@@ -617,13 +645,13 @@ Proof with quick.
     induction τ... }
   { (* Second *)
     intros. simpl.
-    pose proof (IHt s H) as H'.
+    pose proof (IHt sb H) as H'.
     pose proof (R_halts H') as [t' [Hst Hvt]].
     apply value_halts in Hvt.
     pose proof H' as [Hh He].
     destruct He as [Hr [Hs [Hsst [Hvr [Hvs [Hrr Hrs]]]]]].
     pose proof (multistep_preserves_R _ _ H' Hsst).
-    assert (Hst''': second Γ' (substitute s t) -->* Hs).
+    assert (Hst''': second Γ' (substitute sb t) -->* Hs).
     { eapply multi_trans.
       { apply multistep_Second. apply Hsst. }
       { econstructor. apply ST_SndTuple... constructor. } }
@@ -632,9 +660,9 @@ Proof with quick.
     induction τ... }
   { (* Case *)
     intros. simpl.
-    pose proof (IHt1 s H) as IHt1'; clear IHt1.
-    pose proof (IHt2 s H) as IHt2'; clear IHt2.
-    pose proof (IHt3 s H) as IHt3'; clear IHt3.
+    pose proof (IHt1 sb H) as IHt1'; clear IHt1.
+    pose proof (IHt2 sb H) as IHt2'; clear IHt2.
+    pose proof (IHt3 sb H) as IHt3'; clear IHt3.
     (* pose proof (R_halts H0) as [e' [Hste Hve]]. *)
     pose proof (R_halts IHt2') as [t2' [Hst2 Hv2]].
     pose proof (R_halts IHt3') as [t3' [Hst3 Hv3]].
@@ -642,7 +670,7 @@ Proof with quick.
     pose proof (multistep_preserves_R _ _ IHt2' Hst2) as H2'.
     pose proof (multistep_preserves_R _ _ IHt3' Hst3) as H3'.
     (* dependent induction Hve; clear IHHve. *)
-    simpl in IHt1'.
+    simpl in IHt1'. simp Rel in *.
     destruct IHt1' as [Hh IHt1']; destruct IHt1' as [IHt1'|IHt1'];
       destruct IHt1' as [x [Hstep [Hv Hr]]].
     { eapply multistep_preserves_R'.
@@ -665,7 +693,7 @@ Proof with quick.
       destruct H3' as [Hh3 Hs3]. simpl in Hs3... } }
   { (* Inl *)
     intros.
-    pose proof (IHt s H) as H'.
+    pose proof (IHt sb H) as H'.
     apply R_halts in H'.
     destruct H' as [t' [Hst Hv]].
     split...
@@ -677,7 +705,7 @@ Proof with quick.
       eapply multistep_preserves_R... } }
   { (* Inr *)
     intros.
-    pose proof (IHt s H) as H'.
+    pose proof (IHt sb H) as H'.
     apply R_halts in H'.
     destruct H' as [t' [Hst Hv]].
     split...
