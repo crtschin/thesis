@@ -18,218 +18,11 @@ Require Import AD.Definitions.
 Require Import AD.Macro.
 Require Import AD.Tactics.
 Require Import AD.Normalization.
+Require Import AD.Denotation.
 (* Require Import AD.Tangent. *)
 
 Local Open Scope program_scope.
 Local Open Scope R_scope.
-
-(* Notations:
-
-  ⟦ τ ⟧ₜ := denote_t τ, Currently piggybacks off of Coq's types.
-  ⟦ Γ ⟧ₜₓ := denote_ctx Γ, A product list of types ensured to exist
-                          in the context Γ.
-  ⟦ v ⟧ₜₓ := denote_v v, A projection of the product list denoted by the typing
-                        context relevant to the variable referenced by v
-  ⟦ t ⟧ₜₘ := denote_tm t, Gives a function f of t such that it has the correct
-                          denoted type of τ given the denoted context of Γ.
-*)
-
-(*
-  Goal: Write out the logical relation over types with the goal of having both
-    the proof of differentiability and witness in one.
-
-  Will piggyback on Coq's types
-*)
-Reserved Notation "⟦ τ ⟧ₜ".
-Fixpoint denote_t τ : Set :=
-  match τ with
-  | Real => R
-  | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
-  | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
-  | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ
-  end
-where "⟦ τ ⟧ₜ" := (denote_t τ).
-
-Reserved Notation "⟦ Γ ⟧ₜₓ".
-Fixpoint denote_ctx (Γ : Ctx) : Type :=
-  match Γ with
-  | [] => unit
-  | h :: t => ⟦h⟧ₜ * ⟦t⟧ₜₓ
-  end
-where "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
-
-Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
-  match v with
-  | Top Γ' τ' => fun gamma => fst gamma
-  | Pop Γ' τ' σ x => fun gamma => denote_v x (snd gamma)
-  end.
-Notation "⟦ v ⟧ᵥ" := (denote_v v).
-
-Reserved Notation "⟦ t ⟧ₜₘ".
-Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
-  match t with
-  | var σ v => fun ctx => denote_v v ctx
-  | app σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx)
-  | abs σ ρ f => fun ctx => fun x => ⟦ f ⟧ₜₘ (x, ctx)
-
-  | const r => fun ctx => r
-  | add t1 t2 => fun ctx => ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx
-
-  | tuple σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx)
-  | first σ ρ t => fun ctx => fst (⟦t⟧ₜₘ ctx)
-  | second σ ρ t => fun ctx => snd (⟦t⟧ₜₘ ctx)
-
-  | case τ σ ρ e c1 c2 => fun ctx =>
-    match (⟦e⟧ₜₘ ctx) with
-    | Datatypes.inl x => (⟦c1⟧ₜₘ ctx) x
-    | Datatypes.inr x => (⟦c2⟧ₜₘ ctx) x
-    end
-  | inl τ σ e => fun ctx => Datatypes.inl (⟦e⟧ₜₘ ctx)
-  | inr τ σ e => fun ctx => Datatypes.inr (⟦e⟧ₜₘ ctx)
-  end
-where "⟦ t ⟧ₜₘ" := (denote_tm t).
-
-Fixpoint denote_env {Γ} (G : Env Γ) : ⟦ Γ ⟧ₜₓ :=
-  match G with
-  | env_nil => tt
-  | env_cons Γ' τ t G' => (denote_tm t tt, denote_env G')
-  end.
-
-Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
-  match Γ with
-  | [] => fun s ctx => tt
-  | h :: t => fun s ctx =>
-      (denote_tm (hd_sub s) ctx, denote_sub (tl_sub s) ctx)
-  end.
-
-Fixpoint denote_ren {Γ Γ'}: ren Γ' Γ -> denote_ctx Γ -> denote_ctx Γ' :=
-  match Γ' with
-  | [] => fun r ctx => tt
-  | h :: t => fun r ctx =>
-      (denote_tm (hd_ren r) ctx, denote_ren (tl_ren r) ctx)
-  end.
-
-(* Lemmas for renaming and substitution in the denotated context. *)
-(* Many from Strongly Typed Terms in Coq by Nick Becton, et al. *)
-Lemma denote_ren_tl_lift : forall Γ Γ' τ
-  (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
-  denote_ren r ctx = denote_ren (tl_ren (rename_lifted r)) (x, ctx).
-Proof with eauto.
-  induction Γ...
-  intros. specialize IHΓ with (r:=tl_ren r).
-  simpl. rewrite IHΓ with (x:=x)...
-Qed.
-
-Lemma denote_ren_commutes :
-  forall Γ Γ' τ (t : tm Γ τ) (r : ren Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
-    ⟦ t ⟧ₜₘ (denote_ren r ctx) = ⟦ rename r t ⟧ₜₘ ctx.
-Proof with quick.
-  intros. generalize dependent Γ'.
-  induction t; quick; rewrites...
-  { induction v... rewrite IHv... }
-  { specialize IHt with (r:=rename_lifted r).
-    simpl in IHt. simp rename_lifted in IHt.
-    apply functional_extensionality...
-    rewrite <- IHt...
-    rewrite <- denote_ren_tl_lift... }
-Qed.
-
-Lemma denote_ren_shift : forall Γ Γ' τ (r:ren Γ Γ'),
-  denote_ren (fun _ v => Pop _ _ τ (r _ v)) =
-    fun se => denote_ren r (snd se).
-Proof with quick.
-  induction Γ... extensionality ctx.
-  apply injective_projections...
-  unfold tl_ren. rewrite IHΓ...
-Qed.
-
-Lemma denote_ren_id : forall Γ,
-  denote_ren (@id_ren Γ) = Datatypes.id.
-Proof with quick.
-  intros. extensionality x.
-  dependent induction Γ... destruct x...
-  destruct x...
-  apply injective_projections...
-  unfold tl_ren, id_ren in *...
-  rewrite denote_ren_shift...
-Qed.
-
-Lemma denote_shift : forall Γ τ σ (t : tm Γ τ) ctx,
-    ⟦ shift (σ:=σ) t ⟧ₜₘ ctx = ⟦ t ⟧ₜₘ (snd ctx).
-Proof with eauto.
-  unfold shift. intros.
-  rewrite <- denote_ren_commutes...
-  pose proof denote_ren_tl_lift as H.
-  destruct ctx as [x ctx].
-  specialize H with Γ Γ σ (fun t x => x) x ctx.
-  unfold tl_ren in H.
-  assert (H':
-    (fun (σ0 : ty) (x : σ0 ∈ Γ) =>
-       rename_lifted (fun (t : ty) (x0 : t ∈ Γ) => x0) σ0 (Pop Γ σ0 σ x)) =
-    (fun (ρ : ty) (x0 : ρ ∈ Γ) => Pop Γ ρ σ x0)).
-  { apply functional_extensionality_dep... }
-  rewrite <- H'. rewrite <- H.
-  fold (@id_ren Γ). rewrite denote_ren_commutes.
-  rewrite app_ren_id...
-Qed.
-
-Lemma denote_sub_elim : forall Γ Γ' τ
-  (s : sub Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
-  denote_sub s ctx = denote_sub (tl_sub (substitute_lifted s)) (x, ctx).
-Proof with eauto.
-  induction Γ; intros...
-  intros. specialize IHΓ with (s := (tl_sub s)).
-  simpl. rewrite IHΓ with (x := x).
-  unfold hd_sub. unfold tl_sub. simp substitute_lifted.
-  erewrite denote_shift...
-Qed.
-
-Lemma denote_sub_commutes :
-  forall Γ Γ' τ (t : tm Γ τ) (s : sub Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
-    ⟦ t ⟧ₜₘ (denote_sub s ctx) = ⟦ substitute s t ⟧ₜₘ ctx.
-Proof with quick.
-  intros. generalize dependent Γ'.
-  induction t; intros; rewrites...
-  { simpl. induction v...
-    intros. simpl. rewrite IHv... }
-  { specialize IHt with (s:=substitute_lifted s)...
-    apply functional_extensionality...
-    rewrite <- IHt...
-    erewrite denote_sub_elim... }
-Qed.
-
-Lemma denote_sub_id : forall Γ τ (t : tm Γ τ) (ctx : ⟦ Γ ⟧ₜₓ),
-  ⟦ t ⟧ₜₘ (denote_sub id_sub ctx) = ⟦ t ⟧ₜₘ ctx.
-Proof with quick.
-  intros.
-  rewrite denote_sub_commutes...
-  rewrite app_sub_id...
-Qed.
-
-Lemma denote_sub_shift : forall Γ Γ' σ (s:sub Γ Γ'),
-  denote_sub (fun _ v => shift (σ:=σ) (s _ v)) =
-    fun ctx => denote_sub s (snd ctx).
-Proof with quick.
-  induction Γ... extensionality ctx.
-  apply injective_projections...
-  { unfold hd_sub. rewrite denote_shift... }
-  { unfold tl_sub. rewrite IHΓ... }
-Qed.
-
-Theorem soundness : forall τ (t t' : tm [] τ),
-  (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
-Proof with quick.
-  intros.
-  induction H...
-  rewrite <- IHmulti.
-  dependent induction H;
-    extensionality ctx; quick;
-    try (erewrite IHstep; constructor).
-  { rewrite <- denote_sub_commutes...
-    unfold hd_sub. simp cons_sub. destruct ctx... }
-  { rewrite (IHstep t2 t2' t2')...
-    constructor. }
-Qed.
 
 (* Defined in section 5 *)
 (* Record Gl τ σ := make_gl {
@@ -251,41 +44,46 @@ S (σ → ρ) f g :=
     g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) -> *)
     S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x));
 S (σ <+> ρ) f g :=
-  forall g1 g2 h1 h2 x,
-    S σ g1 g2 /\
-    S ρ h1 h2 /\
-      (match f x with
-      | Datatypes.inl s => s = g1 x
-      | Datatypes.inr r => r = h1 x
-      end) /\
-      (match g x with
-      | Datatypes.inl s => s = g2 x
-      | Datatypes.inr r => r = h2 x
-      end).
+  (exists g1 g2,
+    forall (s: S σ g1 g2),
+      f = Datatypes.inl ∘ g1 /\
+      g = Datatypes.inl ∘ g2) \/
+  (exists g1 g2,
+    forall (s: S ρ g1 g2),
+      f = Datatypes.inr ∘ g1 /\
+      g = Datatypes.inr ∘ g2).
 
-(*
-Inductive instantiation :
+(* Inductive instantiation :
   forall {Γ Γ'}, (⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ) -> Prop :=
-  | inst_empty : @instantiation [] [] (denote_sub id_sub)
-  | inst_cons : forall {Γ Γ' τ} {sb : sub Γ Γ'} {g1 g2},
-      instantiation (denote_sub sb) ->
+  | inst_empty : @instantiation [] [] Datatypes.id
+  | inst_cons : forall {Γ Γ' τ} (sb: ⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ) {g1 g2},
+      instantiation sb ->
       (S τ g1 g2) ->
-      instantiation (denote_sub (substitute_lifted (τ:=τ) sb)).
-*)
+      instantiation (fun (ctx: ⟦ τ::Γ' ⟧ₜₓ) => (sb (snd ctx))). *)
 
-Inductive instantiation :
+(* Inductive instantiation :
   forall {Γ Γ'}, sub Γ Γ' -> (R -> Env Γ') -> Prop :=
   | inst_empty : forall {f}, @instantiation [] [] id_sub f
   | inst_cons : forall {Γ Γ' τ} {t : tm Γ' τ} {s : sub Γ Γ'} {f : R -> Env Γ'},
       instantiation s f ->
       (S τ (⟦t⟧ₜₘ ∘ denote_env ∘ f)
         (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
-      instantiation (cons_sub t s) f.
+      instantiation (cons_sub t s) f. *)
+
+Equations instantiation Γ {Γ'} (f : R -> Env Γ') : sub Γ Γ' -> Prop :=
+instantiation nil f s := True;
+instantiation (τ :: Γ) f s :=
+  exists g1 g2,
+    S τ g1 g2 /\
+      g1 = (⟦hd_sub s⟧ₜₘ ∘ denote_env ∘ f) /\
+      g2 = (⟦Dtm (hd_sub s)⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) /\
+      instantiation Γ f (tl_sub s).
 
 Lemma S_cong : forall τ f1 f2 g1 g2,
   S τ f1 f2 -> g1 = f1 -> g2 = f2 -> S τ g1 g2.
 Proof. intros; subst; assumption. Qed.
 
+(*
 Lemma S_substitute_lifted :
   forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (sb: sub Γ Γ') g g1 g2,
   S σ g1 g2 ->
@@ -299,6 +97,7 @@ Lemma S_substitute_lifted :
       (g2 r, (denote_env (Denv (g r))))).
 Proof with quick.
 Admitted.
+*)
 
 (*
   Plain words:
@@ -309,7 +108,7 @@ Admitted.
 Lemma fundamental :
   forall Γ Γ' τ f
     (t : tm Γ τ) (sb : sub Γ Γ'),
-  instantiation sb f ->
+  instantiation Γ f sb ->
   S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ f)
     (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
 Proof with quick.
@@ -318,10 +117,14 @@ Proof with quick.
   (* pose proof (H τ) as H'. clear H. *)
   dependent induction t.
   { (* Var *)
-    intros.
-    dependent induction H... inversion v.
-    dependent destruction v; subst...
-    simp cons_sub. }
+    induction v; intros;
+      simp instantiation in H;
+      destruct H as [g1 [g2 H]];
+      destruct H as [H [Heq1 [Heq2 H']]]; subst.
+    { unfold hd_sub in H... }
+    { eapply S_cong.
+      simp instantiation in H.
+      unfold tl_sub... unfold tl_sub... } }
   { (* App *)
     intros.
     specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
@@ -329,7 +132,14 @@ Proof with quick.
     pose proof (IHt2 H) as IHt2'; clear IHt2...
     simp S in IHt1'. }
   { (* Abs *)
-    intros. simp S...
+    induction Γ.
+    intros. clear H.
+    simp S.
+    simpl (substitute sb (abs [] τ σ t)).
+    simp Dtm; intros; fold (map Dt).
+    eapply S_cong.
+    apply IHt. simp instantiation.
+    exists g1; exists g2; splits...
     admit. }
   { (* Const *)
     quick. split.
@@ -383,11 +193,29 @@ Proof with quick.
     { simp Dtm... rewrite H2... } }
   { (* Case *)
     intros.
-    pose proof (IHt1 Γ' g sb H) as H1'; clear IHt1.
-    pose proof (IHt2 Γ' g sb H) as H2'; clear IHt2.
-    pose proof (IHt3 Γ' g sb H) as H3'; clear IHt3.
-    simp S in *. simpl.
+    pose proof (IHt1 Γ' g sb H) as IH1; clear IHt1.
+    simp S in IH1.
+    (* induction H.
+    rewrite app_sub_id.
+    simp Dtm.
+    pose proof (IHt1 Γ' g sb H) as H1; clear IHt1.
+    pose proof (IHt2 Γ' g sb H) as H2; clear IHt2.
+    pose proof (IHt3 Γ' g sb H) as H3; clear IHt3.
+    simpl (substitute sb (case Γ t1 t2 t3)).
+    simp Dtm.
+    simp S in H1. destruct H1 as [H1|H1].
+    induction H... simpl. *)
     admit. }
+  { (* Inl *)
+    intros. simp S. left...
+    exists (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g).
+    exists (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
+    split; unfold compose; extensionality x... }
+  { (* Inl *)
+    intros. simp S. right...
+    exists (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g).
+    exists (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
+    split; unfold compose; extensionality x... }
 Admitted.
 
 Lemma S_correct_R :

@@ -100,7 +100,6 @@ Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
   inversion G. assumption.
 Defined.
 
-
 (* Examples *)
 Definition ex_id :=
   abs [] Real Real

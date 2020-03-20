@@ -681,7 +681,7 @@ Proof with quick.
     2:{ apply multistep_Case2... }
       eapply multistep_preserves_R'.
     2:{ apply multistep_CaseInl... }
-      destruct H2' as [Hh2 Hs2]. simpl in Hs2... }
+      destruct H2' as [Hh2 Hs2]... }
     { eapply multistep_preserves_R'.
     2:{ apply multistep_Case... }
       eapply multistep_preserves_R'.
@@ -690,7 +690,7 @@ Proof with quick.
     2:{ apply multistep_Case2... }
       eapply multistep_preserves_R'.
     2:{ apply multistep_CaseInr... }
-      destruct H3' as [Hh3 Hs3]. simpl in Hs3... } }
+      destruct H3' as [Hh3 Hs3]... } }
   { (* Inl *)
     intros.
     pose proof (IHt sb H) as H'.
