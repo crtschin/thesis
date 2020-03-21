@@ -55,9 +55,11 @@ Automatic or algorithmic differentiation is beneficial over other methods of aut
 
 Coq is a proof assistant created by Thierry Coquand as an implementation of his calculus of constructions type theory\ref. In the 30 years since it has been released, research has contributed to extending the proof assistant with additional features such as inductive and co-inductive data types\ref, GADTs\ref and advanced modular constructions for organizing immense proofs\ref.
 
-The core of calculus of constructions is based on constructive logic and so many of the laws known in classical logic are not present. Examples include the law of the excluded middle, $\forall A, A \vee \neg A$, or the law of functional extensionality, $\forall x, f(x) = g(x) \rightarrow f = g$. They can, however, be safely added to Coq without making its logic inconsistent. Due to its usefulness in proving propositions over functions, we will make use of functional extensionality in Coq.
+The core of calculus of constructions is based on constructive logic and so many of the laws known in classical logic are not present. Examples include the law of the excluded middle, $\forall A, A \vee \neg A$, or the law of functional extensionality, $\forall x, f(x) = g(x) \rightarrow f = g$. They can, however, be safely added to Coq without making its logic inconsistent. Due to its usefulness in proving propositions over functions, we will make use of the functional extensionality axiom in Coq.
 
-When defining a simply typed lambda calculus in Coq, one is free to define it using an intrinsic or extrinsic formulation.
+\subsubsection{Binders Dependent Types}
+\subsubsection{}
+
 \todo*
 
 \subsection{Denotation Semantics}

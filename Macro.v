@@ -65,7 +65,7 @@ Proof with eauto.
 Qed.
 
 (* The D macro preserves types *)
-Lemma D_type : forall Γ τ
+(* Lemma D_type : forall Γ τ
   (t : tm Γ τ),
   has_type (Dtm t) = Dt τ.
 Proof. trivial. Qed.
@@ -75,7 +75,35 @@ Lemma D_type_sub : forall Γ τ σ
   (s : tm Γ σ),
   has_type (Dtm (substitute (| s |) t)) =
     has_type (substitute (| Dtm s |) (Dtm t)).
-Proof. trivial. Qed.
+Proof. trivial. Qed. *)
+
+Lemma D_rename Γ τ σ (t : tm Γ τ):
+  Dtm (rename (fun (ρ : ty) (x : ρ ∈ Γ) => Pop Γ ρ σ x) t) =
+  rename (fun (ρ : ty) (x : ρ ∈ map Dt Γ) => Pop (map Dt Γ) ρ (Dt σ) x) (Dtm t).
+Proof with quick.
+  induction t; simpl; simp Dtm; fold map Dt; rewrites.
+  fold (map Dt).
+  assert
+    (Dtm (rename
+      (rename_lifted (fun (ρ : ty) (x : ρ ∈ Γ) => Pop Γ ρ σ x)) t) =
+    rename (rename_lifted
+      (fun (ρ : ty) (x : ρ ∈ map Dt Γ) => Pop (map Dt Γ) ρ (Dt σ) x)) (Dtm t)).
+  { admit. }
+  rewrite H...
+Admitted.
+
+Lemma D_shift : forall Γ τ σ (t : tm Γ τ),
+  Dtm (shift (σ:=σ) t) = shift (σ:=Dt σ) (Dtm t).
+Proof with quick.
+  intros. unfold shift...
+  rewrite D_rename...
+Admitted.
+
+Lemma D_cons_sub: forall Γ τ σ (v: τ ∈ σ :: Γ) (s: tm Γ σ),
+  Dtm ((| s |) τ v) = (| Dtm s |) (Dt τ) (Dv v).
+Proof.
+Admitted.
+
 
 Lemma D_sub : forall Γ τ σ
   (t : tm (σ::Γ) τ)
@@ -85,64 +113,20 @@ Lemma D_sub : forall Γ τ σ
 Proof with quick.
   dependent induction t...
   - dependent induction v...
-  - assert (H: σ :: Γ ~= σ :: Γ). { reflexivity. }
-    assert (H': t1 ~= t1). { reflexivity. }
-    assert (H'': t2 ~= t2). { reflexivity. }
-    pose proof (IHt1 Γ σ t1 H H') as H1.
-    pose proof (IHt2 Γ σ t2 H H'') as H2.
-    clear H H' H''.
-    simp Dtm. rewrite H1. rewrite H2...
-  - assert (H: σ0 :: σ :: Γ ~= σ0 :: σ :: Γ). { reflexivity. }
-    assert (H': t ~= t). { reflexivity. }
-    pose proof (IHt (σ::Γ) σ0 t H H') as Ht.
-    clear H H' IHt.
-    simp Dtm... fold (map Dt Γ).
+  - simp Dtm. rewrites.
+  - simp Dtm.
     assert (Hr :
       Dtm (substitute (substitute_lifted (| s |)) t) =
       substitute (substitute_lifted (| Dtm s |)) (Dtm t)).
     { admit. }
-    rewrite Hr...
-  - intros. simpl.
-    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
-    assert (H1: t1 ~= t1). reflexivity.
-    assert (H2: t2 ~= t2). reflexivity.
-    simp Dtm.
-    pose proof (IHt1 Γ σ t1 H H1) as Ht1. rewrite -> Ht1.
-    pose proof (IHt2 Γ σ t2 H H2) as Ht2. rewrite -> Ht2...
-  - intros. simpl.
-    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
-    assert (H1: t1 ~= t1). reflexivity.
-    assert (H2: t2 ~= t2). reflexivity.
-    simp Dtm.
-    pose proof (IHt1 Γ σ t1 H H1) as Ht1. rewrite -> Ht1.
-    pose proof (IHt2 Γ σ t2 H H2) as Ht2. rewrite -> Ht2...
-  - intros.
-    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
-    assert (H': t ~= t). reflexivity.
-    pose proof (IHt Γ σ t H H') as Hr.
-    simpl. simp Dtm. rewrite Hr...
-  - intros.
-    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
-    assert (H': t ~= t). reflexivity.
-    pose proof (IHt Γ σ t H H') as Hr.
-    simpl. simp Dtm. rewrite Hr...
-  - intros. simpl.
-    assert (H: σ :: Γ ~= σ :: Γ). { reflexivity. }
-    assert (H': t1 ~= t1). { reflexivity. }
-    assert (H'': t2 ~= t2). { reflexivity. }
-    assert (H''': t3 ~= t3). { reflexivity. }
-    pose proof (IHt1 Γ σ t1 H H').
-    pose proof (IHt2 Γ σ t2 H H'').
-    pose proof (IHt3 Γ σ t3 H H''').
-    simp Dtm. rewrite H0; rewrite H1; rewrite H2...
-  - intros. simpl.
-    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
-    assert (H': t ~= t). reflexivity.
-    pose proof (IHt Γ σ t H H') as Hr.
-    simp Dtm. rewrite Hr...
-  - intros. simpl.
-    assert (H: σ :: Γ ~= σ :: Γ). reflexivity.
-    assert (H': t ~= t). reflexivity.
-    pose proof (IHt Γ σ t H H') as Hr.
-    simp Dtm. rewrite Hr...
+    rewrites...
+  - simp Dtm.
+    specialize IHt1 with Γ σ t1 s.
+    specialize IHt2 with Γ σ t2 s. rewrites...
+  - simp Dtm. rewrites...
+  - simp Dtm. rewrites...
+  - simp Dtm. rewrites...
+  - simp Dtm. rewrites...
+  - simp Dtm. rewrites...
+  - simp Dtm. rewrites...
 Admitted.

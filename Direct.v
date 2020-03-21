@@ -37,11 +37,12 @@ S (σ × ρ) f g :=
     (f = fun r => (f1 r, g1 r)) /\
     (g = fun r => (f2 r, g2 r));
 S (σ → ρ) f g :=
-  (* exists Γ h,
-  forall (t : tm Γ σ), *)
-  forall g1 g2 (sσ : S σ g1 g2),
-    (* g1 = (⟦t⟧ₜₘ ∘ denote_env ∘ h) ->
-    g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) -> *)
+  forall g1 g2,
+  forall (sσ : S σ g1 g2),
+  forall Γ h,
+  forall (t : tm Γ σ),
+    g1 = (⟦t⟧ₜₘ ∘ denote_env ∘ h) ->
+    g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) ->
     S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x));
 S (σ <+> ρ) f g :=
   (exists g1 g2,
@@ -80,8 +81,15 @@ instantiation (τ :: Γ) f s :=
       instantiation Γ f (tl_sub s).
 
 Lemma S_cong : forall τ f1 f2 g1 g2,
-  S τ f1 f2 -> g1 = f1 -> g2 = f2 -> S τ g1 g2.
-Proof. intros; subst; assumption. Qed.
+  g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
+Proof. intros. rewrites. Qed.
+
+Lemma S_soundness : forall Γ τ (t t' : tm Γ τ) f,
+  (t -->* t') ->
+    S τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
+      S τ (⟦ t' ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm t' ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
+Proof with quick.
+Admitted.
 
 (*
 Lemma S_substitute_lifted :
@@ -96,8 +104,8 @@ Lemma S_substitute_lifted :
     (fun r => ⟦Dtm (substitute (substitute_lifted (τ:=σ) sb) t) ⟧ₜₘ
       (g2 r, (denote_env (Denv (g r))))).
 Proof with quick.
-Admitted.
-*)
+Admitted. *)
+
 
 (*
   Plain words:
@@ -115,14 +123,15 @@ Proof with quick.
   intros Γ Γ' τ g t sb H.
   generalize dependent Γ'.
   (* pose proof (H τ) as H'. clear H. *)
-  dependent induction t.
+  dependent induction t; unfold compose in *.
   { (* Var *)
     induction v; intros;
       simp instantiation in H;
+      (* specialize H with g; *)
       destruct H as [g1 [g2 H]];
       destruct H as [H [Heq1 [Heq2 H']]]; subst.
     { unfold hd_sub in H... }
-    { eapply S_cong.
+    { erewrite S_cong.
       simp instantiation in H.
       unfold tl_sub... unfold tl_sub... } }
   { (* App *)
@@ -130,17 +139,54 @@ Proof with quick.
     specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2...
-    simp S in IHt1'. }
+    simp S in IHt1'.
+    specialize IHt1' with
+      (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g)
+      (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)
+      Γ' g
+      (substitute sb t2)...
+    (* pose proof (IHt1' IHt2') as [t IHt1]. clear IHt1'.
+    apply IHt1. *)
+    (* destruct IHt1' as [_ IHt1']...  *)
+    }
   { (* Abs *)
+    intros. simp S. intros; subst.
+    simpl (substitute sb (abs Γ τ σ t)).
+    simp Dtm. simpl.
     induction Γ.
-    intros. clear H.
-    simp S.
-    simpl (substitute sb (abs [] τ σ t)).
-    simp Dtm; intros; fold (map Dt).
-    eapply S_cong.
-    apply IHt. simp instantiation.
-    exists g1; exists g2; splits...
-    admit. }
+    erewrite S_cong.
+    (* exists (substitute (substitute_lifted sb) t). *)
+    apply IHt.
+    instantiate (2:=g).
+    simp instantiation.
+    exists (⟦ t0 ⟧ₜₘ ∘ denote_env ∘ h).
+    exists (⟦ Dtm t0 ⟧ₜₘ ∘ denote_env ∘ Denv ∘ h).
+    splits...
+    (* instantiate (1:=cons_sub t0 sb). *)
+    all: admit.
+
+    (* Induction on context *)
+    (* induction Γ'.
+    { intros. induction Γ.
+      simp S. simpl (substitute sb (abs [] τ σ t)).
+      simp Dtm. intros. fold (map Dt). subst.
+      eapply S_cong.
+      apply IHt.
+      instantiate (2:=g).
+      pose proof (|t0|).
+      instantiate (1:=(|t0|)).
+      simp instantiation.
+      intros.
+      exists (⟦ t0 ⟧ₜₘ ∘ denote_env ∘ h).
+      exists (⟦ Dtm t0 ⟧ₜₘ ∘ denote_env ∘ Denv ∘ h).
+      splits...
+      admit.
+      (* apply IHt. simp instantiation.
+      exists g1; exists g2; splits... *) }
+    { intros. simp S. intros.
+      simpl (substitute sb (abs _ τ σ t)).
+      simp Dtm. fold (map Dt).  } *)
+    }
   { (* Const *)
     quick. split.
     { intros. apply ex_derive_const. }
@@ -175,7 +221,7 @@ Proof with quick.
     pose proof (IHt H) as IHt'; clear IHt.
     simp S in IHt'.
     destruct IHt' as [f1 [f2 [g1 [g2 [S1 [S2 [H1 H2]]]]]]]...
-    eapply S_cong; try (apply S1);
+    erewrite S_cong; try (apply S1);
     apply functional_extensionality_dep; intros;
     eapply equal_f in H1; eapply equal_f in H2.
     { rewrite H1... }
@@ -186,7 +232,7 @@ Proof with quick.
     pose proof (IHt H) as IHt'; clear IHt.
     simp S in IHt'.
     destruct IHt' as [f1 [f2 [g1 [g2 [S1 [S2 [H1 H2]]]]]]]...
-    eapply S_cong; try (apply S2);
+    erewrite S_cong; try (apply S2);
     apply functional_extensionality_dep; intros;
     eapply equal_f in H1; eapply equal_f in H2.
     { rewrite H1... }

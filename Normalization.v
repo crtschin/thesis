@@ -22,7 +22,7 @@ From AD Require Import Definitions.
     Proofs And Types by Jean-Yves Girard.
 *)
 Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
-  | v_real : forall Γ r,
+  | v_real : forall {Γ r},
     value (const Γ r)
   | v_tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
     value t1 ->
@@ -421,6 +421,14 @@ Proof with quick.
     apply IHmulti...
 Qed.
 
+Lemma multistep_App1 : forall Γ τ σ (t t' : tm Γ (σ → τ)) (b : tm Γ σ),
+  (t -->* t') -> (app _ _ _ t b) -->* (app _ _ _ t' b).
+Proof with quick.
+  intros. induction H.
+  - constructor.
+  - eapply multi_step. apply ST_App1... assumption.
+Qed.
+
 Lemma multistep_App2 : forall Γ τ σ (v : tm Γ (σ → τ)) (t t' : tm Γ σ),
   value v -> (t -->* t') -> (app _ _ _ v t) -->* (app _ _ _ v t').
 Proof with quick.
@@ -445,14 +453,12 @@ Proof with quick.
   - eapply multi_step. apply ST_Add2... assumption.
 Qed.
 
-Lemma multistep_Add : forall Γ t1 t2,
-  value t1 -> value t2 ->
-  exists t', (add Γ t1 t2) -->* (const Γ t').
+Lemma multistep_Add : forall Γ r1 r2,
+  value (const Γ r1) -> value (const Γ r2) ->
+  (add Γ (const Γ r1) (const Γ r2)) -->* (const Γ (Rdefinitions.Rplus r1 r2)).
 Proof with quick.
-  intros.
-  dependent destruction H.
-  dependent destruction H0.
-  exists (Rdefinitions.Rplus r r0). repeat econstructor.
+  intros. econstructor.
+  all: constructor.
 Qed.
 
 Lemma multistep_Tuple1 : forall Γ τ σ (t t' : tm Γ τ) (t1 : tm Γ σ),
@@ -479,12 +485,26 @@ Proof with quick.
   - eapply multi_step. apply ST_Fst... assumption.
 Qed.
 
+Lemma multistep_FirstTuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
+  value t1 -> value t2 -> (first Γ (tuple Γ t1 t2)) -->* t1.
+Proof with quick.
+  intros. econstructor.
+  apply ST_FstTuple... constructor.
+Qed.
+
 Lemma multistep_Second : forall Γ τ σ (t t' : tm Γ (τ × σ)),
   (t -->* t') -> (second Γ t) -->* (second Γ t').
 Proof with quick.
   intros. induction H.
   - constructor.
   - eapply multi_step. apply ST_Snd... assumption.
+Qed.
+
+Lemma multistep_SecondTuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
+  value t1 -> value t2 -> (second Γ (tuple Γ t1 t2)) -->* t2.
+Proof with quick.
+  intros. econstructor.
+  apply ST_SndTuple... constructor.
 Qed.
 
 Lemma multistep_Case : forall Γ τ σ ρ e e' c1 c2,
@@ -603,13 +623,17 @@ Proof with quick.
     { eapply multi_trans.
       { eapply multistep_Add1... }
       { eapply multistep_Add2... } }
-    pose proof (multistep_Add _ _ _ Hv1 Hv2).
-    destruct H3.
-    pose proof (multi_trans H2 H3).
+    dependent destruction Hv1.
+    dependent destruction Hv2.
+    pose proof (multistep_Add Γ0 r r0 v_real v_real).
+    eapply multistep_preserves_R'.
+    2: eassumption.
     eapply multistep_preserves_R'.
     2: eassumption.
     simp Rel.
-    unfold halts in *. exists (const Γ' x). splits...
+    unfold halts in *.
+    exists (const Γ0 (Rdefinitions.RbaseSymbolsImpl.Rplus r r0)).
+    splits...
     econstructor. }
   { (* Tuple *)
     intros.

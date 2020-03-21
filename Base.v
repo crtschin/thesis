@@ -14,7 +14,6 @@ Questions:
 (* Opaque substitute_lifted *)
 (* Sum types *)
 (* Denotational instantiation *)
-(* Use D_sub? *)
 
 Notational conventions:
   capital greeks for typing environment
