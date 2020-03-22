@@ -279,7 +279,9 @@ Proof with quick.
   { (* Case *)
     intros.
     pose proof (IHt1 Γ' g sb H) as IH1; clear IHt1.
-    simp S in IH1.
+    simp S in IH1. simpl. simp Dtm. simpl.
+    destruct IH1 as [[g1 [g2 H']]|[g1 [g2 H']]].
+    all: admit.
     (* induction H.
     rewrite app_sub_id.
     simp Dtm.
@@ -290,7 +292,7 @@ Proof with quick.
     simp Dtm.
     simp S in H1. destruct H1 as [H1|H1].
     induction H... simpl. *)
-    admit. }
+    }
   { (* Inl *)
     intros. simp S. left...
     exists (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g).

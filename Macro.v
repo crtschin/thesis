@@ -64,6 +64,15 @@ Proof with eauto.
   intros Γ τ H. induction H; constructor. assumption.
 Qed.
 
+Lemma D_rename_lifted : forall Γ τ σ ρ (t : tm (ρ::Γ) τ),
+  Dtm
+  (rename (rename_lifted
+    (fun (ρ : ty) (x : ρ ∈ Γ) => Pop Γ ρ σ x)) t) =
+  rename (rename_lifted
+    (fun (ρ : ty) (x : ρ ∈ map Dt Γ) => Pop (map Dt Γ) ρ (Dt σ) x)) (Dtm t).
+Proof with quick.
+Admitted.
+
 Lemma D_rename Γ τ σ (t : tm Γ τ):
   Dtm (rename (fun (ρ : ty) (x : ρ ∈ Γ) => Pop Γ ρ σ x) t) =
   rename (fun (ρ : ty) (x : ρ ∈ map Dt Γ) => Pop (map Dt Γ) ρ (Dt σ) x) (Dtm t).
@@ -95,6 +104,14 @@ Lemma D_sub_lifted : forall Γ τ σ ρ (t : tm (ρ::σ::Γ) τ) (s: tm Γ σ),
 Dtm (substitute (substitute_lifted (| s |)) t) =
   substitute (substitute_lifted (| Dtm s |)) (Dtm t).
 Proof with quick.
+  dependent induction t...
+  - dependent induction v...
+    simp Dtm.
+    simp substitute_lifted.
+    rewrite D_shift.
+    simp substitute_lifted.
+    unfold Dv.
+    simp substitute_lifted.
 Admitted.
 
 Lemma D_sub : forall Γ τ σ
