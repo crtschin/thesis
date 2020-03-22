@@ -64,19 +64,6 @@ Proof with eauto.
   intros Γ τ H. induction H; constructor. assumption.
 Qed.
 
-(* The D macro preserves types *)
-(* Lemma D_type : forall Γ τ
-  (t : tm Γ τ),
-  has_type (Dtm t) = Dt τ.
-Proof. trivial. Qed.
-
-Lemma D_type_sub : forall Γ τ σ
-  (t : tm (σ::Γ) τ)
-  (s : tm Γ σ),
-  has_type (Dtm (substitute (| s |) t)) =
-    has_type (substitute (| Dtm s |) (Dtm t)).
-Proof. trivial. Qed. *)
-
 Lemma D_rename Γ τ σ (t : tm Γ τ):
   Dtm (rename (fun (ρ : ty) (x : ρ ∈ Γ) => Pop Γ ρ σ x) t) =
   rename (fun (ρ : ty) (x : ρ ∈ map Dt Γ) => Pop (map Dt Γ) ρ (Dt σ) x) (Dtm t).
@@ -104,6 +91,11 @@ Lemma D_cons_sub: forall Γ τ σ (v: τ ∈ σ :: Γ) (s: tm Γ σ),
 Proof.
 Admitted.
 
+Lemma D_sub_lifted : forall Γ τ σ ρ (t : tm (ρ::σ::Γ) τ) (s: tm Γ σ),
+Dtm (substitute (substitute_lifted (| s |)) t) =
+  substitute (substitute_lifted (| Dtm s |)) (Dtm t).
+Proof with quick.
+Admitted.
 
 Lemma D_sub : forall Γ τ σ
   (t : tm (σ::Γ) τ)
@@ -115,11 +107,7 @@ Proof with quick.
   - dependent induction v...
   - simp Dtm. rewrites.
   - simp Dtm.
-    assert (Hr :
-      Dtm (substitute (substitute_lifted (| s |)) t) =
-      substitute (substitute_lifted (| Dtm s |)) (Dtm t)).
-    { admit. }
-    rewrites...
+    rewrite D_sub_lifted...
   - simp Dtm.
     specialize IHt1 with Γ σ t1 s.
     specialize IHt2 with Γ σ t2 s. rewrites...

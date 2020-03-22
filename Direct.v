@@ -62,23 +62,24 @@ S (σ <+> ρ) f g :=
       (S τ g1 g2) ->
       instantiation (fun (ctx: ⟦ τ::Γ' ⟧ₜₓ) => (sb (snd ctx))). *)
 
-(* Inductive instantiation :
+Inductive instantiation :
   forall {Γ Γ'}, sub Γ Γ' -> (R -> Env Γ') -> Prop :=
   | inst_empty : forall {f}, @instantiation [] [] id_sub f
-  | inst_cons : forall {Γ Γ' τ} {t : tm Γ' τ} {s : sub Γ Γ'} {f : R -> Env Γ'},
+  | inst_cons :
+      forall {Γ Γ' τ} {t : tm Γ' τ} {s : sub Γ Γ'} {f : R -> Env Γ'},
       instantiation s f ->
       (S τ (⟦t⟧ₜₘ ∘ denote_env ∘ f)
         (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
-      instantiation (cons_sub t s) f. *)
+      instantiation (cons_sub t s) f.
 
-Equations instantiation Γ {Γ'} (f : R -> Env Γ') : sub Γ Γ' -> Prop :=
+(* Equations instantiation Γ {Γ'} (f : R -> Env Γ') : sub Γ Γ' -> Prop :=
 instantiation nil f s := True;
 instantiation (τ :: Γ) f s :=
   exists g1 g2,
     S τ g1 g2 /\
       g1 = (⟦hd_sub s⟧ₜₘ ∘ denote_env ∘ f) /\
       g2 = (⟦Dtm (hd_sub s)⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) /\
-      instantiation Γ f (tl_sub s).
+      instantiation Γ f (tl_sub s). *)
 
 Lemma S_cong : forall τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
@@ -86,9 +87,14 @@ Proof. intros. rewrites. Qed.
 
 Lemma S_soundness : forall Γ τ (t t' : tm Γ τ) f,
   (t -->* t') ->
-    S τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
+    S τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
       S τ (⟦ t' ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm t' ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
 Proof with quick.
+  intros.
+  pose proof (soundness _ _ t t' H) as Heq.
+  pose proof (D_step _ _ t t' H) as H'.
+  pose proof (soundness _ _ (Dtm t) (Dtm t') H') as Heq'.
+  rewrite <- Heq. rewrite <- Heq'...
 Admitted.
 
 (*
@@ -106,6 +112,16 @@ Lemma S_substitute_lifted :
 Proof with quick.
 Admitted. *)
 
+Lemma S_exists : forall Γ τ g1 g2 (h : R -> Env Γ),
+  S τ g1 g2 ->
+    exists (t: tm Γ τ),
+      g1 = (⟦t⟧ₜₘ ∘ denote_env ∘ h) /\
+      g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h).
+Proof.
+  intros. induction τ.
+  simp S in H.
+  exists (const Γ 0). split.
+Admitted.
 
 (*
   Plain words:
@@ -116,7 +132,7 @@ Admitted. *)
 Lemma fundamental :
   forall Γ Γ' τ f
     (t : tm Γ τ) (sb : sub Γ Γ'),
-  instantiation Γ f sb ->
+  instantiation sb f ->
   S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ f)
     (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
 Proof with quick.
@@ -125,7 +141,12 @@ Proof with quick.
   (* pose proof (H τ) as H'. clear H. *)
   dependent induction t; unfold compose in *.
   { (* Var *)
-    induction v; intros;
+    (* Using Inductive Instantiation *)
+    intros. induction H; dependent induction v...
+    simp cons_sub.
+
+    (* Using Equation Instantiation *)
+    (* induction v; intros;
       simp instantiation in H;
       (* specialize H with g; *)
       destruct H as [g1 [g2 H]];
@@ -133,35 +154,53 @@ Proof with quick.
     { unfold hd_sub in H... }
     { erewrite S_cong.
       simp instantiation in H.
-      unfold tl_sub... unfold tl_sub... } }
+      unfold tl_sub... unfold tl_sub... } *)
+    }
   { (* App *)
     intros.
     specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2...
     simp S in IHt1'.
+
+    (* With terms in relation for functions *)
     specialize IHt1' with
       (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g)
       (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)
       Γ' g
       (substitute sb t2)...
-    (* pose proof (IHt1' IHt2') as [t IHt1]. clear IHt1'.
-    apply IHt1. *)
-    (* destruct IHt1' as [_ IHt1']...  *)
+
+    (* With existentials for term in relation for functions *)
+    (* pose proof (IHt1' IHt2') as [t IHt1]. clear IHt1'. *)
+    (* With existentials for context in relation for functions *)
+    (* pose proof (IHt1' IHt2') as [Γ0 [h IHt1]]. clear IHt1'.
+    eapply IHt1... *)
+    (* all: admit. *)
     }
   { (* Abs *)
     intros. simp S. intros; subst.
     simpl (substitute sb (abs Γ τ σ t)).
     simp Dtm. simpl.
-    induction Γ.
+
+    (* simp instantiation in H. *)
+    (* With existentials for context in relation *)
+    (* induction H.
+    exists []; exists f... subst... *)
+    (* specialize IHt with (σ::[])
+      (fun r => env_cons t0 (f r)) (cons_sub t0 id_sub). *)
+
+    induction H.
     erewrite S_cong.
     (* exists (substitute (substitute_lifted sb) t). *)
     apply IHt.
-    instantiate (2:=g).
-    simp instantiation.
-    exists (⟦ t0 ⟧ₜₘ ∘ denote_env ∘ h).
+    instantiate (1:=f).
+    (* Show Existentials. *)
+    (* pose proof (cons_sub t @id_sub []). *)
+    (* instantiate (1:=id_sub). *)
+    (* simp instantiation. *)
+    (* exists (⟦ t0 ⟧ₜₘ ∘ denote_env ∘ h).
     exists (⟦ Dtm t0 ⟧ₜₘ ∘ denote_env ∘ Denv ∘ h).
-    splits...
+    splits... *)
     (* instantiate (1:=cons_sub t0 sb). *)
     all: admit.
 

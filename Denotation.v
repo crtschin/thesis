@@ -218,7 +218,49 @@ Proof with quick.
   { unfold tl_sub. rewrite IHΓ... }
 Qed.
 
-Theorem soundness : forall τ (t t' : tm [] τ),
+Lemma denote_sub_tl_simpl : forall Γ Γ' τ (ctx : ⟦ Γ' ⟧ₜₓ) (s : sub (τ::Γ) Γ'),
+  ⟦ tl_sub s ⟧ₛ ctx = snd (⟦ s ⟧ₛ ctx).
+Proof with quick.
+  intros...
+Qed.
+
+Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦Γ⟧ₜₓ),
+  denote_sub id_sub ctx = ctx.
+Proof with quick.
+  induction Γ.
+  { simpl denote_sub. destruct ctx... }
+  { simpl denote_sub. destruct ctx...
+    apply injective_projections...
+    rewrite denote_sub_tl_simpl.
+    assert (⟦ @id_sub (a::Γ) ⟧ₛ (d, d0) = (d, d0)).
+    { rewrites. admit. }
+    rewrite H... }
+Admitted.
+
+Lemma denote_sub_tl_snd : forall Γ τ ctx,
+  ⟦ tl_sub (Γ:=Γ) (τ:=τ) id_sub ⟧ₛ ctx = snd ctx.
+Proof with quick.
+  (* pose proof (tl_sub (Γ:=Γ) (τ:=τ) id_sub). *)
+  induction Γ...
+  { destruct ctx... destruct u... }
+  { destruct ctx...
+    destruct p... apply injective_projections...
+    rewrite denote_sub_tl_simpl.
+    rewrite denote_sub_tl_simpl.
+    rewrite denote_sub_id_ctx... }
+Admitted.
+
+Lemma denote_sub_tl_cons : forall Γ τ (t : tm Γ τ) ctx,
+  denote_sub (tl_sub (|t|)) ctx = ctx.
+Proof with quick.
+  intros.
+  unfold id_sub.
+  rewrite tl_cons_sub.
+  fold (@id_sub Γ).
+  rewrite denote_sub_id_ctx...
+Admitted.
+
+Theorem soundness : forall Γ τ (t t' : tm Γ τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
 Proof with quick.
   intros.
@@ -228,9 +270,10 @@ Proof with quick.
     extensionality ctx; quick;
     try (erewrite IHstep; constructor).
   { rewrite <- denote_sub_commutes...
-    unfold hd_sub. simp cons_sub. destruct ctx... }
-  { rewrite (IHstep t2 t2' t2')...
-    constructor. }
+    unfold hd_sub. simp cons_sub.
+    induction Γ.
+    { destruct ctx... }
+    { rewrite denote_sub_tl_cons... } }
 Qed.
 
 Lemma D_value : forall Γ τ (t : tm Γ τ),
@@ -240,18 +283,19 @@ Proof.
     try (constructor || assumption).
 Qed.
 
-(*
-Lemma D_step : forall τ (t t' : tm [] τ),
+Lemma D_step : forall Γ τ (t t' : tm Γ τ),
+  (* value t' -> *)
   (t -->* t') -> Dtm t -->* Dtm t'.
 Proof with quick.
-  intros.
+  intros Γ τ t t' H.
   induction H... constructor.
   induction H.
   { simp Dtm. fold (map Dt) Dt.
+    pose proof (D_value _ _ _ H).
     eapply multi_step.
-    apply ST_AppAbs.
-    apply D_value in H...
-    rewrite D_sub in IHmulti...  }
+    apply ST_AppAbs...
+    eapply multi_trans...
+    admit. }
   { simp Dtm. fold map Dt.
     specialize IHstep with t1'.
     eapply multi_trans...
@@ -296,10 +340,10 @@ Proof with quick.
     apply multistep_Add...
     rewrite Rplus_0_r.
     constructor. }
-  { simp Dtm. fold map Dt.
+  { simp Dtm.
     specialize IHstep with t1'.
     eapply multi_trans...
-    simp Dtm. fold map Dt.
+    simp Dtm.
     eapply multi_trans...
     apply multistep_Tuple1.
     apply multistep_Add1.
@@ -307,8 +351,13 @@ Proof with quick.
     apply IHstep. constructor.
     constructor.
     eapply multi_trans...
-    apply multistep_Tuple1.
-    apply multistep_Add.
+    apply multistep_Tuple2.
+    admit.
+    apply multistep_Add1.
+    apply multistep_Second.
+    apply IHstep. constructor.
+    constructor. constructor. }
+    (* apply multistep_Add.
     apply multistep_First.
     apply IHstep. constructor.
     constructor.
@@ -316,11 +365,12 @@ Proof with quick.
 
     apply multistep_App1.
     apply IHstep.
-     }
-Qed.
+     } *)
+  all: admit.
+Admitted.
 
 
-Theorem D_soundness : forall τ (t t' : tm [] τ),
+Theorem D_soundness : forall Γ τ (t t' : tm Γ τ),
   (Dtm t -->* Dtm t') -> ⟦Dtm t⟧ₜₘ = ⟦Dtm t'⟧ₜₘ.
 Proof with quick.
   intros.
@@ -329,13 +379,15 @@ Proof with quick.
   dependent induction H;
     extensionality ctx;
     try (erewrite IHstep; constructor).
-  { rewrite <- denote_sub_commutes...
-    unfold hd_sub. simp cons_sub. destruct ctx... }
-  { erewrite soundness.
-    2: { eapply multi_step. apply ST_App1... constructor. }
-    quick. }
+  { simp Dtm. fold map Dt. simpl.
+    rewrite <- denote_sub_commutes...
+    unfold hd_sub. simp cons_sub.
+    rewrite denote_sub_tl_cons... }
+  { simp Dtm. fold map Dt. erewrite soundness.
+  2:{ eapply multi_step. apply ST_App1... constructor. }
+    simp Dtm... }
   { erewrite soundness.
     2: { eapply multi_step. apply ST_App2... constructor. }
     quick. }
   all: admit.
-Admitted. *)
+Admitted.

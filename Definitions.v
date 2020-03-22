@@ -356,6 +356,14 @@ Lemma substitute_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (s : sub Γ Γ')
   substitute s (abs Γ τ σ t) = abs Γ' τ σ (substitute (substitute_lifted s) t).
 Proof. reflexivity. Qed.
 
+Lemma tl_cons_sub : forall Γ Γ' τ (t : tm Γ' τ) (sb : sub Γ Γ'),
+  tl_sub (cons_sub t sb) = sb.
+Proof with quick.
+  intros.
+  extensionality σ; extensionality s.
+  induction s; unfold tl_sub; simp cons_sub...
+Qed.
+
 Lemma subst_shift_refl :
   forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ),
     substitute (| s |) (shift t) = t.
