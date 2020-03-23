@@ -149,7 +149,7 @@ Admitted. *)
     to the term t is also in the relation S.
 *)
 Lemma fundamental :
-  forall Γ Γ' τ f
+  forall Γ Γ' τ (f : R -> Env Γ')
     (t : tm Γ τ) (sb : sub Γ Γ'),
   instantiation sb f ->
   S Γ' τ (substitute sb t) (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ f)
@@ -202,13 +202,14 @@ Proof with quick.
     intros. simp S. intros; subst.
     simpl (substitute sb (abs Γ τ σ t)).
     simp Dtm. simpl.
+    specialize IHt with (σ::Γ')
+      (fun r => env_cons s (g r)) (cons_sub s sb).
+    eapply IHt.
 
     (* simp instantiation in H. *)
     (* With existentials for context in relation *)
     (* induction H.
     exists []; exists f... subst... *)
-    specialize IHt with (σ::Γ')
-      (fun r => env_cons s (f r)) (cons_sub s id_sub).
 
     (* exists (substitute (substitute_lifted sb) t). *)
     (* instantiate (1:=f). *)
@@ -321,6 +322,7 @@ Proof with quick.
     intros.
     pose proof (IHt1 Γ' g sb H) as IH1; clear IHt1.
     simp S in IH1. simpl. simp Dtm. simpl.
+    inversion IH1.
     destruct IH1 as [[g1 [g2 H']]|[g1 [g2 H']]].
     all: admit.
     (* induction H.

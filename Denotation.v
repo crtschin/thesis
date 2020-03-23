@@ -232,6 +232,7 @@ Proof with quick.
   { simpl denote_sub. destruct ctx...
     apply injective_projections...
     rewrite denote_sub_tl_simpl.
+    (* eapply IHΓ. *)
     assert (⟦ @id_sub (a::Γ) ⟧ₛ (d, d0) = (d, d0)).
     { rewrites. admit. }
     rewrite H... }
@@ -260,7 +261,7 @@ Proof with quick.
   rewrite denote_sub_id_ctx...
 Admitted.
 
-Theorem soundness : forall Γ τ (t t' : tm Γ τ),
+Theorem soundness : forall τ (t t' : tm [] τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
 Proof with quick.
   intros.
@@ -271,9 +272,7 @@ Proof with quick.
     try (erewrite IHstep; constructor).
   { rewrite <- denote_sub_commutes...
     unfold hd_sub. simp cons_sub.
-    induction Γ.
-    { destruct ctx... }
-    { rewrite denote_sub_tl_cons... } }
+    destruct ctx... }
 Qed.
 
 Lemma D_value : forall Γ τ (t : tm Γ τ),
