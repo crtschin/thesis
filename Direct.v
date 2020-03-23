@@ -54,7 +54,7 @@ S Γ (σ → ρ) t f g :=
   forall (s : tm Γ σ),
   forall g1 g2,
   forall (sσ : S Γ σ s g1 g2),
-    value s ->
+    (* value s -> *)
     (* g1 = (⟦s⟧ₜₘ ∘ denote_env ∘ h) -> *)
     (* g2 = (⟦Dtm s⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) -> *)
     S Γ ρ (app Γ _ _ t s) (fun x => f x (g1 x)) (fun x => g x (g2 x));
@@ -84,6 +84,7 @@ Inductive instantiation :
   | inst_cons :
       forall {Γ Γ' τ} {t : tm Γ' τ} {s : sub Γ Γ'} {f : R -> Env Γ'},
       instantiation s f ->
+      value t ->
       (S Γ' τ t (⟦t⟧ₜₘ ∘ denote_env ∘ f)
         (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
       instantiation (cons_sub t s) f.
@@ -179,14 +180,16 @@ Proof with quick.
     specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2...
-    simp S in IHt1'. admit.
+    simp S in IHt1'.
+    (* admit. *)
 
     (* With terms in relation for functions *)
     (* specialize IHt1' with
+      (substitute sb t2)
       (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g)
       (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)
-      Γ' g
-      (substitute sb t2)... *)
+      Γ' g... *)
+    (* eapply IHt1'... *)
 
     (* With existentials for term in relation for functions *)
     (* pose proof (IHt1' IHt2') as [t IHt1]. clear IHt1'. *)
@@ -204,8 +207,8 @@ Proof with quick.
     (* With existentials for context in relation *)
     (* induction H.
     exists []; exists f... subst... *)
-    (* specialize IHt with (σ::[])
-      (fun r => env_cons t0 (f r)) (cons_sub t0 id_sub). *)
+    specialize IHt with (σ::Γ')
+      (fun r => env_cons s (f r)) (cons_sub s id_sub).
 
     (* exists (substitute (substitute_lifted sb) t). *)
     (* instantiate (1:=f). *)
