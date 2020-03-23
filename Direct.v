@@ -133,6 +133,7 @@ Lemma fundamental :
   forall Γ Γ' τ f
     (t : tm Γ τ) (sb : sub Γ Γ'),
   instantiation sb f ->
+  (* instantiation Γ f sb -> *)
   S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ f)
     (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
 Proof with quick.
