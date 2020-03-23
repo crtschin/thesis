@@ -29,28 +29,44 @@ Local Open Scope R_scope.
   Gl_P : (R -> ⟦τ⟧ₜ) -> (R -> ⟦σ⟧ₜ) -> Prop;
 }. *)
 
-Equations S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
-S Real f g := (forall (x : R), ex_derive f x) /\
+(*
+  Relation between
+    denotation function of term
+      (the function the term describes)
+    denotation function of macro term
+      (the derivative of the function the term describes)
+*)
+Equations S Γ τ : tm Γ τ -> (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
+S Γ Real t f g :=
+  (forall h, ⟦ t ⟧ₜₘ ∘ denote_env ∘ h = f /\
+    ⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ h = g)
+  /\
+  (forall (x : R), ex_derive f x) /\
   (fun r => g r) = (fun r => (f r, Derive f r));
-S (σ × ρ) f g :=
-  exists f1 f2 g1 g2 (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
+S Γ (σ × ρ) t f g :=
+  exists f1 f2 g1 g2 t1 t2,
+  exists (s1 : S Γ σ t1 f1 f2) (s2 : S Γ ρ t2 g1 g2),
+    t = tuple Γ t1 t2 /\
     (f = fun r => (f1 r, g1 r)) /\
     (g = fun r => (f2 r, g2 r));
-S (σ → ρ) f g :=
+S Γ (σ → ρ) t f g :=
+  (* exists h, *)
+  forall (s : tm Γ σ),
   forall g1 g2,
-  forall (sσ : S σ g1 g2),
-  forall Γ h,
-  forall (t : tm Γ σ),
-    g1 = (⟦t⟧ₜₘ ∘ denote_env ∘ h) ->
-    g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) ->
-    S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x));
-S (σ <+> ρ) f g :=
+  forall (sσ : S Γ σ s g1 g2),
+    value s ->
+    (* g1 = (⟦s⟧ₜₘ ∘ denote_env ∘ h) -> *)
+    (* g2 = (⟦Dtm s⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) -> *)
+    S Γ ρ (app Γ _ _ t s) (fun x => f x (g1 x)) (fun x => g x (g2 x));
+S Γ (σ <+> ρ) t f g :=
   (exists g1 g2,
-    forall (s: S σ g1 g2),
+    forall (t : tm Γ σ),
+    forall (s: S Γ σ t g1 g2),
       f = Datatypes.inl ∘ g1 /\
       g = Datatypes.inl ∘ g2) \/
   (exists g1 g2,
-    forall (s: S ρ g1 g2),
+    forall (t : tm Γ ρ),
+    forall (s: S Γ ρ t g1 g2),
       f = Datatypes.inr ∘ g1 /\
       g = Datatypes.inr ∘ g2).
 
@@ -68,7 +84,7 @@ Inductive instantiation :
   | inst_cons :
       forall {Γ Γ' τ} {t : tm Γ' τ} {s : sub Γ Γ'} {f : R -> Env Γ'},
       instantiation s f ->
-      (S τ (⟦t⟧ₜₘ ∘ denote_env ∘ f)
+      (S Γ' τ t (⟦t⟧ₜₘ ∘ denote_env ∘ f)
         (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
       instantiation (cons_sub t s) f.
 
@@ -81,20 +97,22 @@ instantiation (τ :: Γ) f s :=
       g2 = (⟦Dtm (hd_sub s)⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) /\
       instantiation Γ f (tl_sub s). *)
 
-Lemma S_cong : forall τ f1 f2 g1 g2,
-  g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
+Lemma S_cong : forall Γ τ t f1 f2 g1 g2,
+  g1 = f1 -> g2 = f2 -> S Γ τ t f1 f2 = S Γ τ t g1 g2.
 Proof. intros. rewrites. Qed.
 
-Lemma S_soundness : forall Γ τ (t t' : tm Γ τ) f,
+Lemma S_soundness : forall Γ τ (t t' : tm Γ τ) f f',
   (t -->* t') ->
-    S τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
-      S τ (⟦ t' ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm t' ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
+    S Γ τ t f f' = S Γ τ t' f f'.
 Proof with quick.
   intros.
+  induction τ; simp S...
+  all: admit.
+  (* intros.
   pose proof (soundness _ _ t t' H) as Heq.
   pose proof (D_step _ _ t t' H) as H'.
   pose proof (soundness _ _ (Dtm t) (Dtm t') H') as Heq'.
-  rewrite <- Heq. rewrite <- Heq'...
+  rewrite <- Heq. rewrite <- Heq'... *)
 Admitted.
 
 (*
@@ -112,7 +130,7 @@ Lemma S_substitute_lifted :
 Proof with quick.
 Admitted. *)
 
-Lemma S_exists : forall Γ τ g1 g2 (h : R -> Env Γ),
+(* Lemma S_exists : forall Γ τ g1 g2 (h : R -> Env Γ),
   S τ g1 g2 ->
     exists (t: tm Γ τ),
       g1 = (⟦t⟧ₜₘ ∘ denote_env ∘ h) /\
@@ -121,7 +139,7 @@ Proof.
   intros. induction τ.
   simp S in H.
   exists (const Γ 0). split.
-Admitted.
+Admitted. *)
 
 (*
   Plain words:
@@ -133,7 +151,7 @@ Lemma fundamental :
   forall Γ Γ' τ f
     (t : tm Γ τ) (sb : sub Γ Γ'),
   instantiation sb f ->
-  S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ f)
+  S Γ' τ (substitute sb t) (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ f)
     (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
 Proof with quick.
   intros Γ Γ' τ g t sb H.
@@ -161,14 +179,14 @@ Proof with quick.
     specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2...
-    simp S in IHt1'.
+    simp S in IHt1'. admit.
 
     (* With terms in relation for functions *)
-    specialize IHt1' with
+    (* specialize IHt1' with
       (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g)
       (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)
       Γ' g
-      (substitute sb t2)...
+      (substitute sb t2)... *)
 
     (* With existentials for term in relation for functions *)
     (* pose proof (IHt1' IHt2') as [t IHt1]. clear IHt1'. *)
@@ -189,11 +207,8 @@ Proof with quick.
     (* specialize IHt with (σ::[])
       (fun r => env_cons t0 (f r)) (cons_sub t0 id_sub). *)
 
-    induction H.
-    erewrite S_cong.
     (* exists (substitute (substitute_lifted sb) t). *)
-    apply IHt.
-    instantiate (1:=f).
+    (* instantiate (1:=f). *)
     (* Show Existentials. *)
     (* pose proof (cons_sub t @id_sub []). *)
     (* instantiate (1:=id_sub). *)
@@ -227,17 +242,22 @@ Proof with quick.
       simp Dtm. fold (map Dt).  } *)
     }
   { (* Const *)
-    quick. split.
+    quick. splits.
     { intros. apply ex_derive_const. }
-    apply functional_extensionality.
-    intros. unfold compose. rewrite Derive_const... }
+    { apply functional_extensionality.
+      intros. unfold compose. rewrite Derive_const... } }
   { (* Add *)
     simpl in *. intros.
-    pose proof (IHt1 Γ' g sb H) as [Hex1 H1]; clear IHt1.
-    pose proof (IHt2 Γ' g sb H) as [Hex2 H2]; clear IHt2.
-    split.
-    { intros.
-      specialize Hex1 with x.
+    pose proof (IHt1 Γ' g sb H) as [[Heq1 Heq1'] [Hex1 H1]]; clear IHt1.
+    pose proof (IHt2 Γ' g sb H) as [[Heq2 Heq2'] [Hex2 H2]]; clear IHt2.
+    splits; intros.
+    { unfold compose.
+      extensionality x; simpl.
+      admit. }
+    { unfold compose.
+      extensionality x; simpl.
+      admit. }
+    { specialize Hex1 with x.
       specialize Hex2 with x.
       apply (ex_derive_plus _ _ _ Hex1 Hex2). }
     { apply functional_extensionality...
@@ -250,32 +270,50 @@ Proof with quick.
     simpl. intros.
     pose proof (IHt1 Γ' g sb H) as H1'; clear IHt1.
     pose proof (IHt2 Γ' g sb H) as H2'; clear IHt2.
+    simp S.
     exists (⟦ substitute sb t1 ⟧ₜₘ ∘ denote_env ∘ g).
     exists (⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
     exists (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g).
-    exists (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)... }
+    exists (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)...
+    exists (substitute sb t1).
+    exists (substitute sb t2).
+    exists H1'. exists H2'... }
   { (* Projection 1 *)
     intros. unfold compose in *.
     specialize IHt with Γ' g sb.
     pose proof (IHt H) as IHt'; clear IHt.
     simp S in IHt'.
-    destruct IHt' as [f1 [f2 [g1 [g2 [S1 [S2 [H1 H2]]]]]]]...
-    erewrite S_cong; try (apply S1);
-    apply functional_extensionality_dep; intros;
-    eapply equal_f in H1; eapply equal_f in H2.
-    { rewrite H1... }
-    { simp Dtm... rewrite H2... } }
+    destruct IHt' as [f1 [f2 [g1 [g2 [t1 [t2 [H1 H2]]]]]]]...
+    simp Dtm... destruct H2 as [H2 [Heq [Heq1 Heq2]]].
+    erewrite S_cong.
+  2:{ apply functional_extensionality_dep...
+      eapply equal_f in Heq1.
+      rewrite Heq1...  }
+  2:{ apply functional_extensionality_dep...
+      eapply equal_f in Heq2.
+      rewrite Heq2... }
+    rewrite Heq.
+    erewrite S_soundness...
+    eapply multistep_FirstTuple.
+    all: admit. }
   { (* Projection 2 *)
     intros. unfold compose in *.
     specialize IHt with Γ' g sb.
     pose proof (IHt H) as IHt'; clear IHt.
     simp S in IHt'.
     destruct IHt' as [f1 [f2 [g1 [g2 [S1 [S2 [H1 H2]]]]]]]...
-    erewrite S_cong; try (apply S2);
-    apply functional_extensionality_dep; intros;
-    eapply equal_f in H1; eapply equal_f in H2.
-    { rewrite H1... }
-    { simp Dtm... rewrite H2... } }
+    simp Dtm... destruct H2 as [H2 [Heq [Heq1 Heq2]]].
+    erewrite S_cong.
+  2:{ apply functional_extensionality_dep...
+      eapply equal_f in Heq1.
+      rewrite Heq1...  }
+  2:{ apply functional_extensionality_dep...
+      eapply equal_f in Heq2.
+      rewrite Heq2... }
+      rewrite Heq.
+    erewrite S_soundness...
+    eapply multistep_SecondTuple.
+    all: admit. }
   { (* Case *)
     intros.
     pose proof (IHt1 Γ' g sb H) as IH1; clear IHt1.
@@ -307,21 +345,29 @@ Admitted.
 
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real) f,
-  S Real (fun r => (⟦ t ⟧ₜₘ (denote_env (f r))))
+  S Γ Real t (fun r => (⟦ t ⟧ₜₘ (denote_env (f r))))
     (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) ->
   (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
   fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
     Derive (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
-Proof. intros. destruct H. quick. Qed.
+Proof with quick.
+  intros. simp S in H.
+  unfold compose in *. extensionality x.
+  destruct H.
+  clear H.
+  destruct H0.
+  eapply equal_f in H0.
+  rewrite H0...
+Qed.
 
-Lemma S_correct_prod :
+(* Lemma S_correct_prod :
   forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) f,
   S (τ × σ) (⟦ tuple _ t s ⟧ₜₘ ∘ denote_env ∘ f)
     (⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
   ⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
     fun r => (⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r))),
               (⟦ Dtm s ⟧ₜₘ (denote_env (Denv (f r))))).
-Proof. quick. Qed.
+Proof. quick. Qed. *)
 
 Theorem semantic_correct_R :
   forall (t : tm [] Real) (f : R -> Env []),
