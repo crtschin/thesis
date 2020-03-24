@@ -22,19 +22,19 @@ Local Open Scope R_scope.
   Maps types in 'ty' to an underlying Type
   given a proof that that type is a diffeological space
 *)
-Fixpoint denote_t τ : DiffeoSp :=
+(* Fixpoint denote_t τ : DiffeoSp :=
   match τ with
   | Real => R_diffeology
   | Prod τ1 τ2 => denote_t τ1 *** denote_t τ2
   | Arrow τ1 τ2 => denote_t τ1 -D> denote_t τ2
-  end.
+  end. *)
 
 (* Example denote_t_ex :
   denote_t ((Real × Real × Real × Real) → (Real × Real)) =
     diff_smooth (denote_t (Real × Real × Real × Real)) (denote_t (Real × Real)).
 Proof. trivial. Qed. *)
 
-Fixpoint denote_ctx Γ : DiffeoSp :=
+(* Fixpoint denote_ctx Γ : DiffeoSp :=
   match Γ with
   | [] => unit_diffeology
   | τ :: Γ' => denote_t τ *** denote_ctx Γ'
@@ -79,4 +79,4 @@ Program Fixpoint S τ
       S ρ (fun x => functional_diffeology_app (f1 x) (g1 x))
           (fun x => functional_diffeology_app (f2 x) (g2 x)) ->
       f = f1 /\ g = f2
-  end.
+  end. *)

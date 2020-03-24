@@ -1,5 +1,9 @@
-\documentclass[10pt,a4paper,msc]{article}
+\documentclass[a4, 12pt]{article}
 % \usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
 \usepackage{amsthm}
 \usepackage{todo}
 \usepackage{amsmath}
@@ -15,16 +19,78 @@ backref=true
 \addbibresource{refs.bib}
 \usepackage[hidelinks]{hyperref}
 
-\title{Formalization of the Denotation Semantics of
-    \\ Automatic Differentiation in Coq
-    \\ Project Proposal
-}
-\author{Curtis Chin Jen Sem \\ (5601118)}
-\date{April 2020}
-
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Utrecht University}
+\cfoot{\thepage}
+\rfoot{Curtis Chin Jen Sem}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
 \begin{document}
 
-\maketitle
+\begin{titlepage}
+
+\begin{figure}
+   \begin{minipage}{0.48\textwidth}
+   \begin{flushleft}
+    %  \includegraphics[scale=0.5]{Images/UU_LOGO.png}
+   \end{flushleft}
+   \end{minipage}\hfill
+   \begin{minipage}{0.48\textwidth}
+   \begin{flushright}
+    %  \includegraphics[scale=0.2]{Images/Logo.png}
+   \end{flushright}
+   \end{minipage}
+\end{figure}
+
+\thispagestyle{fancy}
+
+\vspace{1in}
+
+\center
+
+\textsc{\large Master Thesis Proposal}
+
+\vspace{0.5in}
+
+\noindent\makebox[\linewidth]{\rule{\linewidth}{1.2pt}}
+\textsc{ \textbf{\large Formalized Proof of Automatic Differentiation in Coq }}
+\noindent\makebox[\linewidth]{\rule{\linewidth}{1.2pt}}
+
+\vspace{0.5in}
+
+\begin{minipage}{0.48\textwidth}
+    \begin{flushleft}
+        \textit{Student:} \\
+        Curtis Chin Jen Sem \\
+        crtschin@gmail.com
+    \end{flushleft}
+\end{minipage}
+\begin{minipage}{0.48\textwidth}
+    \begin{flushright}
+    \textit{Supervisors:} \\
+    Mathijs V\'{a}k\'{a}r \\
+    Email
+    \end{flushright}
+    \begin{flushright}
+    Wouter Swierstra \\
+    Email
+    \end{flushright}
+\end{minipage}
+
+\vspace{2in}
+
+\textbf{\large Department of Information and Computing Science} \\
+
+\today
+
+\end{titlepage}
+
+\newpage
+
+\setcounter{page}{2}
+\tableofcontents
+\newpage
 
 \section{Introduction}
 
@@ -39,35 +105,58 @@ We aim to formalize an extendable proof of an implementation of automatic differ
 % Contributing an extendable proof of a simply typed lambda calculus
 % On which both the correctness of optimizations and language
 % extensions could be proven
+% Proof of optimizations maintaining correctness (partial evaluation)
 
 \section{Background}
 
-\subsection{Automatic Differentiation}
+\subsection{Automatic differentiation}
 
 % http://jmlr.org/papers/volume18/17-468/17-468.pdf
 
 One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function. The idea being to use the gradient in the gradient descent algorithm\ref. Automatic is a generalization of backpropogation. Automatic differentiation has a long and rich history, where its purpose is to calculate the derivative of a function, or in other words, calculate the derivative of function described by an arbitrary program\ref. So the semantics which one would normally expect in programming language is extended with relevant concepts such as derivative values and the chain rule.
 
 Automatic or algorithmic differentiation is beneficial over other methods of automatically calculating the derivatives of functions such as numerical differentiation or symbolic differentiation due to its balance between speed and computational complexity. There are two main modes of automatic differentiation which I will both discuss. These are namely forward and reverse mode AD. In this paper we will prove the semantics of a forward mode AD algorithm correct. The algorithm being a very simple macro on the syntax of a simply typed lambda calculus.
+
+\todo*
+
+\subsection{Denotational semantics}
+% A formal semantics of programming language: An introduction
+
+The notion of denotational semantics, created by Dana Scott and Christopher Strachey\ref, tries to find underlying mathematical objects able to explain the properties of programming languages. Their original search for a solution for lambda calculi led them to well-known concepts such as partial orderings and least fixed points. In this model, programs are interpreted as partial functions and computation by taking fixpoint of such functions. Non-termination on the other hand is symbolized by a value bottom that is lower in the ordering relation than any other element. This search for an underlying mathematical foundation for languages is also known as domain theory.
+
+In this specific case, we try to find a satisfactory model we can use to show that our implementation of forward mode automatic differentiation is correct when applied to a simply typed lambda calculus. In the original pen and paper proof of automatic differentiation this paper was inspired by, the models used were diffeological spaces, which are the useful generalization of smooth manifolds and as such describe sets whose functions are always differentiable. For the purpose of this thesis, however, this was deemed overkill and much too difficult and time consuming to implement in a mathematically sound manner in Coq. As such we chose to make use of Coq's existing types as denotation.
+
 \todo*
 
 \subsection{Coq}
 
 Coq is a proof assistant created by Thierry Coquand as an implementation of his calculus of constructions type theory\ref. In the 30 years since it has been released, research has contributed to extending the proof assistant with additional features such as inductive and co-inductive data types\ref, GADTs\ref and advanced modular constructions for organizing immense proofs\ref.
 
-The core of calculus of constructions is based on constructive logic and so many of the laws known in classical logic are not present. Examples include the law of the excluded middle, $\forall A, A \vee \neg A$, or the law of functional extensionality, $\forall x, f(x) = g(x) \rightarrow f = g$. They can, however, be safely added to Coq without making its logic inconsistent. Due to its usefulness in proving propositions over functions, we will make use of functional extensionality in Coq.
+The core of calculus of constructions is based on constructive logic and so many of the laws known in classical logic are not present. Examples include the law of the excluded middle, $\forall A, A \vee \neg A$, or the law of functional extensionality, $\forall x, f(x) = g(x) \rightarrow f = g$. They can, however, be safely added to Coq without making its logic inconsistent. Due to its usefulness in proving propositions over functions, we will make use of the functional extensionality axiom in Coq.
 
-When defining a simply typed lambda calculus in Coq, one is free to define it using an intrinsic or extrinsic formulation.
+\subsubsection{Language representation}
+
+When defining a simply typed lambda calculus, there are two main representations. The arguably simpler variant, known as an extrinsic representation, is traditionally the one introduced to new students learning Coq. In the extensional representation, the terms themselves are untyped and typing judgments are defined separately. The other approach, also called an intrinsic representation or strongly typed terms, makes use of just a single well-typed definition. Ill-typed terms are made impossible by the type checker. This representation, while beneficial in the proof load, however complicates much of the normal machinery involved in programming language theory. One example is how one would define operations on the language such as substitutions in a way to maintain the type-correctness. The main contribution of the paper is an intrinsic treatment of terms and substitution without any coercions\ref.
+
+But even when choosing an intrinsic representation, the problem of variable binding persists. Much meta-theoretical research has been done on possible approaches to this problem each with their own advantages and obstacles. The POPLmark challenge gives a comprehensive overview of each of the possibilities in various proof assistants. An example of an approach is the nominal representation where every variable is named. While this does follow the standard format used in regular mathematics, problems such as alpha-conversion and capture-avoidance arise.
+
+The approach used in the rest of this thesis is closely related to the de-bruijn representation, which numbers variables relative to the binding lambda term. Instead of using numbers to represent the distance, we make use of indices which should be present in the typing context. This approach was fleshed out by Nick Benton, et. al.\ref. While this does subvert the problems present in the nominal representation, it unfortunately does have problems of its own. Variable substitutions are defined using two seperate renaming and substitution operations. Renaming is formulated as a function from variables to variables just changing the typing context and substitution actually swaps the variables for terms. Due to using indices from the context as variables, some lifting boilerplate is needed to manipulate the current context.
+% Give an example?
 \todo*
 
-\subsection{Denotation Semantics}
-% A formal semantics of programming language: An introduction
+\subsubsection{Dependent types}
 
-The notion of denotational semantics, created by Dana Scott and Christopher Strachey\ref, tries to find underlying mathematical objects able to explain the properties of programming languages. Their original search for a solution for lambda calculi led them to well-known concepts such as partial orderings and least fixed points. In this model, programs are interpreted as partial functions and computation by taking fixpoint of such functions. Non-termination on the other hand is symbolized by a value bottom that is lower in the ordering relation than any other element. This search for an underlying mathematical foundation for languages is also known as domain theory.
+In Coq, one can normally write function definitions using either case-analysis as in other functional languages, or using Coq's tactics. If proof terms are present in the function definition, however, it is standard to write it using tactics because of the otherwise cumbersome and verbose code needed to pattern-match on the arguments. Writing definitions using tactics also has its limitations, the user is allowed definitions that later are uncovered to be unprovable, the definitions are opaque such that the standard `simpl` tactic which invokes Coq's reduction mechanic is not able to reduce the term. This often requires the user to write and use proofs of the functions reducibility at its argument.
 
-In this specific case, we try to find a satisfactory model we can use to show that our implementation of forward mode automatic differentiation is correct when applied to a simply typed lambda calculus.
+In \ref Matthieu Sozeau introduces an extensions to Coq via a new keyword `Program` which allows the use of case-analysis in more complex definitions. To be more specific, it introduces a method called Predicate subtyping to Coq which allows more permissive definitions with the proofs accompanying them being written separately. It does this in the language Russell, which contains a slightly weaker type system in that terms do not require proof terms for subset types. This definition is translated into Coq where the missing proofs are filled in. While this does improve on the previous situation, using the definitions in proofs can often be unwieldy due to the amount of boilerplate introduced. This can make debugging error messages even harder than it already is in a proof assistant.
 
 \todo*
+
+Sozeau further improves on this in \ref by introducing a method for user-friendlier dependently typed programming in Coq as the `Equations` library. This introduces `Agda` like with-clauses when pattern matching. It makes use of a notion called covering where a set of equations should be an exhaustive covering of a function signature. There are two main ways to integrate this in a dependently typed environment, externally where it is integrated as high-level constructs in the pattern matching core as Agda does it or internally by using the existing type theory and finding witnesses of the covering to prove the definition correct. This was invaluable when using well-scoped well-typed de-bruijn representation discussed in the previous section.
+
+\todo*
+
+\subsection{Logical relations}
 
 \section{Preliminary Results}
 \todo*
@@ -91,4 +180,5 @@ In this specific case, we try to find a satisfactory model we can use to show th
 \todo*
 
 \printbibliography
+% \bibliographystyle{IEEEtran}
 \end{document}

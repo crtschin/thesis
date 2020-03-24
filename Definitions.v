@@ -8,7 +8,7 @@ Require Import Reals.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 
-From Equations Require Equations.
+Require Import Equations.Equations.
 From AD Require Import Tactics.
 
 Open Scope R_scope.
@@ -17,9 +17,11 @@ Inductive ty : Type :=
   | Real : ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
+  | Sum  : ty -> ty -> ty
 .
 
 Notation "A × B" := (Prod A B) (left associativity, at level 90).
+Notation "A <+> B" := (Sum A B) (left associativity, at level 90).
 Notation "A → B" := (Arrow A B) (right associativity, at level 20).
 
 (* STLC with well-typed well-scoped debruijn *)
@@ -30,12 +32,14 @@ Notation "A → B" := (Arrow A B) (right associativity, at level 20).
  *)
 Definition Ctx {x} := list x.
 
-Inductive Var {T} : list T -> T -> Type :=
+Inductive Var {T : Type} : list T -> T -> Type :=
   | Top : forall Γ τ, Var (τ::Γ) τ
   | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ
 .
+Derive Signature for Var.
 
-Notation "x ∈ C" := (Var C x) (at level 75).
+
+Notation "x ∈ Γ" := (Var Γ x) (at level 75).
 
 Inductive tm (Γ : Ctx) : ty -> Type :=
   (* Base STLC *)
@@ -59,27 +63,23 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
     tm Γ (τ × σ)
   | first : forall {τ σ}, tm Γ (τ × σ) -> tm Γ τ
   | second : forall {τ σ}, tm Γ (τ × σ) -> tm Γ σ
+
+  | case : forall {τ σ ρ}, tm Γ (τ <+> σ) ->
+    tm Γ (τ → ρ) ->
+    tm Γ (σ → ρ) ->
+    tm Γ ρ
+  | inl : forall {τ σ}, tm Γ τ -> tm Γ (τ <+> σ)
+  | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
 (* Closed terms *)
-Inductive Closed : ty -> Type :=
+(* Inductive Closed : ty -> Type :=
   | closure : forall {Γ τ}, tm Γ τ -> Env Γ -> Closed τ
   | clapp : forall {τ σ}, Closed (σ → τ) -> Closed σ -> Closed τ
   with Env : Ctx -> Type :=
   | env_nil : Env []
   | env_cons : forall {Γ τ}, Closed τ -> Env Γ -> Env (τ::Γ)
 .
-
-Inductive Env' : Ctx -> Type :=
-  | env'_nil : Env' []
-  | env'_cons : forall {Γ τ}, tm [] τ -> Env' Γ -> Env' (τ::Γ)
-.
-
-Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
-  induction Γ. constructor.
-  inversion G. assumption.
-Defined.
-
 Scheme closed_env_rec_prop := Induction for Closed Sort Prop
   with env_closed_rec_prop := Induction for Env Sort Prop.
 
@@ -87,8 +87,18 @@ Scheme closed_env_rec_set := Induction for Closed Sort Set
   with env_closed_rec_set := Induction for Env Sort Set.
 
 Scheme closed_env_rec := Induction for Closed Sort Type
-  with env_closed_rec := Induction for Env Sort Type.
+  with env_closed_rec := Induction for Env Sort Type. *)
 (* End Closed terms *)
+
+Inductive Env : Ctx -> Type :=
+  | env_nil : Env []
+  | env_cons : forall {Γ τ}, tm [] τ -> Env Γ -> Env (τ::Γ)
+.
+
+Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
+  induction Γ. constructor.
+  inversion G. assumption.
+Defined.
 
 (* Examples *)
 Definition ex_id :=
@@ -148,13 +158,9 @@ Definition sub (Γ Γ' : list ty) :=
 
 (* Helper functions for defining substitutions on the i'th variable *)
 Definition id_sub {Γ} : sub Γ Γ := var Γ.
-Program Definition cons_sub {Γ Γ' τ}
-    (e: tm Γ' τ) (s: sub Γ Γ') : sub (τ::Γ) Γ' :=
-    fun σ x =>
-    match x with
-    | Top _ _ => e
-    | Pop _ _ _ v' => s σ v'
-    end.
+Equations cons_sub {Γ Γ' τ} (e: tm Γ' τ) (s: sub Γ Γ') : sub (τ::Γ) Γ' :=
+cons_sub e s τ (Top Γ σ) := e;
+cons_sub e s τ (Pop Γ τ σ v) := s τ v.
 
 Notation "| a ; .. ; b |" :=
   (cons_sub a  .. ( cons_sub b id_sub) .. )
@@ -170,49 +176,67 @@ Definition hd_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : tm Γ' τ := var Γ' τ (
 Definition tl_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : ren Γ Γ'
   := fun σ x => r σ (Pop Γ σ τ x).
 
-Program Definition rename_lifted {Γ Γ' τ} (r : ren Γ Γ')
-  : ren (τ::Γ) (τ::Γ') := fun σ v =>
-  match v with
-  | Top _ _  => Top Γ' τ
-  | Pop _ _ _ v' => Pop Γ' σ τ (r σ v')
-  end.
+Equations rename_lifted {Γ Γ' τ} (r : ren Γ Γ')
+  : ren (τ::Γ) (τ::Γ') :=
+rename_lifted r τ (Top Γ τ) => Top Γ' τ;
+rename_lifted r τ (Pop Γ τ σ v) => Pop Γ' τ σ (r τ v).
 
 Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   match t with
+  (* STLC *)
   | var _ _ v => var _ _ (r _ v)
   | app _ _ _ t1 t2 => app _ _ _ (rename r t1) (rename r t2)
   | abs _ _ _ f => abs _ _ _ (rename (rename_lifted r) f)
 
+  (* Reals *)
   | const _ r => const _ r
   | add _ t1 t2 => add _ (rename r t1) (rename r t2)
 
+  (* Products *)
   | tuple _ t1 t2 => tuple _ (rename r t1) (rename r t2)
   | first _ p => first _ (rename r p)
   | second _ p => second _ (rename r p)
+
+  (* Sums *)
+  | case _ e c1 c2 =>
+      case _ (rename r e)
+        (rename r c1)
+        (rename r c2)
+  | inl _ e => inl _ (rename r e)
+  | inr _ e => inr _ (rename r e)
   end.
 
 Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
   := rename (fun ρ x => Pop Γ ρ σ x).
 
-Program Definition substitute_lifted {Γ Γ' τ} (s : sub Γ Γ')
-  : sub (τ::Γ) (τ::Γ') := fun τ' v =>
-  match v with
-  | Top _ _  => var (τ::Γ') τ (Top Γ' τ)
-  | Pop _ _ _ w => shift (s τ' w)
-  end.
+Equations substitute_lifted {Γ Γ' τ} (s : sub Γ Γ')
+  : sub (τ::Γ) (τ::Γ') :=
+substitute_lifted s τ (Top _ _) := var (_::Γ') _ (Top Γ' _);
+substitute_lifted s τ (Pop _ _ _ v) := shift (s _ v).
 
 Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   match t with
+  (* STLC *)
   | var _ _ v => s _ v
   | app _ _ _ t1 t2 => app _ _ _ (substitute s t1) (substitute s t2)
   | abs _ _ _ f => abs _ _ _ (substitute (substitute_lifted s) f)
 
+  (* Reals *)
   | const _ r => const _ r
   | add _ t1 t2 => add _ (substitute s t1) (substitute s t2)
 
+  (* Products *)
   | tuple _ t1 t2 => tuple  _ (substitute s t1) (substitute s t2)
   | first _ p => first _ (substitute s p)
   | second _ p => second _ (substitute s p)
+
+  (* Sums *)
+  | case _ e c1 c2 =>
+      case _ (substitute s e)
+        (substitute s c1)
+        (substitute s c2)
+  | inl _ e => inl _ (substitute s e)
+  | inr _ e => inr _ (substitute s e)
   end.
 
 (*
@@ -293,7 +317,8 @@ Lemma lift_ren_sub : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (s : sub Γ Γ'),
     compose_ren_sub (rename_lifted r) (substitute_lifted s).
 Proof with eauto.
   intros. ExtVar. unfold compose_ren_sub.
-  simpl. unfold shift. rewrite <- 2 app_ren_ren...
+  simp substitute_lifted. unfold shift.
+  rewrite <- 2 app_ren_ren...
 Qed.
 
 Lemma app_ren_sub : forall Γ Γ' Γ'' τ
@@ -309,7 +334,8 @@ Lemma lift_sub_sub : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (s' : sub Γ Γ'),
   substitute_lifted (τ:=τ) (compose_sub_sub s s') =
     compose_sub_sub (substitute_lifted s) (substitute_lifted s').
 Proof with eauto.
-  intros. ExtVar. unfold compose_sub_sub. simpl. unfold shift.
+  intros. ExtVar. unfold compose_sub_sub.
+  simp substitute_lifted. unfold shift.
   rewrite <- app_ren_sub. rewrite <- app_sub_ren...
 Qed.
 
@@ -329,6 +355,14 @@ Proof. reflexivity. Qed.
 Lemma substitute_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (s : sub Γ Γ'),
   substitute s (abs Γ τ σ t) = abs Γ' τ σ (substitute (substitute_lifted s) t).
 Proof. reflexivity. Qed.
+
+Lemma tl_cons_sub : forall Γ Γ' τ (t : tm Γ' τ) (sb : sub Γ Γ'),
+  tl_sub (cons_sub t sb) = sb.
+Proof with quick.
+  intros.
+  extensionality σ; extensionality s.
+  induction s; unfold tl_sub; simp cons_sub...
+Qed.
 
 Lemma subst_shift_refl :
   forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ),

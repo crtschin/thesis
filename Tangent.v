@@ -10,7 +10,7 @@ Require Import Coq.Program.Basics.
 Import EqNotations.
 
 Open Scope type_scope.
-
+(*
 Parameter Derived :
   forall {X : Type}, X -> Prop.
 
@@ -24,4 +24,4 @@ Axiom T_sum : forall {X Y: Type},
 Axiom T_comp : forall {X Y Z W V} (f : X -> Y) (g : Y -> Z),
   T (compose g f) = @compose W V (T f) (T g).
 
-Definition Derive {X Y} (f : X -> Y) {x : X} : .
+Definition Derive {X Y} (f : X -> Y) {x : X} : . *)
