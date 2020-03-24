@@ -90,16 +90,6 @@ Scheme closed_env_rec := Induction for Closed Sort Type
   with env_closed_rec := Induction for Env Sort Type. *)
 (* End Closed terms *)
 
-Inductive Env : Ctx -> Type :=
-  | env_nil : Env []
-  | env_cons : forall {Γ τ}, tm [] τ -> Env Γ -> Env (τ::Γ)
-.
-
-Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
-  induction Γ. constructor.
-  inversion G. assumption.
-Defined.
-
 (* Examples *)
 Definition ex_id :=
   abs [] Real Real

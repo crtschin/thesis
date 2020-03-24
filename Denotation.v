@@ -88,13 +88,6 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
   end
 where "⟦ t ⟧ₜₘ" := (denote_tm t).
 
-Fixpoint denote_env {Γ} (G : Env Γ) : ⟦ Γ ⟧ₜₓ :=
-  match G with
-  | env_nil => tt
-  | env_cons Γ' τ t G' => (denote_tm t tt, denote_env G')
-  end.
-Notation "⟦ G ⟧ₑ" := (denote_env G).
-
 Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   match Γ with
   | [] => fun s ctx => tt
