@@ -30,7 +30,7 @@ Notation "A → B" := (Arrow A B) (right associativity, at level 20).
     - From Mathematics to Abstract Machine by Swierstra, et al.
     - Strongly Typed Term Representations in Coq by Benton, et al.
  *)
-Definition Ctx {x} := list x.
+Definition Ctx {x} : Type := list x.
 
 Inductive Var {T : Type} : list T -> T -> Type :=
   | Top : forall Γ τ, Var (τ::Γ) τ

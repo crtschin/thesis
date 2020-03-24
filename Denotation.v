@@ -88,13 +88,6 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
   end
 where "⟦ t ⟧ₜₘ" := (denote_tm t).
 
-Fixpoint denote_env {Γ} (G : Env Γ) : ⟦ Γ ⟧ₜₓ :=
-  match G with
-  | env_nil => tt
-  | env_cons Γ' τ t G' => (denote_tm t tt, denote_env G')
-  end.
-Notation "⟦ G ⟧ₑ" := (denote_env G).
-
 Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   match Γ with
   | [] => fun s ctx => tt
@@ -269,10 +262,12 @@ Proof with quick.
   rewrite <- IHmulti.
   dependent induction H;
     extensionality ctx; quick;
-    try (erewrite IHstep; constructor).
+    try (erewrite IHstep; constructor)...
   { rewrite <- denote_sub_commutes...
     unfold hd_sub. simp cons_sub.
     destruct ctx... }
+  { erewrite <- (IHstep t2 t2' t2')...
+    constructor. }
 Qed.
 
 Lemma D_value : forall Γ τ (t : tm Γ τ),
@@ -382,11 +377,5 @@ Proof with quick.
     rewrite <- denote_sub_commutes...
     unfold hd_sub. simp cons_sub.
     rewrite denote_sub_tl_cons... }
-  { simp Dtm. fold map Dt. erewrite soundness.
-  2:{ eapply multi_step. apply ST_App1... constructor. }
-    simp Dtm... }
-  { erewrite soundness.
-    2: { eapply multi_step. apply ST_App2... constructor. }
-    quick. }
   all: admit.
 Admitted.
