@@ -21,109 +21,109 @@ From AD Require Import Definitions.
   Also used as a reference is:
     Proofs And Types by Jean-Yves Girard.
 *)
-Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
-  | v_real : forall {Γ r},
-    value (const Γ r)
-  | v_tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
+Inductive value : forall {τ}, tm τ -> Prop :=
+  | v_real : forall {r},
+    value (const r)
+  | v_tuple : forall τ σ (t1 : tm τ) (t2 : tm σ),
     value t1 ->
     value t2 ->
-    value (tuple Γ t1 t2)
-  | v_abs : forall Γ τ σ b,
-    value (abs Γ τ σ b)
-  | v_inl : forall Γ τ σ t,
+    value (tuple t1 t2)
+  | v_abs : forall τ σ b,
+    value (abs τ σ b)
+  | v_inl : forall τ σ t,
     value t ->
-    value (@inl Γ τ σ t)
-  | v_inr : forall Γ τ σ t,
+    value (@inl τ σ t)
+  | v_inr : forall τ σ t,
     value t ->
-    value (@inr Γ τ σ t)
+    value (@inr τ σ t)
 .
 Hint Constructors value : ad.
 
 Reserved Notation "t1 --> t2" (at level 40).
-Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
+Inductive step : forall {Γ τ}, tm τ -> tm τ -> Prop :=
   (* Base STLC *)
-  | ST_AppAbs : forall Γ τ σ t1' v2,
+  | ST_AppAbs : forall τ σ f v2,
     value v2 ->
-      (app Γ τ σ (abs Γ τ σ t1') v2) --> (substitute (| v2 |) t1')
-  | ST_App1 : forall Γ τ σ t1 t1' t2,
+      (app τ σ (abs τ σ f) v2) --> (f v2)
+  | ST_App1 : forall τ σ t1 t1' t2,
       t1 --> t1' ->
-        (app Γ τ σ t1 t2) --> (app Γ τ σ t1' t2)
-  | ST_App2 : forall Γ τ σ (v1 : tm Γ (σ → τ)) t2 t2',
+        (app τ σ t1 t2) --> (app τ σ t1' t2)
+  | ST_App2 : forall τ σ (v1 : tm (σ → τ)) t2 t2',
       value v1 ->
       t2 --> t2' ->
-        (app Γ τ σ v1 t2) --> (app Γ τ σ v1 t2')
+        (app τ σ v1 t2) --> (app τ σ v1 t2')
 
   (* Add *)
-  | ST_Add : forall Γ v1 v2,
-      (add Γ (const Γ v1) (const Γ v2)) --> const Γ (Rdefinitions.Rplus v1 v2)
-  | ST_Add1 : forall Γ t1 t1' t2,
+  | ST_Add : forall v1 v2,
+      (add (const v1) (const v2)) --> const (Rdefinitions.Rplus v1 v2)
+  | ST_Add1 : forall t1 t1' t2,
       t1 --> t1' ->
-      (add Γ t1 t2) --> (add Γ t1' t2)
-  | ST_Add2 : forall Γ v1 t2 t2',
+      (add t1 t2) --> (add t1' t2)
+  | ST_Add2 : forall v1 t2 t2',
     value v1 ->
       t2 --> t2' ->
-      (add Γ v1 t2) --> (add Γ v1 t2')
+      (add v1 t2) --> (add v1 t2')
 
   (* Pairs *)
-  | ST_Tuple1 : forall Γ τ σ t1 t1' t2,
+  | ST_Tuple1 : forall τ σ t1 t1' t2,
       t1 --> t1' ->
-      (@tuple Γ τ σ t1 t2) --> (@tuple Γ τ σ t1' t2)
-  | ST_Tuple2 : forall Γ τ σ t2 t2' v1,
+      (@tuple τ σ t1 t2) --> (@tuple τ σ t1' t2)
+  | ST_Tuple2 : forall τ σ t2 t2' v1,
       value v1 ->
       t2 --> t2' ->
-      (@tuple Γ τ σ v1 t2) --> (@tuple Γ τ σ v1 t2')
-  | ST_Fst : forall Γ τ σ t1 t1',
+      (@tuple τ σ v1 t2) --> (@tuple τ σ v1 t2')
+  | ST_Fst : forall τ σ t1 t1',
         t1 --> t1' ->
-        (@first Γ τ σ t1) --> (@first Γ τ σ t1')
-  | ST_FstTuple : forall Γ τ σ v1 v2,
+        (@first τ σ t1) --> (@first τ σ t1')
+  | ST_FstTuple : forall τ σ v1 v2,
         value v1 ->
         value v2 ->
-      (@first Γ τ σ (@tuple Γ τ σ v1 v2)) --> v1
-  | ST_Snd : forall Γ τ σ t1 t1',
+      (@first τ σ (@tuple τ σ v1 v2)) --> v1
+  | ST_Snd : forall τ σ t1 t1',
         t1 --> t1' ->
-        (@second Γ τ σ t1) --> (@second Γ τ σ t1')
-  | ST_SndTuple : forall Γ τ σ v1 v2,
+        (@second τ σ t1) --> (@second τ σ t1')
+  | ST_SndTuple : forall τ σ v1 v2,
         value v1 ->
         value v2 ->
-      (@second Γ τ σ (@tuple Γ τ σ v1 v2)) --> v2
+      (@second τ σ (@tuple τ σ v1 v2)) --> v2
 
   (* Sums *)
-  | ST_Case : forall Γ τ σ ρ e e' t1 t2,
+  | ST_Case : forall τ σ ρ e e' t1 t2,
       e --> e' ->
-      (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e' t1 t2)
-  | ST_Case1 : forall Γ τ σ ρ (t2 : tm Γ (σ → ρ))
-        (t1 t1' : tm Γ (τ → ρ)) (e e' : tm Γ (τ <+> σ)),
-      (* (@inl Γ τ σ e --> @inl Γ τ σ e') -> *)
-      (* (@inl Γ τ σ e --> @inl Γ τ σ e') -> *)
+      (@case τ σ ρ e t1 t2) --> (@case τ σ ρ e' t1 t2)
+  | ST_Case1 : forall τ σ ρ (t2 : tm (σ → ρ))
+        (t1 t1' : tm (τ → ρ)) (e e' : tm (τ <+> σ)),
+      (* (@inl τ σ e --> @inl τ σ e') -> *)
+      (* (@inl τ σ e --> @inl τ σ e') -> *)
       value e ->
       (t1 --> t1') ->
-      (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e t1' t2)
-  | ST_Case2 : forall Γ τ σ ρ (t2 t2' : tm Γ (σ → ρ))
-        (t1 : tm Γ (τ → ρ)) (e e' : tm Γ (τ <+> σ)),
-      (* (@inr Γ τ σ e --> @inr Γ τ σ e') -> *)
+      (@case τ σ ρ e t1 t2) --> (@case τ σ ρ e t1' t2)
+  | ST_Case2 : forall τ σ ρ (t2 t2' : tm (σ → ρ))
+        (t1 : tm (τ → ρ)) (e e' : tm (τ <+> σ)),
+      (* (@inr τ σ e --> @inr τ σ e') -> *)
       (* value e' -> *)
-      (* (@inr Γ τ σ e --> @inr Γ τ σ e') -> *)
+      (* (@inr τ σ e --> @inr τ σ e') -> *)
       value e ->
       value t1 ->
       (t2 --> t2') ->
-      (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e t1 t2')
-  | ST_CaseInl : forall Γ τ σ ρ t2 t1' (e : tm Γ τ),
+      (@case τ σ ρ e t1 t2) --> (@case τ σ ρ e t1 t2')
+  | ST_CaseInl : forall τ σ ρ t2 t1' (e : tm τ),
       value e ->
       value t1' ->
       value t2 ->
-      (@case Γ τ σ ρ (inl Γ e) t1' t2) --> (app Γ ρ τ t1' e)
-  | ST_CaseInr : forall Γ τ σ ρ t1 t2' (e : tm Γ σ),
+      (@case τ σ ρ (inl e) t1' t2) --> (app ρ τ t1' e)
+  | ST_CaseInr : forall τ σ ρ t1 t2' (e : tm σ),
       value e ->
       value t1 ->
       value t2' ->
-      (@case Γ τ σ ρ (inr Γ e) t1 t2') --> (app Γ ρ σ t2' e)
+      (@case τ σ ρ (inr e) t1 t2') --> (app ρ σ t2' e)
 
-  | ST_Inl : forall Γ τ σ t1 t1',
+  | ST_Inl : forall τ σ t1 t1',
         t1 --> t1' ->
-        (@inl Γ τ σ t1) --> (@inl Γ τ σ t1')
-  | ST_Inr : forall Γ τ σ t1 t1',
+        (@inl τ σ t1) --> (@inl τ σ t1')
+  | ST_Inr : forall τ σ t1 t1',
         t1 --> t1' ->
-        (@inr Γ τ σ t1) --> (@inr Γ τ σ t1')
+        (@inr τ σ t1) --> (@inr τ σ t1')
 
 where "t  -->  v" := (step t v).
 

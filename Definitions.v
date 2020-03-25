@@ -32,44 +32,37 @@ Notation "A → B" := (Arrow A B) (right associativity, at level 20).
  *)
 Definition Ctx {x} : Type := list x.
 
-Inductive Var {T : Type} : list T -> T -> Type :=
-  | Top : forall Γ τ, Var (τ::Γ) τ
-  | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ
-.
-Derive Signature for Var.
+Inductive Var (τ : ty) : Type.
 
-
-Notation "x ∈ Γ" := (Var Γ x) (at level 75).
-
-Inductive tm (Γ : Ctx) : ty -> Type :=
+Inductive tm : ty -> Type :=
   (* Base STLC *)
   | var : forall τ,
-    τ ∈ Γ -> tm Γ τ
+    Var τ -> tm τ
   | app : forall τ σ,
-    tm Γ (σ → τ) ->
-    tm Γ σ ->
-    tm Γ τ
+    tm (σ → τ) ->
+    tm σ ->
+    tm τ
   | abs : forall τ σ,
-    tm (σ::Γ) τ -> tm Γ (σ → τ)
+    (Var σ -> tm τ) -> tm (σ → τ)
 
   (* Reals *)
-  | const : R -> tm Γ Real
-  | add : tm Γ Real -> tm Γ Real -> tm Γ Real
+  | const : R -> tm Real
+  | add : tm Real -> tm Real -> tm Real
 
   (* Products (currently using projection instead of pattern matching) *)
   | tuple : forall {τ σ},
-    tm Γ τ ->
-    tm Γ σ ->
-    tm Γ (τ × σ)
-  | first : forall {τ σ}, tm Γ (τ × σ) -> tm Γ τ
-  | second : forall {τ σ}, tm Γ (τ × σ) -> tm Γ σ
+    tm τ ->
+    tm σ ->
+    tm (τ × σ)
+  | first : forall {τ σ}, tm (τ × σ) -> tm τ
+  | second : forall {τ σ}, tm (τ × σ) -> tm σ
 
-  | case : forall {τ σ ρ}, tm Γ (τ <+> σ) ->
-    tm Γ (τ → ρ) ->
-    tm Γ (σ → ρ) ->
-    tm Γ ρ
-  | inl : forall {τ σ}, tm Γ τ -> tm Γ (τ <+> σ)
-  | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ <+> σ)
+  | case : forall {τ σ ρ}, tm (τ <+> σ) ->
+    tm (τ → ρ) ->
+    tm (σ → ρ) ->
+    tm ρ
+  | inl : forall {τ σ}, tm τ -> tm (τ <+> σ)
+  | inr : forall {τ σ}, tm σ -> tm (τ <+> σ)
 .
 
 (* Closed terms *)
@@ -90,7 +83,7 @@ Scheme closed_env_rec := Induction for Closed Sort Type
   with env_closed_rec := Induction for Env Sort Type. *)
 (* End Closed terms *)
 
-Inductive Env : Ctx -> Type :=
+(* Inductive Env : Ctx -> Type :=
   | env_nil : Env []
   | env_cons : forall {Γ τ}, tm [] τ -> Env Γ -> Env (τ::Γ)
 .
@@ -98,26 +91,26 @@ Inductive Env : Ctx -> Type :=
 Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
   induction Γ. constructor.
   inversion G. assumption.
-Defined.
+Defined. *)
 
 (* Examples *)
 Definition ex_id :=
-  abs [] Real Real
-    (var [Real] Real (Top _ _)).
+  abs Real Real
+    (fun v => var Real v).
 
 Definition ex_const :=
-  abs [] (Real → Real) Real
-    (abs [Real] (Real) (Real)
-      (var [Real;Real] Real (Top [Real] Real))).
+  abs (Real → Real) Real
+    (fun v => abs (Real) (Real)
+      (fun v' => var Real v)).
 
 Definition ex_plus :=
-  abs [] (Real → Real) Real
-    (abs [Real] Real Real
-      (add [Real;Real]
-        (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
-          (var [Real;Real] Real (Top [Real] Real)))).
+  abs (Real → Real) Real
+    (fun v => abs Real Real
+      (fun v' => add
+        (var Real v)
+          (var Real v'))).
 
-Definition neuron :=
+(* Definition neuron :=
   abs [] (Real → Real → Real) Real
     (abs [Real] (Real → Real) Real
       (abs [Real;Real] Real Real
@@ -129,7 +122,7 @@ Definition neuron :=
           (var [Real;Real;Real] Real
             (Pop [Real;Real] Real Real
               (Pop [Real] Real Real
-                (Top [] Real))))))).
+                (Top [] Real))))))). *)
 (* End Examples *)
 
 (*
@@ -144,7 +137,7 @@ Definition neuron :=
     with an expression with the same type typed in a different context.
     Effectively 'using up' one of the variables in the context.
 *)
-Definition gren (f : ty -> ty) Γ Γ'  :=
+(* Definition gren (f : ty -> ty) Γ Γ'  :=
   forall τ, Var (map f Γ) (f τ) -> Var (map f Γ') (f τ).
 Definition gsub (f : ty -> ty) Γ Γ' :=
   forall τ, Var (map f Γ) (f τ) -> tm (map f Γ') (f τ).
@@ -405,4 +398,4 @@ with substitute_closed {Γ Γ' τ} (s : sub Γ Γ') (c : Closed τ) : Closed τ 
   match c with
   | closure t E => closure (substitute s t) (substitute_env s E)
   | clapp cf c => clapp (substitute_closed s cf) (substitute_closed s c)
-  end. *)
+  end. *) *)
