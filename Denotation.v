@@ -243,15 +243,12 @@ Proof with quick.
     rewrite denote_sub_id_ctx... }
 Admitted.
 
-Lemma denote_sub_tl_cons : forall Γ τ (t : tm Γ τ) ctx,
-  denote_sub (tl_sub (|t|)) ctx = ctx.
+Lemma denote_sub_tl_cons : forall Γ Γ' τ (t : tm Γ' τ) ctx (sb : sub Γ Γ'),
+  denote_sub (tl_sub (cons_sub t sb)) ctx = denote_sub sb ctx.
 Proof with quick.
   intros.
-  unfold id_sub.
-  rewrite tl_cons_sub.
-  fold (@id_sub Γ).
-  rewrite denote_sub_id_ctx...
-Admitted.
+  rewrite tl_cons_sub...
+Qed.
 
 Theorem soundness : forall Γ τ (t t' : tm Γ τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
@@ -266,7 +263,8 @@ Proof with quick.
     unfold hd_sub. simp cons_sub.
     induction Γ.
     { destruct ctx... }
-    { rewrite denote_sub_tl_cons... } }
+    { rewrite denote_sub_tl_cons...
+      rewrite denote_sub_tl_snd... destruct ctx... } }
 Qed.
 
 Lemma D_value : forall Γ τ (t : tm Γ τ),
@@ -362,7 +360,7 @@ Proof with quick.
   all: admit.
 Admitted.
 
-
+(*
 Theorem D_soundness : forall Γ τ (t t' : tm Γ τ),
   (Dtm t -->* Dtm t') -> ⟦Dtm t⟧ₜₘ = ⟦Dtm t'⟧ₜₘ.
 Proof with quick.
@@ -383,4 +381,4 @@ Proof with quick.
     2: { eapply multi_step. apply ST_App2... constructor. }
     quick. }
   all: admit.
-Admitted.
+Admitted. *)

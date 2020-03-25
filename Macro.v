@@ -53,11 +53,11 @@ Dtm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm e) (Dtm c1) (Dtm c2);
 Dtm (Γ:=Γ) (τ:=τ) (inl Γ e) := inl _ (Dtm e);
 Dtm (Γ:=Γ) (τ:=τ) (inr Γ e) := inr _ (Dtm e).
 
-Fixpoint Denv {Γ} (G : Env Γ) : Env (Dctx Γ) :=
+(* Fixpoint Denv {Γ} (G : Env Γ) : Env (Dctx Γ) :=
   match G with
   | env_nil => env_nil
   | env_cons c G => env_cons (Dtm c) (Denv G)
-  end.
+  end. *)
 
 Lemma Dt_lift_var : forall Γ τ, τ ∈ Γ -> (Dt τ) ∈ (map Dt Γ).
 Proof with eauto.
