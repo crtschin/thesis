@@ -92,7 +92,7 @@ Scheme closed_env_rec := Induction for Closed Sort Type
 
 Inductive Env : Ctx -> Type :=
   | env_nil : Env []
-  | env_cons : forall {Γ τ}, tm [] τ -> Env Γ -> Env (τ::Γ)
+  | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
 .
 
 Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.

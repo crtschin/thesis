@@ -36,39 +36,39 @@ Local Open Scope R_scope.
     denotation function of macro term
       (the derivative of the function the term describes)
 *)
-Equations S Γ τ : tm Γ τ -> (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
-S Γ Real t f g :=
-  (*
-  /\ *)
-  forall (h1 : R -> ⟦ Γ ⟧ₜₓ) (h2 : R -> ⟦ Dctx Γ ⟧ₜₓ),
-  (forall (x : R), ex_derive (⟦ t ⟧ₜₘ ∘ h1) x) /\
-  (fun r => (⟦ Dtm t ⟧ₜₘ ∘ h2) r) = (fun r => ((⟦ t ⟧ₜₘ ∘ h1) r, Derive (⟦ t ⟧ₜₘ ∘ h1) r));
-S Γ (σ × ρ) t f g :=
-  exists f1 f2 g1 g2 t1 t2,
-  exists (s1 : S Γ σ t1 f1 f2) (s2 : S Γ ρ t2 g1 g2),
-    t = tuple Γ t1 t2 /\
+Equations S (Γ : list ty) τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
+S Γ Real f g :=
+  forall (h : R -> Env Γ),
+  (forall (x : R), ex_derive f x) /\
+  (fun r => g r) =
+    (fun r => (f r, Derive f r));
+S Γ (σ × ρ) f g :=
+  exists f1 f2 g1 g2,
+  exists (s1 : S Γ σ f1 f2) (s2 : S Γ ρ g1 g2),
     (f = fun r => (f1 r, g1 r)) /\
     (g = fun r => (f2 r, g2 r));
-S Γ (σ → ρ) t f g :=
+S Γ (σ → ρ) f g :=
   (* exists h, *)
+  forall (h : R -> Env Γ),
   forall (s : tm Γ σ),
-  forall g1 g2,
-  forall (sσ : S Γ σ s g1 g2),
+  forall (sσ : S Γ σ (⟦s⟧ₜₘ ∘ denote_env ∘ h)
+            (⟦Dtm s⟧ₜₘ ∘ denote_env ∘ Denv ∘ h)),
     (* (fun x => h1 x) = (fun x => f x (g1 x)) /\
     (fun x => h2 x) = (fun x => g x (g2 x)); *)
     (* value s -> *)
     (* g1 = (⟦s⟧ₜₘ ∘ denote_env ∘ h) -> *)
     (* g2 = (⟦Dtm s⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) -> *)
-    S Γ ρ (app Γ _ _ t s) (fun x => f x (g1 x)) (fun x => g x (g2 x));
-S Γ (σ <+> ρ) t f g :=
+    S Γ ρ (fun x => f x ((⟦s⟧ₜₘ ∘ denote_env ∘ h) x))
+      (fun x => g x ((⟦Dtm s⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) x));
+S Γ (σ <+> ρ) f g :=
   (exists g1 g2,
-    forall (t : tm Γ σ),
-    forall (s: S Γ σ t g1 g2),
+    (* forall (t : tm Γ σ), *)
+    forall (s: S Γ σ g1 g2),
       f = Datatypes.inl ∘ g1 /\
       g = Datatypes.inl ∘ g2) \/
   (exists g1 g2,
-    forall (t : tm Γ ρ),
-    forall (s: S Γ ρ t g1 g2),
+    (* forall (t : tm Γ ρ), *)
+    forall (s: S Γ ρ g1 g2),
       f = Datatypes.inr ∘ g1 /\
       g = Datatypes.inr ∘ g2).
 
@@ -88,7 +88,8 @@ Inductive instantiation :
         forall {t : tm Γ' τ},
       instantiation s ->
         value t ->
-        (forall g1 g2, S Γ' τ t g1 g2) ->
+        (forall h, S Γ' τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ h)
+          (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h)) ->
         instantiation (cons_sub t s).
 
 (* Equations instantiation Γ {Γ'} (f : R -> Env Γ') : sub Γ Γ' -> Prop :=
@@ -100,10 +101,10 @@ instantiation (τ :: Γ) f s :=
       g2 = (⟦Dtm (hd_sub s)⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) /\
       instantiation Γ f (tl_sub s). *)
 
-Lemma S_cong : forall Γ τ t f1 f2 g1 g2,
-  g1 = f1 -> g2 = f2 -> S Γ τ t f1 f2 = S Γ τ t g1 g2.
-Proof. intros. rewrites. Qed.
-
+Lemma S_cong : forall Γ τ f1 f2 g1 g2,
+  g1 = f1 -> g2 = f2 -> S Γ τ f1 f2 = S Γ τ g1 g2.
+Proof. intros; rewrites. Qed.
+(*
 Lemma S_soundness : forall Γ τ (t t' : tm Γ τ) f f',
   (t -->* t') ->
     S Γ τ t f f' = S Γ τ t' f f'.
@@ -116,7 +117,7 @@ Proof with quick.
   pose proof (D_step _ _ t t' H) as H'.
   pose proof (soundness _ _ (Dtm t) (Dtm t') H') as Heq'.
   rewrite <- Heq. rewrite <- Heq'... *)
-Admitted.
+Admitted. *)
 
 (*
 Lemma S_substitute_lifted :
@@ -144,14 +145,14 @@ Proof.
   exists (const Γ 0). split.
 Admitted. *)
 
-Lemma S_app : forall Γ τ σ t1 t2 h1 h1' h2 h2',
+(* Lemma S_app : forall Γ τ σ t1 t2 h1 h1' h2 h2',
   S Γ σ t2 h2 h2' ->
     S Γ (σ → τ) t1 h1 h1' ->
     S Γ τ (app Γ τ σ t1 t2) (fun r => (h1 r) (h2 r)) (fun r => (h1' r) (h2' r)).
 Proof with quick.
   intros...
   simp S in H0.
-Admitted.
+Admitted. *)
 
 
 (*
@@ -162,11 +163,13 @@ Admitted.
 *)
 Lemma fundamental :
   forall Γ Γ' τ
-    (t : tm Γ τ) (sb : sub Γ Γ') h1 h2,
+    (t : tm Γ τ) (sb : sub Γ Γ') (h : R -> Env Γ'),
   instantiation sb ->
-  S Γ' τ (substitute sb t) (⟦substitute sb t⟧ₜₘ ∘ h1) (⟦Dtm (substitute sb t)⟧ₜₘ ∘ h2).
+  S Γ' τ
+    (⟦substitute sb t⟧ₜₘ ∘ denote_env ∘ h)
+    (⟦Dtm (substitute sb t)⟧ₜₘ ∘ denote_env ∘ Denv ∘ h).
 Proof with quick.
-  intros Γ Γ' τ t sb h1 h2 H.
+  intros Γ Γ' τ t sb h H.
   generalize dependent Γ'.
   (* pose proof (H τ) as H'. clear H. *)
   dependent induction t; unfold compose in *.
@@ -191,10 +194,12 @@ Proof with quick.
   { (* App *)
     intros...
     simp S in IHt1... simp Dtm...
-    specialize IHt1 with Γ' sb h1 h2; specialize IHt2 with Γ' sb h1 h2.
+    specialize IHt1 with Γ' sb h; specialize IHt2 with Γ' sb h.
     pose proof (IHt1 H); pose proof (IHt2 H).
     clear IHt1; clear IHt2.
     simp S in H0.
+    (* unfold compose in *.
+    apply H0. *)
     (* specialize H0 with (substitute sb t2).
     destruct H0 as [g1 [g2 H']].
     eapply H'. *)
@@ -217,7 +222,8 @@ Proof with quick.
   { (* Abs *)
     intros. simp S. intros; subst...
     simpl (substitute sb (abs Γ τ σ t)).
-    simp Dtm. simpl.
+    simp Dtm...
+    unfold compose in *.
     exists (⟦ s ⟧ₜₘ ∘ h1).
     exists (⟦ Dtm s ⟧ₜₘ ∘ h2).
     exists (⟦ substitute (cons_sub s sb) t ⟧ₜₘ ∘ h1).
