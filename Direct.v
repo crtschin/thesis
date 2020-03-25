@@ -52,15 +52,14 @@ S Γ (σ × ρ) t f g :=
 S Γ (σ → ρ) t f g :=
   (* exists h, *)
   forall (s : tm Γ σ),
-  forall g1 g2 h1 h2,
+  forall g1 g2,
   forall (sσ : S Γ σ s g1 g2),
-  forall (sτ : S Γ ρ (app Γ ρ σ t s) h1 h2),
-    (fun x => h1 x) = (fun x => f x (g1 x)) /\
-    (fun x => h2 x) = (fun x => g x (g2 x));
+    (* (fun x => h1 x) = (fun x => f x (g1 x)) /\
+    (fun x => h2 x) = (fun x => g x (g2 x)); *)
     (* value s -> *)
     (* g1 = (⟦s⟧ₜₘ ∘ denote_env ∘ h) -> *)
     (* g2 = (⟦Dtm s⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) -> *)
-    (* S Γ ρ (app Γ _ _ t s) (fun x => f x (g1 x)) (fun x => g x (g2 x)); *)
+    S Γ ρ (app Γ _ _ t s) (fun x => f x (g1 x)) (fun x => g x (g2 x));
 S Γ (σ <+> ρ) t f g :=
   (exists g1 g2,
     forall (t : tm Γ σ),
@@ -191,13 +190,14 @@ Proof with quick.
     }
   { (* App *)
     intros...
-    simp S in IHt1.
-    (* pose proof S_app. *)
-    (* specialize IHt1 with g sb; specialize IHt2 with Γ' g sb.
-    pose proof (IHt1 H) as IHt1'; clear IHt1.
-    pose proof (IHt2 H) as IHt2'; clear IHt2...
-    simp S in IHt1'. *)
-    (* admit. *)
+    simp S in IHt1... simp Dtm...
+    specialize IHt1 with Γ' sb h1 h2; specialize IHt2 with Γ' sb h1 h2.
+    pose proof (IHt1 H); pose proof (IHt2 H).
+    clear IHt1; clear IHt2.
+    simp S in H0.
+    (* specialize H0 with (substitute sb t2).
+    destruct H0 as [g1 [g2 H']].
+    eapply H'. *)
 
     (* With terms in relation for functions *)
     (* specialize IHt1' with
@@ -218,6 +218,11 @@ Proof with quick.
     intros. simp S. intros; subst...
     simpl (substitute sb (abs Γ τ σ t)).
     simp Dtm. simpl.
+    exists (⟦ s ⟧ₜₘ ∘ h1).
+    exists (⟦ Dtm s ⟧ₜₘ ∘ h2).
+    exists (⟦ substitute (cons_sub s sb) t ⟧ₜₘ ∘ h1).
+    exists (⟦ Dtm (substitute (cons_sub s sb) t) ⟧ₜₘ ∘ h2)...
+    splits...
     (* specialize IHt with (σ::Γ')
       (fun r => env_cons s (g r)) (cons_sub s sb).
     eapply IHt. *)
