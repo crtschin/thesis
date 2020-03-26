@@ -39,22 +39,22 @@ S Γ (σ × ρ) h1 h2 f g :=
     (g = fun r => (f2 r, g2 r));
 S Γ (σ → ρ) h1 h2 f g :=
   forall (s : tm Γ σ),
-  forall (b : tm (σ::Γ) ρ),
+  (* forall (b : tm (σ::Γ) ρ), *)
   (* forall (t : tm Γ (σ → ρ)), *)
   forall (sσ : S Γ σ h1 h2 (⟦ s ⟧ₜₘ ∘ h1) (⟦ Dtm s ⟧ₜₘ ∘ h2)),
     (* t = abs _ _ _ b -> *)
     (* value s -> *)
     (* (fun x => (⟦ substitute (|s|) b ⟧ₜₘ ∘ h1) x) = (fun x => f x ((⟦ s ⟧ₜₘ ∘ h1) x)) /\
     (fun x => (⟦ Dtm (substitute (|s|) b) ⟧ₜₘ ∘ h2) x) = (fun x => g x ((⟦ Dtm s ⟧ₜₘ ∘ h2) x)) -> *)
-  S Γ ρ h1 h2 (⟦ (substitute (|s|) b) ⟧ₜₘ ∘ h1)
-    (⟦ Dtm (substitute (|s|) b) ⟧ₜₘ ∘ h2);
+  (exists t, S Γ ρ h1 h2 (⟦ (app _ _ _ t s) ⟧ₜₘ ∘ h1)
+    (⟦ Dtm (app _ _ _ t s) ⟧ₜₘ ∘ h2));
 S Γ (σ <+> ρ) h1 h2 f g :=
-  (exists g1 g2,
-    forall (s: S Γ σ h1 h2 g1 g2),
+  (forall g1 g2,
+    (* forall (s: S Γ σ h1 h2 g1 g2), *)
       f = Datatypes.inl ∘ g1 /\
       g = Datatypes.inl ∘ g2) \/
-  (exists g1 g2,
-    forall (s: S Γ ρ h1 h2 g1 g2),
+  (forall g1 g2,
+    (* forall (s: S Γ ρ h1 h2 g1 g2), *)
       f = Datatypes.inr ∘ g1 /\
       g = Datatypes.inr ∘ g2).
 
@@ -166,7 +166,9 @@ Proof with quick.
     specialize IHt1 with Γ' sb h1 h2; specialize IHt2 with Γ' sb h1 h2.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2...
-    simp S in IHt1'. simp Dtm...
+    simp S in IHt1'.
+    pose proof (IHt1' _ IHt2').
+    simp Dtm...
 
     (*
     (* With terms in relation for functions *)
@@ -195,11 +197,16 @@ Proof with quick.
     intros. simp S... subst. unfold compose...
     specialize IHt with Γ'
       (cons_sub s sb) h1 h2.
+    exists (substitute sb (abs _ _ _ t))...
     (* exists Γ'. exists h1. exists h2. *)
     intros; subst. simp Dtm...
-    rewrite D_sub.
+    (* rewrite D_sub. *)
     erewrite S_cong. apply IHt...
-
+  2:{ extensionality x.
+      erewrite <- 2 denote_sub_commutes...
+      unfold hd_sub. simp cons_sub substitute_lifted...
+      erewrite <- denote_sub_elim.
+    }
     eapply IHt.
 
     destruct H0.
@@ -327,9 +334,24 @@ Proof with quick.
     { simp Dtm... rewrite H2... } }
   { (* Case *)
     intros.
-    pose proof (IHt1 Γ' g sb H) as IH1; clear IHt1.
+    pose proof (IHt1 Γ' sb h1 h2 H) as IH1; clear IHt1.
+    pose proof (IHt2 Γ' sb h1 h2 H) as IH2; clear IHt2.
+    pose proof (IHt3 Γ' sb h1 h2 H) as IH3; clear IHt3.
     simp S in IH1. simpl. simp Dtm. simpl.
-    destruct IH1 as [[g1 [g2 H']]|[g1 [g2 H']]].
+    fold denote_t Dt in *.
+    destruct IH1 as [[Heq1 Heq2]|[Heq1 Heq2]].
+    simp S in *.
+    erewrite S_cong. apply IH2.
+  2:{ extensionality x.
+      eapply equal_f in Heq1.
+      rewrite Heq1...
+      unfold compose...
+      admit. }
+  2:{ extensionality x.
+      eapply equal_f in Heq2.
+      rewrite Heq2...
+      unfold compose...
+      admit. }
     all: admit.
     (* induction H.
     rewrite app_sub_id.
@@ -344,13 +366,15 @@ Proof with quick.
     }
   { (* Inl *)
     intros. simp S. left...
-    exists (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g).
-    exists (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
+    fold denote_t Dt in *.
+    exists (⟦ substitute sb t ⟧ₜₘ ∘ h1).
+    exists (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ h2).
     split; unfold compose; extensionality x... }
   { (* Inl *)
     intros. simp S. right...
-    exists (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g).
-    exists (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
+    fold denote_t Dt in *.
+    exists (⟦ substitute sb t ⟧ₜₘ ∘ h1).
+    exists (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ h2).
     split; unfold compose; extensionality x... }
 Admitted.
 
