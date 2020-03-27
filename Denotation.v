@@ -252,15 +252,15 @@ Proof with quick.
     rewrite denote_sub_id_ctx... }
 Admitted.
 
-Lemma denote_sub_tl_cons : forall Γ τ (t : tm Γ τ) ctx,
-  denote_sub (tl_sub (|t|)) ctx = ctx.
+Lemma denote_sub_tl_cons :
+  forall Γ Γ' τ (t : tm Γ' τ) ctx (sb : sub Γ Γ'),
+  denote_sub (tl_sub (cons_sub t sb)) ctx = denote_sub sb ctx.
 Proof with quick.
   intros.
   unfold id_sub.
   rewrite tl_cons_sub.
-  fold (@id_sub Γ).
-  rewrite denote_sub_id_ctx...
-Admitted.
+  fold (@id_sub Γ)...
+Qed.
 
 Theorem soundness : forall τ (t t' : tm [] τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
@@ -277,113 +277,3 @@ Proof with quick.
   { erewrite <- (IHstep t2 t2' t2')...
     constructor. }
 Qed.
-
-Lemma D_value : forall Γ τ (t : tm Γ τ),
-  value t -> value (Dtm t).
-Proof.
-  intros. induction H; simp Dtm; constructor;
-    try (constructor || assumption).
-Qed.
-
-Lemma D_step : forall Γ τ (t t' : tm Γ τ),
-  (* value t' -> *)
-  (t -->* t') -> Dtm t -->* Dtm t'.
-Proof with quick.
-  intros Γ τ t t' H.
-  induction H... constructor.
-  induction H.
-  { simp Dtm. fold (map Dt) Dt.
-    pose proof (D_value _ _ _ H).
-    eapply multi_step.
-    apply ST_AppAbs...
-    eapply multi_trans...
-    admit. }
-  { simp Dtm. fold map Dt.
-    specialize IHstep with t1'.
-    eapply multi_trans...
-    simp Dtm. fold map Dt.
-    eapply multi_trans...
-    apply multistep_App1.
-    apply IHstep.
-    all: constructor. }
-  { simp Dtm. fold map Dt.
-    specialize IHstep with t2'...
-    eapply multi_trans...
-    simp Dtm. fold map Dt.
-    eapply multi_trans...
-    apply multistep_App2.
-    apply D_value in H...
-    apply IHstep.
-    all: constructor. }
-  { simp Dtm. fold map Dt.
-    eapply multi_trans...
-    simp Dtm.
-    eapply multi_trans.
-    apply multistep_Tuple1.
-    eapply multi_trans.
-    apply multistep_Add1.
-    apply multistep_FirstTuple...
-    apply multistep_Add2...
-    apply multistep_FirstTuple...
-    eapply multi_trans.
-    apply multistep_Tuple1.
-    pose proof multistep_Add as H.
-    specialize H with (map Dt Γ) v1 v2.
-    pose proof (H v_real v_real)...
-    eapply multi_trans.
-    apply multistep_Tuple2...
-    eapply multi_trans.
-    apply multistep_Add1...
-    apply multistep_SecondTuple...
-    apply multistep_Add2...
-    apply multistep_SecondTuple...
-    eapply multi_trans.
-    apply multistep_Tuple2...
-    apply multistep_Add...
-    rewrite Rplus_0_r.
-    constructor. }
-  { simp Dtm.
-    specialize IHstep with t1'.
-    eapply multi_trans...
-    simp Dtm.
-    eapply multi_trans...
-    apply multistep_Tuple1.
-    apply multistep_Add1.
-    apply multistep_First.
-    apply IHstep. constructor.
-    constructor.
-    eapply multi_trans...
-    apply multistep_Tuple2.
-    admit.
-    apply multistep_Add1.
-    apply multistep_Second.
-    apply IHstep. constructor.
-    constructor. constructor. }
-    (* apply multistep_Add.
-    apply multistep_First.
-    apply IHstep. constructor.
-    constructor.
-    all: constructor. }
-
-    apply multistep_App1.
-    apply IHstep.
-     } *)
-  all: admit.
-Admitted.
-
-
-Theorem D_soundness : forall Γ τ (t t' : tm Γ τ),
-  (Dtm t -->* Dtm t') -> ⟦Dtm t⟧ₜₘ = ⟦Dtm t'⟧ₜₘ.
-Proof with quick.
-  intros.
-  induction H...
-  rewrite <- IHmulti.
-  dependent induction H;
-    extensionality ctx;
-    try (erewrite IHstep; constructor).
-  { simp Dtm. fold map Dt. simpl.
-    rewrite <- denote_sub_commutes...
-    unfold hd_sub. simp cons_sub.
-    rewrite denote_sub_tl_cons... }
-  all: admit.
-Admitted.

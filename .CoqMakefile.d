@@ -13,15 +13,18 @@ Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v Definitions.
 Diffeology.vo Diffeology.glob Diffeology.v.beautified Diffeology.required_vo: Diffeology.v Tactics.vo Definitions.vo Macro.vo
 Diffeology.vio: Diffeology.v Tactics.vio Definitions.vio Macro.vio
 Diffeology.vos Diffeology.vok Diffeology.required_vos: Diffeology.v Tactics.vos Definitions.vos Macro.vos
-Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Normalization.vo Denotation.vo
-Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Normalization.vio Denotation.vio
-Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Normalization.vos Denotation.vos
+Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Normalization.vo Denotation.vo Natural.vo
+Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Normalization.vio Denotation.vio Natural.vio
+Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Normalization.vos Denotation.vos Natural.vos
 Domain.vo Domain.glob Domain.v.beautified Domain.required_vo: Domain.v 
 Domain.vio: Domain.v 
 Domain.vos Domain.vok Domain.required_vos: Domain.v 
 Macro.vo Macro.glob Macro.v.beautified Macro.required_vo: Macro.v Definitions.vo Tactics.vo
 Macro.vio: Macro.v Definitions.vio Tactics.vio
 Macro.vos Macro.vok Macro.required_vos: Macro.v Definitions.vos Tactics.vos
+Natural.vo Natural.glob Natural.v.beautified Natural.required_vo: Natural.v Tactics.vo Definitions.vo Normalization.vo Macro.vo Denotation.vo
+Natural.vio: Natural.v Tactics.vio Definitions.vio Normalization.vio Macro.vio Denotation.vio
+Natural.vos Natural.vok Natural.required_vos: Natural.v Tactics.vos Definitions.vos Normalization.vos Macro.vos Denotation.vos
 Normalization.vo Normalization.glob Normalization.v.beautified Normalization.required_vo: Normalization.v Tactics.vo Definitions.vo
 Normalization.vio: Normalization.v Tactics.vio Definitions.vio
 Normalization.vos Normalization.vok Normalization.required_vos: Normalization.v Tactics.vos Definitions.vos

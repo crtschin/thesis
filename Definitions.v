@@ -90,7 +90,7 @@ Scheme closed_env_rec := Induction for Closed Sort Type
   with env_closed_rec := Induction for Env Sort Type. *)
 (* End Closed terms *)
 
-Inductive Env : Ctx -> Type :=
+Inductive Env: Ctx -> Type :=
   | env_nil : Env []
   | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
 .
@@ -238,6 +238,10 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | inl _ e => inl _ (substitute s e)
   | inr _ e => inr _ (substitute s e)
   end.
+(*
+Equations substitute_env {Γ Γ'} (G: Env Γ) (sb : sub Γ Γ'): Env Γ' :=
+substitute_env env_nil s := env_nil;
+substitute_env (env_cons t G') s := env_cons (substitute sb t) G'. *)
 
 (*
   Tactics from:
