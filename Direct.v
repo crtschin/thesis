@@ -316,8 +316,8 @@ Theorem semantic_correct_R :
       Derive (fun (x : R) => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
 Proof with quick.
   intros.
-  rewrite <- (app_sub_id [] Real t).
   apply S_correct_R.
+  rewrite <- (app_sub_id [] Real t).
   apply (fundamental [] [] Real t id_sub).
   constructor.
 Qed.

@@ -38,7 +38,6 @@ Inductive Var {T : Type} : list T -> T -> Type :=
 .
 Derive Signature for Var.
 
-
 Notation "x ∈ Γ" := (Var Γ x) (at level 75).
 
 Inductive tm (Γ : Ctx) : ty -> Type :=
