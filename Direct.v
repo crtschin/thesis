@@ -104,10 +104,11 @@ Lemma S_soundness : forall Γ τ (t t' : tm Γ τ) h,
 Proof with quick.
   intros.
   pose proof (natural_soundness _ _ t t' H) as Heq.
-  pose proof (natural_soundness _ _ (Dtm t) (Dtm t')
-    (D_natural _ _ _ _ H)) as Heq'.
+  (* pose proof (natural_soundness _ _ (Dtm t) (Dtm t')
+    (D_natural _ _ _ _ H)) as Heq'. *)
   rewrites.
-Qed.
+  admit.
+Admitted.
 
 (*
   Plain words:
@@ -190,6 +191,10 @@ Proof with quick.
       { erewrite denote_sub_elim... }
       erewrite H'... }
     { extensionality x.
+      (* rewrite 2 D_sub.
+      pose proof Ddenote_sub_commutes as H'.
+      rewrite H'. rewrite H'.
+      rewrite Ddenote_sub_commutes. *)
       (* TODO: Suspect *)
       erewrite D_sub_cons'.
       erewrite D_sub_lift'.
