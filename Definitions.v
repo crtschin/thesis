@@ -63,6 +63,7 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | first : forall {τ σ}, tm Γ (τ × σ) -> tm Γ τ
   | second : forall {τ σ}, tm Γ (τ × σ) -> tm Γ σ
 
+  (* Sums *)
   | case : forall {τ σ ρ}, tm Γ (τ <+> σ) ->
     tm Γ (τ → ρ) ->
     tm Γ (σ → ρ) ->
@@ -70,24 +71,6 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | inl : forall {τ σ}, tm Γ τ -> tm Γ (τ <+> σ)
   | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ <+> σ)
 .
-
-(* Closed terms *)
-(* Inductive Closed : ty -> Type :=
-  | closure : forall {Γ τ}, tm Γ τ -> Env Γ -> Closed τ
-  | clapp : forall {τ σ}, Closed (σ → τ) -> Closed σ -> Closed τ
-  with Env : Ctx -> Type :=
-  | env_nil : Env []
-  | env_cons : forall {Γ τ}, Closed τ -> Env Γ -> Env (τ::Γ)
-.
-Scheme closed_env_rec_prop := Induction for Closed Sort Prop
-  with env_closed_rec_prop := Induction for Env Sort Prop.
-
-Scheme closed_env_rec_set := Induction for Closed Sort Set
-  with env_closed_rec_set := Induction for Env Sort Set.
-
-Scheme closed_env_rec := Induction for Closed Sort Type
-  with env_closed_rec := Induction for Env Sort Type. *)
-(* End Closed terms *)
 
 Inductive Env: Ctx -> Type :=
   | env_nil : Env []

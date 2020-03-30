@@ -9,18 +9,13 @@ Require Import Arith.PeanoNat.
 Require Import Program.Equality.
 
 (*
-Questions:
-(* Equations *)
-(* Opaque substitute_lifted *)
-(* Sum types *)
-(* Denotational instantiation *)
+
+
 
 Notational conventions:
   capital greeks for typing environment
   lowercase greeks for types
   lowercase latin for terms
-
-Functional extensionality is oft used and the derivative is (to be) defined axiomatically
 
 Literature:
 
@@ -28,7 +23,7 @@ Main paper:
 - Correctness of Automatic Differentiation via
     Diffeologies and Categorical Gluing by Huot, Staton and Vakar.
 
-Very relevant:
+Relevant:
 - On the Versatility of Open Logical Relations - Barthe, et al.
 
 Logical Relations:
