@@ -59,6 +59,10 @@ Dtm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm e) (Dtm c1) (Dtm c2);
 Dtm (Γ:=Γ) (τ:=τ) (inl Γ e) := inl _ (Dtm e);
 Dtm (Γ:=Γ) (τ:=τ) (inr Γ e) := inr _ (Dtm e).
 
+(* Equations Denv {Γ}: forall {τ}, Env τ Γ -> Env (Dt τ) (Dctx Γ) :=
+Denv (τ:=τ) env_nil => env_nil (Dt τ);
+Denv (τ:=τ) (env_cons Γ t G) => env_cons (Dt τ) (Dtm t) (Denv G). *)
+
 Fixpoint Denv {Γ} (G : Env Γ): Env (Dctx Γ) :=
   match G with
   | env_nil => env_nil

@@ -88,7 +88,6 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
   end
 where "⟦ t ⟧ₜₘ" := (denote_tm t).
 
-
 Equations denote_env {Γ} (G : Env Γ): ⟦ Γ ⟧ₜₓ :=
 denote_env env_nil => tt;
 denote_env (env_cons t G') with denote_env G' => {
@@ -114,6 +113,22 @@ Notation "⟦ r ⟧ᵣ" := (denote_ren r).
 
 (* Lemmas for renaming and substitution in the denotated context. *)
 (* Many from Strongly Typed Terms in Coq by Nick Becton, et al. *)
+(* Lemma denote_shave_env_snd : forall τ Γ (e : Env τ (τ::Γ)),
+  snd ⟦ e ⟧ₑ = ⟦ shave_env e ⟧ₑ.
+Proof with quick.
+  dependent induction e.
+  simp shave_env.
+  simp denote_env...
+Qed.
+
+Lemma Ddenote_shave_env_snd : forall τ Γ (e : Env τ (τ::Γ)),
+  snd ⟦ Denv e ⟧ₑ = ⟦ Denv (shave_env e) ⟧ₑ.
+Proof with quick.
+  dependent induction e.
+  simp shave_env.
+  simp denote_env...
+Qed. *)
+
 Lemma denote_ren_tl_lift : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
   denote_ren r ctx = denote_ren (tl_ren (rename_lifted r)) (x, ctx).

@@ -72,15 +72,19 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
-Inductive Env: Ctx -> Type :=
+Inductive Env : Ctx -> Type :=
   | env_nil : Env []
   | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
 .
+Derive Signature for Env.
 
-Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
-  induction Γ. constructor.
-  inversion G. assumption.
-Defined.
+(* Equations shave_env {Γ τ} (G : Env τ (τ::Γ)) : Env τ Γ :=
+shave_env (env_cons τ t G) := G.
+
+Next Obligation.
+  dependent induction G.
+  simp shave_env.
+Defined. *)
 
 (* Examples *)
 Definition ex_id :=
