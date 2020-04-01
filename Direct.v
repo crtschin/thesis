@@ -2,8 +2,10 @@ Require Import Lists.List.
 Import ListNotations.
 Require Import Logic.FunctionalExtensionality.
 Require Import Strings.String.
+Require Import Arith.PeanoNat.
 Require Import Relations.
 Require Import Logic.JMeq.
+Require Import Init.Datatypes.
 Require Import Reals.
 Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
@@ -48,10 +50,6 @@ S (σ → ρ) f g :=
     (g2 : R -> ⟦ Dt σ ⟧ₜ) (sσ : S σ g1 g2),
     S ρ (fun x => f x (g1 x))
       (fun x => g x (g2 x));
-  (* forall (sσ : S σ (⟦s⟧ₜₘ ∘ denote_env ∘ h)
-            (⟦Dtm s⟧ₜₘ ∘ denote_env ∘ Denv ∘ h)),
-    S ρ (fun x => f x ((⟦s⟧ₜₘ ∘ denote_env ∘ h) x))
-      (fun x => g x ((⟦Dtm s⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) x)); *)
 S (σ <+> ρ) f g :=
   (exists g1 g2,
     S σ g1 g2 /\
@@ -76,26 +74,6 @@ Inductive instantiation : forall Γ,
         instantiation (τ::Γ)
           (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r)).
 
-(* Inductive instantiation :
-  forall {Γ Γ'}, (R -> Env Γ') -> sub Γ Γ' -> Prop :=
-  | inst_empty : forall h, @instantiation [] [] h id_sub
-  | inst_cons :
-        forall {Γ Γ' τ} {s : sub Γ Γ'},
-        forall {t : tm Γ' τ} h,
-      instantiation h s ->
-        (* value t -> *)
-        (S Γ' h τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ h)
-          (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h)) ->
-        instantiation h (cons_sub t s). *)
-
-(* Equations instantiation Γ {Γ'} (f : R -> Env Γ) : sub Γ Γ' -> Prop :=
-instantiation nil f sb := True;
-instantiation (τ :: Γ) f sb :=
-    S Γ (shave_env ∘ f) τ
-      (⟦hd_sub sb⟧ₜₘ ∘ denote_env ∘ shave_env ∘ f)
-      (⟦Dtm (hd_sub sb)⟧ₜₘ ∘ denote_env ∘ Denv ∘ shave_env ∘ f) /\
-    instantiation Γ (shave_env ∘ f) (tl_sub sb). *)
-
 Lemma inst_eq : forall Γ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> instantiation Γ f1 f2 = instantiation Γ g1 g2.
 Proof. intros; rewrites. Qed.
@@ -103,19 +81,6 @@ Proof. intros; rewrites. Qed.
 Lemma S_eq : forall τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
 Proof. intros; rewrites. Qed.
-
-(* Lemma S_soundness : forall Γ τ (t t' : tm Γ τ) h,
-  (t ⇓ t') ->
-    S Γ h τ (⟦t⟧ₜₘ ∘ denote_env ∘ h) (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h)
-      = S Γ h τ (⟦t'⟧ₜₘ ∘ denote_env ∘ h) (⟦Dtm t'⟧ₜₘ ∘ denote_env ∘ Denv ∘ h).
-Proof with quick.
-  intros.
-  pose proof (natural_soundness _ _ t t' H) as Heq.
-  (* pose proof (natural_soundness _ _ (Dtm t) (Dtm t')
-    (D_natural _ _ _ _ H)) as Heq'. *)
-  rewrites.
-  admit.
-Admitted. *)
 
 (*
   Plain words:
@@ -128,9 +93,6 @@ Lemma fundamental :
   forall (t : tm Γ τ),
   forall (sb : R -> ⟦ Γ ⟧ₜₓ),
   forall (Dsb : R -> ⟦ Dctx Γ ⟧ₜₓ),
-  (* forall (sb : ⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ),
-  forall (Dsb : ⟦ Dctx Γ' ⟧ₜₓ -> ⟦ Dctx Γ ⟧ₜₓ), *)
-  (* forall (h : R -> Env Γ'), *)
   instantiation Γ sb Dsb ->
   S τ (⟦t⟧ₜₘ ∘ sb)
     (⟦Dtm t⟧ₜₘ ∘ Dsb).
@@ -237,69 +199,80 @@ Proof with quick.
 Qed.
 
 Lemma S_correct_R :
-  forall Γ (t : tm Γ Real) (f : R -> Env Γ),
-  S Real (fun r => (⟦ t ⟧ₜₘ (denote_env (f r))))
-    (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) ->
-  (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
-  fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-    Derive (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
+  forall Γ (t : tm Γ Real),
+  forall (f1 : R -> ⟦ Γ ⟧ₜₓ),
+  forall  (f2 : R -> ⟦ Dctx Γ ⟧ₜₓ),
+  S Real (fun r => ⟦ t ⟧ₜₘ (f1 r))
+    (fun r => ⟦ Dtm t ⟧ₜₘ (f2 r)) ->
+  (* forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x /\ *)
+  (forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x) /\
+  (⟦ Dtm t ⟧ₜₘ ∘ f2) =
+  fun r => (⟦ t ⟧ₜₘ (f1 r),
+    Derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) r).
 Proof with quick.
   intros. simp S in H.
-  unfold compose in *. extensionality x.
-  destruct H.
-  eapply equal_f in H0.
-  rewrite H0...
+Qed.
+
+Lemma S_correct_R1 :
+  forall Γ (t : tm Γ Real),
+  forall (f1 : R -> ⟦ Γ ⟧ₜₓ),
+  forall  (f2 : R -> ⟦ Dctx Γ ⟧ₜₓ),
+  S Real (fun r => ⟦ t ⟧ₜₘ (f1 r))
+    (fun r => ⟦ Dtm t ⟧ₜₘ (f2 r)) ->
+  (* forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x /\ *)
+  (⟦ Dtm t ⟧ₜₘ ∘ f2) =
+  fun r => (⟦ t ⟧ₜₘ (f1 r),
+    Derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) r).
+Proof with quick.
+  intros. simp S in H. destruct H as [Hex Heq].
+  unfold compose in *. splits...
+Qed.
+
+Lemma S_correct_R2 :
+  forall Γ (t : tm Γ Real),
+  forall (f1 : R -> ⟦ Γ ⟧ₜₓ),
+  forall (f2 : R -> ⟦ Dctx Γ ⟧ₜₓ),
+  S Real (fun r => ⟦ t ⟧ₜₘ (f1 r))
+    (fun r => ⟦ Dtm t ⟧ₜₘ (f2 r)) ->
+  forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x.
+Proof with quick.
+  intros. simp S in H. destruct H as [Hex Heq].
+  unfold compose in *. splits...
 Qed.
 
 Inductive reals : Ctx -> Prop :=
   | reals_empty : reals []
   | reals_cons : forall Γ, tm Γ Real -> reals Γ -> reals (Real::Γ).
 
+Equations gen (n : nat) : R -> ⟦ repeat Real n ⟧ₜₓ :=
+gen O r := tt;
+gen (Datatypes.S n) r := (r, gen n r).
+
+Equations Dgen (n : nat) : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ :=
+Dgen O r := tt;
+Dgen (Datatypes.S n) r := ((r, 1), Dgen n r).
+
 Theorem semantic_correct_R :
-  forall Γ,
-  forall (t : tm Γ Real),
-    reals Γ ->
-    forall (f : R -> Env Γ),
-    (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
-      fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-      Derive (fun (x : R) => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
+  forall n (t : tm (repeat Real n) Real),
+  exists (f1 : R -> ⟦ (repeat Real n) ⟧ₜₓ),
+  exists (f2 : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ),
+    (forall x, ex_derive (fun (x : R) => ⟦ t ⟧ₜₘ (f1 x)) x) /\
+    (⟦ Dtm t ⟧ₜₘ ∘ f2) =
+      fun r => (⟦ t ⟧ₜₘ (f1 r),
+        Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f1 x)) r).
 Proof with quick.
-  intros.
-  (* eapply H'. *)
-  (* unfold compose in *. *)
-  generalize dependent t...
+  intros n t...
+  exists (gen n); exists (Dgen n).
   eapply S_correct_R.
   eapply fundamental.
-  induction H...
-  { erewrite inst_eq.
-  2:{ extensionality r; remember (f r);
-        dependent destruction e; simp denote_env; reflexivity. }
-  2:{ extensionality r; remember (f r);
-        dependent destruction e; quick; simp denote_env; reflexivity. }
+  clear t. induction n...
+  { erewrite inst_eq;
+      try (extensionality r; simp gen Dgen; reflexivity).
     fold (@Basics.const unit R tt); constructor. }
-  { erewrite inst_eq.
-  2:{ extensionality r. remember (f r).
-        dependent destruction e. simp denote_env; reflexivity. }
-    constructor... }
-  (* generalize dependent f. *)
-  induction H...
-  { exists (Basics.const env_nil).
-    apply S_correct_R.
-    eapply fundamental...
-    (* assert (f = Basics.const env_nil).
-    { unfold Basics.const. extensionality x.
-      remember (f x). dependent destruction e... } *)
-    rewrites; unfold Basics.const in *...
-    simp denote_env.
-    fold (@Basics.const unit R tt); constructor. }
-  {
-    specialize IHreals with X as [f IH].
-    exists (env_cons X ∘ f).
-    apply S_correct_R. unfold compose.
-    erewrite S_eq.
-  2:{ extensionality r. simp denote_env. reflexivity. }
-  2:{ extensionality r... simp denote_env. reflexivity. }
-    eapply fundamental...
-    constructor.
-    all: admit. }
-Admitted.
+  { erewrite inst_eq;
+      try (extensionality r; simp gen Dgen; reflexivity).
+    constructor. eapply IHn.
+    simp S. splits...
+    { apply ex_derive_id. }
+    { extensionality r. rewrite Derive_id... } }
+Qed.

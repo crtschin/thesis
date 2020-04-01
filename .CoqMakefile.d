@@ -13,9 +13,9 @@ Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v Definitions.
 Diffeology.vo Diffeology.glob Diffeology.v.beautified Diffeology.required_vo: Diffeology.v Tactics.vo Definitions.vo Macro.vo
 Diffeology.vio: Diffeology.v Tactics.vio Definitions.vio Macro.vio
 Diffeology.vos Diffeology.vok Diffeology.required_vos: Diffeology.v Tactics.vos Definitions.vos Macro.vos
-Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Normalization.vo Denotation.vo Natural.vo
-Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Normalization.vio Denotation.vio Natural.vio
-Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Normalization.vos Denotation.vos Natural.vos
+Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Denotation.vo
+Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Denotation.vio
+Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Denotation.vos
 Domain.vo Domain.glob Domain.v.beautified Domain.required_vo: Domain.v 
 Domain.vio: Domain.v 
 Domain.vos Domain.vok Domain.required_vos: Domain.v 

@@ -78,13 +78,8 @@ Inductive Env : Ctx -> Type :=
 .
 Derive Signature for Env.
 
-(* Equations shave_env {Γ τ} (G : Env τ (τ::Γ)) : Env τ Γ :=
-shave_env (env_cons τ t G) := G.
-
-Next Obligation.
-  dependent induction G.
-  simp shave_env.
-Defined. *)
+Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
+shave_env (env_cons t G) := G.
 
 (* Examples *)
 Definition ex_id :=
