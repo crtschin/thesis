@@ -47,12 +47,12 @@ Inductive eval : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
 
   (* Sums *)
   | EV_CaseInl : forall Γ τ σ ρ t1 t2 t1' t2' e e',
-      e ⇓ (inl Γ e') ->
+      e ⇓ (inl Γ _ _ e') ->
       (t1 ⇓ t1') ->
       (t2 ⇓ t2') ->
       (@case Γ τ σ ρ e t1 t2) ⇓ (app Γ ρ τ t1' e')
   | EV_CaseInr : forall Γ τ σ ρ t1 t2 t1' t2' e e',
-      e ⇓ (inr Γ e') ->
+      e ⇓ (inr Γ _ _ e') ->
       (t1 ⇓ t1') ->
       (t2 ⇓ t2') ->
       (@case Γ τ σ ρ e t1 t2) ⇓ (app Γ ρ σ t2' e')

@@ -56,8 +56,8 @@ Dtm (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) := tuple _ (Dtm t1) (Dtm t2);
 Dtm (Γ:=Γ) (τ:=τ) (first Γ p) := first _ (Dtm p);
 Dtm (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm p);
 Dtm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm e) (Dtm c1) (Dtm c2);
-Dtm (Γ:=Γ) (τ:=τ) (inl Γ e) := inl _ (Dtm e);
-Dtm (Γ:=Γ) (τ:=τ) (inr Γ e) := inr _ (Dtm e).
+Dtm (Γ:=Γ) (τ:=τ) (inl Γ _ _ e) := inl _ _ _ (Dtm e);
+Dtm (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm e).
 
 (* Equations Denv {Γ}: forall {τ}, Env τ Γ -> Env (Dt τ) (Dctx Γ) :=
 Denv (τ:=τ) env_nil => env_nil (Dt τ);
@@ -104,8 +104,8 @@ Dsubstitute (Γ:=Γ) (τ:=τ) s (tuple Γ t1 t2) := tuple _ (Dsubstitute s t1) (
 Dsubstitute (Γ:=Γ) (τ:=τ) s (first Γ p) := first _ (Dsubstitute s p);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (second Γ p) := second _ (Dsubstitute s p);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (case Γ e c1 c2) := case _ (Dsubstitute s e) (Dsubstitute s c1) (Dsubstitute s c2);
-Dsubstitute (Γ:=Γ) (τ:=τ) s (inl Γ e) := inl _ (Dsubstitute s e);
-Dsubstitute (Γ:=Γ) (τ:=τ) s (inr Γ e) := inr _ (Dsubstitute s e).
+Dsubstitute (Γ:=Γ) (τ:=τ) s (inl Γ _ _ e) := inl _ _ _ (Dsubstitute s e);
+Dsubstitute (Γ:=Γ) (τ:=τ) s (inr Γ _ _ e) := inr _ _ _ (Dsubstitute s e).
 
 (* Lemma D_rename_lifted : forall Γ Γ' τ σ
   (r : ren Γ Γ') (t : tm (σ::Γ) τ) ,

@@ -68,8 +68,8 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
     tm Γ (τ → ρ) ->
     tm Γ (σ → ρ) ->
     tm Γ ρ
-  | inl : forall {τ σ}, tm Γ τ -> tm Γ (τ <+> σ)
-  | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ <+> σ)
+  | inl : forall τ σ, tm Γ τ -> tm Γ (τ <+> σ)
+  | inr : forall τ σ, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
 Inductive Env : Ctx -> Type :=
@@ -183,8 +183,8 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
       case _ (rename r e)
         (rename r c1)
         (rename r c2)
-  | inl _ e => inl _ (rename r e)
-  | inr _ e => inr _ (rename r e)
+  | inl _ _ _ e => inl _ _ _ (rename r e)
+  | inr _ _ _ e => inr _ _ _ (rename r e)
   end.
 
 Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
@@ -216,8 +216,8 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
       case _ (substitute s e)
         (substitute s c1)
         (substitute s c2)
-  | inl _ e => inl _ (substitute s e)
-  | inr _ e => inr _ (substitute s e)
+  | inl _ _ _ e => inl _ _ _ (substitute s e)
+  | inr _ _ _ e => inr _ _ _ (substitute s e)
   end.
 (*
 Equations substitute_env {Γ Γ'} (G: Env Γ) (sb : sub Γ Γ'): Env Γ' :=

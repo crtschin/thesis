@@ -32,10 +32,10 @@ Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
     value (abs Γ τ σ b)
   | v_inl : forall Γ τ σ t,
     value t ->
-    value (@inl Γ τ σ t)
+    value (inl Γ τ σ t)
   | v_inr : forall Γ τ σ t,
     value t ->
-    value (@inr Γ τ σ t)
+    value (inr Γ τ σ t)
 .
 Hint Constructors value : ad.
 
@@ -111,12 +111,12 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       value e ->
       value t1' ->
       value t2 ->
-      (@case Γ τ σ ρ (inl Γ e) t1' t2) --> (app Γ ρ τ t1' e)
+      (@case Γ τ σ ρ (inl Γ _ _ e) t1' t2) --> (app Γ ρ τ t1' e)
   | ST_CaseInr : forall Γ τ σ ρ t1 t2' (e : tm Γ σ),
       value e ->
       value t1 ->
       value t2' ->
-      (@case Γ τ σ ρ (inr Γ e) t1 t2') --> (app Γ ρ σ t2' e)
+      (@case Γ τ σ ρ (inr Γ _ _ e) t1 t2') --> (app Γ ρ σ t2' e)
 
   | ST_Inl : forall Γ τ σ t1 t1',
         t1 --> t1' ->
@@ -141,7 +141,7 @@ Definition normal_form {X : Type} (Rel : relation X) (t : X) : Prop :=
   ~ exists t', Rel t t'.
 Theorem multi_R : forall (X : Type) (Rel : relation X) (x y : X),
   Rel x y -> (multi Rel) x y.
-Proof with quick. intros. econstructor... econstructor... Qed.
+Proof with quick. intros. repeat econstructor... Qed.
 Theorem multi_trans : forall {X : Type} {Rel : relation X} {x y z : X},
   multi Rel x y -> multi Rel y z -> multi Rel x z.
 Proof with quick. intros. induction H... apply multi_step with y... Qed.
@@ -169,6 +169,16 @@ Proof. intros; subst; auto. Qed.
 Ltac value_contradiction H :=
   (apply value__normal in H; contradiction H; quick).
 
+Ltac auto_value_contradiction :=
+  match goal with
+  | [ H : value _ |- _ ] =>
+      solve [value_contradiction H]
+  | [ H : ?A --> _ |- _ ] =>
+      assert (H': value A); quick;
+        solve [value_contradiction H']
+  | _ => idtac
+  end.
+
 Lemma step_deterministic : forall Γ τ,
   deterministic (@step Γ τ).
 Proof with quick.
@@ -177,60 +187,7 @@ Proof with quick.
   generalize dependent t''.
   dependent induction H1;
     intros t'' H2; dependent destruction H2;
-      try erewrite IHstep...
-  { dependent induction H;
-    dependent destruction H2... }
-  { value_contradiction H. }
-  { dependent induction H1... }
-  { value_contradiction H. }
-  { value_contradiction H0. }
-  { value_contradiction H. }
-  { assert (H': value (const Γ v1)). constructor.
-    value_contradiction H'. }
-  { assert (H': value (const Γ v2)). constructor.
-    value_contradiction H'. }
-  { assert (H': value (const Γ v1)). constructor.
-    value_contradiction H'. }
-  { value_contradiction H. }
-  { assert (H': value (const Γ v2)). constructor.
-    value_contradiction H'. }
-  { value_contradiction H. }
-  { value_contradiction H. }
-  { value_contradiction H. }
-  { dependent destruction H1.
-    value_contradiction H.
-    value_contradiction H2. }
-  { dependent destruction H2...
-    value_contradiction H.
-    value_contradiction H0. }
-  { dependent destruction H1...
-    value_contradiction H.
-    value_contradiction H2. }
-  { dependent destruction H2...
-    value_contradiction H.
-    value_contradiction H0. }
-  { value_contradiction H. }
-  { value_contradiction H. }
-  { assert (value (@inl Γ τ σ e0)). constructor...
-    value_contradiction H3. }
-  { assert (value (@inr Γ τ σ e0)). constructor...
-    value_contradiction H3. }
-  { value_contradiction H. }
-  { value_contradiction H2. }
-  { value_contradiction H2. }
-  { value_contradiction H2. }
-  { value_contradiction H. }
-  { value_contradiction H0. }
-  { value_contradiction H4. }
-  { value_contradiction H4. }
-  { assert (value (@inl Γ τ σ e)). constructor...
-    value_contradiction H3. }
-  { value_contradiction H0. }
-  { value_contradiction H1. }
-  { assert (value (@inr Γ τ σ e)). constructor...
-    value_contradiction H3. }
-  { value_contradiction H0. }
-  { value_contradiction H1. }
+      try erewrite IHstep; quick; auto_value_contradiction.
 Qed.
 
 (** A trivial fact: *)
@@ -244,11 +201,12 @@ Qed.
 
 Equations Rel {Γ} τ (t : tm Γ τ): Prop :=
 Rel Real t := halts t;
-Rel (τ1 × τ2) t := halts t /\ (exists (r : tm Γ τ1) (s : tm Γ τ2),
-  t -->* tuple Γ r s /\
-  value r /\
-  value s /\
-  Rel τ1 r /\ Rel τ2 s);
+Rel (τ1 × τ2) t :=
+  halts t /\ (exists (r : tm Γ τ1) (s : tm Γ τ2),
+    t -->* tuple Γ r s /\
+    value r /\
+    value s /\
+    Rel τ1 r /\ Rel τ2 s);
 Rel (τ1 → τ2) t := halts t /\
   (forall (s : tm Γ τ1), Rel τ1 s -> Rel τ2 (app Γ τ2 τ1 t s));
 Rel (τ1 <+> τ2) t := halts t /\
@@ -529,7 +487,7 @@ Qed.
 
 Lemma multistep_CaseInl : forall Γ τ σ ρ e c1 c2,
   value e -> value c1 -> value c2 ->
-    (@case Γ τ σ ρ (inl Γ e) c1 c2) -->* (@app Γ ρ τ c1 e).
+    (@case Γ τ σ ρ (inl Γ _ _ e) c1 c2) -->* (@app Γ ρ τ c1 e).
 Proof with quick.
   intros. econstructor...
   - apply ST_CaseInl...
@@ -538,7 +496,7 @@ Qed.
 
 Lemma multistep_CaseInr : forall Γ τ σ ρ e c1 c2,
   value e -> value c1 -> value c2 ->
-    (@case Γ τ σ ρ (inr Γ e) c1 c2) -->* (@app Γ ρ σ c2 e).
+    (@case Γ τ σ ρ (inr Γ _ _ e) c1 c2) -->* (@app Γ ρ σ c2 e).
 Proof with quick.
   intros. econstructor...
   - apply ST_CaseInr...

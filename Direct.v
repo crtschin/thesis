@@ -19,10 +19,7 @@ Import EqNotations.
 Require Import AD.Definitions.
 Require Import AD.Macro.
 Require Import AD.Tactics.
-(* Require Import AD.Normalization. *)
 Require Import AD.Denotation.
-(* Require Import AD.Natural. *)
-(* Require Import AD.Tangent. *)
 
 Local Open Scope program_scope.
 Local Open Scope R_scope.
@@ -213,37 +210,6 @@ Proof with quick.
   intros. simp S in H.
 Qed.
 
-Lemma S_correct_R1 :
-  forall Γ (t : tm Γ Real),
-  forall (f1 : R -> ⟦ Γ ⟧ₜₓ),
-  forall  (f2 : R -> ⟦ Dctx Γ ⟧ₜₓ),
-  S Real (fun r => ⟦ t ⟧ₜₘ (f1 r))
-    (fun r => ⟦ Dtm t ⟧ₜₘ (f2 r)) ->
-  (* forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x /\ *)
-  (⟦ Dtm t ⟧ₜₘ ∘ f2) =
-  fun r => (⟦ t ⟧ₜₘ (f1 r),
-    Derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) r).
-Proof with quick.
-  intros. simp S in H. destruct H as [Hex Heq].
-  unfold compose in *. splits...
-Qed.
-
-Lemma S_correct_R2 :
-  forall Γ (t : tm Γ Real),
-  forall (f1 : R -> ⟦ Γ ⟧ₜₓ),
-  forall (f2 : R -> ⟦ Dctx Γ ⟧ₜₓ),
-  S Real (fun r => ⟦ t ⟧ₜₘ (f1 r))
-    (fun r => ⟦ Dtm t ⟧ₜₘ (f2 r)) ->
-  forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x.
-Proof with quick.
-  intros. simp S in H. destruct H as [Hex Heq].
-  unfold compose in *. splits...
-Qed.
-
-Inductive reals : Ctx -> Prop :=
-  | reals_empty : reals []
-  | reals_cons : forall Γ, tm Γ Real -> reals Γ -> reals (Real::Γ).
-
 Equations gen (n : nat) : R -> ⟦ repeat Real n ⟧ₜₓ :=
 gen O r := tt;
 gen (Datatypes.S n) r := (r, gen n r).
@@ -252,27 +218,54 @@ Equations Dgen (n : nat) : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ :=
 Dgen O r := tt;
 Dgen (Datatypes.S n) r := ((r, 1), Dgen n r).
 
+Equations hd_env {n} : Env (Real :: repeat Real n) -> tm (repeat Real n) Real :=
+hd_env (env_cons t E') := t.
+
+Equations tl_env {n} : Env (Real :: repeat Real n) -> Env (repeat Real n) :=
+tl_env (env_cons t E) := E.
+
 Theorem semantic_correct_R :
-  forall n (t : tm (repeat Real n) Real),
-  exists (f1 : R -> ⟦ (repeat Real n) ⟧ₜₓ),
-  exists (f2 : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ),
-    (forall x, ex_derive (fun (x : R) => ⟦ t ⟧ₜₘ (f1 x)) x) /\
+  forall n,
+  forall (f1 : R -> ⟦ repeat Real n ⟧ₜₓ),
+  forall (f2 : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ),
+  forall (t : tm (repeat Real n) Real),
+  (* forall (f2 : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ), *)
     (⟦ Dtm t ⟧ₜₘ ∘ f2) =
       fun r => (⟦ t ⟧ₜₘ (f1 r),
         Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f1 x)) r).
 Proof with quick.
-  intros n t...
-  exists (gen n); exists (Dgen n).
+  intros...
+  (* exists (gen n); exists (Dgen n). *)
   eapply S_correct_R.
   eapply fundamental.
-  clear t. induction n...
+  clear t.
+  induction n...
   { erewrite inst_eq;
-      try (extensionality r; simp gen Dgen; reflexivity).
+      try (extensionality r).
+  2:{ remember (f1 r). dependent destruction u.
+      (* simpl. simp denote_env.  *)
+      reflexivity. }
+  2:{ remember (f2 r). dependent destruction u.
+      (* simpl. simp denote_env.  *)
+      reflexivity. }
     fold (@Basics.const unit R tt); constructor. }
   { erewrite inst_eq;
-      try (extensionality r; simp gen Dgen; reflexivity).
-    constructor. eapply IHn.
-    simp S. splits...
-    { apply ex_derive_id. }
-    { extensionality r. rewrite Derive_id... } }
-Qed.
+      try (extensionality r).
+  2:{ instantiate (1:=fun r => (fst (f1 r),
+        snd (f1 r))). apply injective_projections... }
+  2:{ instantiate (1:=fun r => (fst (f2 r),
+        snd (f2 r))). apply injective_projections... }
+    constructor...
+    admit.
+  (* 2:{ instantiate (1:=fun r => ( ⟦ hd_env (f r) ⟧ₜₘ ⟦ tl_env (f r) ⟧ₑ,
+        ⟦ tl_env (f r) ⟧ₑ))...
+      remember (f r). dependent elimination e.
+      simp hd_env tl_env denote_env... }
+  2:{ instantiate (1:=fun r => ( ⟦ Dtm (hd_env (f r)) ⟧ₜₘ
+        ⟦ Denv (tl_env (f r)) ⟧ₑ, ⟦ Denv (tl_env (f r)) ⟧ₑ))...
+      remember (f r). dependent elimination e.
+      simp hd_env tl_env. simpl. simp denote_env. reflexivity. }
+    constructor.*)
+    (* { apply ex_derive_id. }
+    { extensionality r. rewrite Derive_id... } } *)
+Admitted.

@@ -199,7 +199,7 @@ While this does follow the standard format used in regular mathematics, problems
 \begin{listing}
   \begin{minted}{coq}
   Inductive ty : Type :=
-    | ~()~ : ~ty~
+    | ~unit~ : ~ty~
     | ~\rightarrow~ : ~ty \rightarrow ty \rightarrow ty~.
 
   Inductive tm : Type :=
@@ -249,7 +249,7 @@ Using the Coq keyword return, it is possible to let the return type of a match e
 This makes it possible to specify what the return type of the empty list should be.
 In snippet \ref{lst:dt_ilist}, we use the unit type which contains just one inhabitant, \texttt{tt}.
 
-\begin{listing}[h]
+\begin{listing}
   \begin{minted}{coq}
   Inductive ilist : ~Type \rightarrow nat \rightarrow Type~ :=
     | nil : ~\forall A, ilist A 0~
@@ -279,7 +279,7 @@ It makes use of a notion called coverings where a set of equations should be an 
 There are two main ways to integrate this in a dependently typed environment, externally where it is integrated as high-level constructs in the pattern matching core as Agda does it, or internally by using the existing type theory and finding witnesses of the covering to prove the definition correct, which is the approach used by Sozeau.
 This was invaluable when defining the substitution operators in the well-scoped well-typed de-bruijn representation discussed in the previous section.
 
-\begin{listing}[h]
+\begin{listing}
   \begin{minted}{coq}
   Equations hd {A n} (ls : ilist A n) (pf : n <> 0%nat) : A :=
   hd nil pf with pf eq_refl := { | x :=! x };
@@ -294,7 +294,7 @@ This was invaluable when defining the substitution operators in the well-scoped 
 \subsection{Logical relations}
 
 Logical relations, otherwise known as Tait's method, is technique often employed when proving programming language properties\cite{skorstengaard2019introduction}.
-They are defined as relations over the types of the language.
+
 There are two main ways they are used, namely as unary and binary relations.
 Unary logical relations, also known as logical predicates, are predicates over single terms and are typically used to prove language characteristics such as type safety or strong normalization.
 Binary logical relations on the other hand are used to prove program equivalences, usually in the context of denotational semantics.
@@ -302,8 +302,22 @@ A logical relations proof essentially consists of 2 steps.
 The first usually states that well-typed terms are in the relation, while the second states that the property of interest follows from the relation.
 It should be evident that the proof itself is usually routine compared to defining the relation itself.
 
+A well-known logical relations proof is the proof of strong normalization.
+
 The proof given in the paper this thesis is based on, is a logical relations proof on the denotation semantics using diffeological spaces as its domains\cite{huot2020correctness}.
 A similar, independent proof of correctness was given in \cite{barthe2020versatility} using an syntactic relation.
+
+\begin{listing}
+  \begin{minted}{coq}
+    Equations SN {~\Gamma~} ~\tau~ (t : ~tm \Gamma \tau~): Prop :=
+    SN unit t := halts t;
+    SN ~(\tau \rightarrow \sigma)~ t := halts t /\
+      ~(\forall (s : tm \Gamma \tau), SN \tau s \rightarrow SN \sigma (app \Gamma \sigma \tau t s))~;
+  \end{minted}
+  \caption{Example of a logical relation used in a strong normalizations proof in the intrinsic strongly-typed formulation}
+  \label{lst:sn_logical_relation}
+\end{listing}
+
 
 \section{Preliminary Results}
 \todo{Fill in}
