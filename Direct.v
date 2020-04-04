@@ -25,11 +25,9 @@ Local Open Scope program_scope.
 Local Open Scope R_scope.
 
 (*
-  Relation between
-    denotation function of term
-      (the function the term describes)
-    denotation function of macro term
-      (the derivative of the function the term describes)
+  Using a logical relation on the denotational semantics adapted from:
+    Correctness of Automatic Differentiation via
+      Diffeologies and Categorical Gluing by Huot, Staton and Vakar.
 *)
 Equations S τ :
   (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
@@ -201,7 +199,6 @@ Lemma S_correct_R :
   forall  (f2 : R -> ⟦ Dctx Γ ⟧ₜₓ),
   S Real (fun r => ⟦ t ⟧ₜₘ (f1 r))
     (fun r => ⟦ Dtm t ⟧ₜₘ (f2 r)) ->
-  (* forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x /\ *)
   (forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x) /\
   (⟦ Dtm t ⟧ₜₘ ∘ f2) =
   fun r => (⟦ t ⟧ₜₘ (f1 r),
@@ -218,6 +215,12 @@ Equations Dgen (n : nat) : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ :=
 Dgen O r := tt;
 Dgen (Datatypes.S n) r := ((r, 1), Dgen n r).
 
+Equations D n
+  (f : R -> ⟦ repeat Real n ⟧ₜₓ): R -> ⟦ map Dt (repeat Real n) ⟧ₜₓ :=
+D 0 f r := f r;
+D (Datatypes.S n) f r :=
+  (((fst ∘ f) r, Derive (fst ∘ f) r), D n (snd ∘ f) r).
+
 Equations hd_env {n} : Env (Real :: repeat Real n) -> tm (repeat Real n) Real :=
 hd_env (env_cons t E') := t.
 
@@ -226,13 +229,11 @@ tl_env (env_cons t E) := E.
 
 Theorem semantic_correct_R :
   forall n,
-  forall (f1 : R -> ⟦ repeat Real n ⟧ₜₓ),
-  forall (f2 : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ),
+  forall (f : R -> ⟦ repeat Real n ⟧ₜₓ),
   forall (t : tm (repeat Real n) Real),
-  (* forall (f2 : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ), *)
-    (⟦ Dtm t ⟧ₜₘ ∘ f2) =
-      fun r => (⟦ t ⟧ₜₘ (f1 r),
-        Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f1 x)) r).
+    (⟦ Dtm t ⟧ₜₘ ∘ D n f) =
+      fun r => (⟦ t ⟧ₜₘ (f r),
+        Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f x)) r).
 Proof with quick.
   intros...
   (* exists (gen n); exists (Dgen n). *)
@@ -242,20 +243,20 @@ Proof with quick.
   induction n...
   { erewrite inst_eq;
       try (extensionality r).
-  2:{ remember (f1 r). dependent destruction u.
+  2:{ remember (f r). dependent destruction u.
       (* simpl. simp denote_env.  *)
       reflexivity. }
-  2:{ remember (f2 r). dependent destruction u.
+  2:{ simp D. remember (f r). dependent destruction u.
       (* simpl. simp denote_env.  *)
       reflexivity. }
     fold (@Basics.const unit R tt); constructor. }
   { erewrite inst_eq;
       try (extensionality r).
-  2:{ instantiate (1:=fun r => (fst (f1 r),
-        snd (f1 r))). apply injective_projections... }
-  2:{ instantiate (1:=fun r => (fst (f2 r),
-        snd (f2 r))). apply injective_projections... }
+  2:{ instantiate (1:=fun r => (fst (f r),
+        snd (f r))). apply injective_projections... }
+  2:{ simp D. unfold compose. reflexivity. }
     constructor...
+    simp S. splits...
     admit.
   (* 2:{ instantiate (1:=fun r => ( ⟦ hd_env (f r) ⟧ₜₘ ⟦ tl_env (f r) ⟧ₑ,
         ⟦ tl_env (f r) ⟧ₑ))...
