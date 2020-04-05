@@ -243,7 +243,7 @@ Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop 
       (forall x, ex_derive g x) ->
       differentiable (Datatypes.S n) (fun x => (g x, f x)).
 
-Definition diff_eq : forall n f1 f2,
+(* Definition diff_eq : forall n f1 f2,
   f1 = f2 -> differentiable n f1 = differentiable n f2.
 Proof. quick; rewrite H; trivial. Qed.
 
@@ -286,7 +286,7 @@ Proof with quick.
     (* pose proof S_tm_derivable. *)
     { apply (S_tm_derivable n (hd_env ∘ f) (tl_env ∘ f)). }
     { extensionality x... } }
-Qed.
+Qed. *)
 
 Theorem semantic_correct_R :
   forall n,
