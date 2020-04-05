@@ -89,13 +89,13 @@ Lemma fundamental :
   forall (sb : R -> ⟦ Γ ⟧ₜₓ),
   forall (Dsb : R -> ⟦ Dctx Γ ⟧ₜₓ),
   instantiation Γ sb Dsb ->
-  S τ (⟦t⟧ₜₘ ∘ sb)
-    (⟦Dtm t⟧ₜₘ ∘ Dsb).
+  S τ (fun x => ⟦t⟧ₜₘ (sb x))
+    (fun x => ⟦Dtm (t)⟧ₜₘ (Dsb x)).
 Proof with quick.
   unfold compose.
   intros Γ τ t sb Dsb.
   (* pose proof (H τ) as H'. clear H. *)
-  dependent induction t; unfold compose in *.
+  induction t; unfold compose in *.
   { (* Var *)
     (* Using Inductive Instantiation *)
     intros. dependent induction v; dependent induction H;
@@ -227,46 +227,102 @@ hd_env (env_cons t E') := t.
 Equations tl_env {n} : Env (Real :: repeat Real n) -> Env (repeat Real n) :=
 tl_env (env_cons t E) := E.
 
+Equations DE n
+  (f : R -> Env (repeat Real n)): R -> Env (map Dt (repeat Real n)) :=
+DE 0 f r := f r;
+DE (Datatypes.S n) f r :=
+  (env_cons (Dtm ((hd_env ∘ f) r)) (DE n (tl_env ∘ f) r)).
+
+Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop :=
+  | differentiable_0 : differentiable 0 (fun _ => tt)
+  | differentiable_Sn :
+    forall n,
+    forall (f : R -> ⟦ repeat Real n ⟧ₜₓ),
+    forall (g : R -> R),
+      differentiable n f ->
+      (forall x, ex_derive g x) ->
+      differentiable (Datatypes.S n) (fun x => (g x, f x)).
+
+Definition diff_eq : forall n f1 f2,
+  f1 = f2 -> differentiable n f1 = differentiable n f2.
+Proof. quick; rewrite H; trivial. Qed.
+
+Lemma S_tm_derivable :
+    forall n (t : R -> tm (repeat Real n) Real),
+    forall (ctx : R -> Env (repeat Real n)),
+  forall x, ex_derive (fun x => ⟦ t x ⟧ₜₘ ⟦ctx x⟧ₑ) x.
+Proof.
+  intros.
+  (* apply S_correct_R. *)
+  (* specialize H with (repeat Real n) t (denote_env ∘ ctx)
+    (denote_env ∘ Denv ∘ ctx). *)
+  (* eapply fundamental. *)
+  admit.
+Admitted.
+
+Lemma S_denote_derivable :
+  forall n,
+  forall (f : R -> Env (repeat Real n)),
+  differentiable n (denote_env ∘ f).
+Proof with quick.
+  intros.
+  induction n.
+  { assert (Heq: f = fun _ => env_nil).
+    { extensionality x. remember (f x). dependent destruction e... }
+    rewrite Heq; clear Heq.
+    unfold compose.
+    eapply differentiable_0. }
+  { simpl in f.
+    assert (Heq: f = fun r => env_cons (hd_env (f r)) (tl_env (f r))).
+    { extensionality x. remember (f x). dependent destruction e... }
+    rewrite Heq. clear Heq.
+    unfold compose.
+    (* rewrite Heq. *)
+    erewrite diff_eq.
+    instantiate
+      (1:=fun r => (⟦(hd_env (f r))⟧ₜₘ ⟦(tl_env (f r))⟧ₑ, ⟦(tl_env (f r))⟧ₑ)).
+    constructor.
+    { eapply IHn. }
+    (* pose proof S_tm_derivable. *)
+    { apply (S_tm_derivable n (hd_env ∘ f) (tl_env ∘ f)). }
+    { extensionality x... } }
+Qed.
+
 Theorem semantic_correct_R :
   forall n,
   forall (f : R -> ⟦ repeat Real n ⟧ₜₓ),
   forall (t : tm (repeat Real n) Real),
+    differentiable n f ->
     (⟦ Dtm t ⟧ₜₘ ∘ D n f) =
-      fun r => (⟦ t ⟧ₜₘ (f r),
-        Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f x)) r).
+      (fun r => (⟦ t ⟧ₜₘ (f r),
+        Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f x)) r)).
 Proof with quick.
   intros...
   (* exists (gen n); exists (Dgen n). *)
+  (* pose proof (S_denote_derivable n f). *)
+  unfold compose.
   eapply S_correct_R.
   eapply fundamental.
   clear t.
   induction n...
   { erewrite inst_eq;
       try (extensionality r).
-  2:{ remember (f r). dependent destruction u.
+  2:{ remember (f r) as e. dependent destruction e.
       (* simpl. simp denote_env.  *)
       reflexivity. }
-  2:{ simp D. remember (f r). dependent destruction u.
+  2:{ simp D. remember (f r) as e. dependent destruction e.
       (* simpl. simp denote_env.  *)
       reflexivity. }
     fold (@Basics.const unit R tt); constructor. }
   { erewrite inst_eq;
       try (extensionality r).
-  2:{ instantiate (1:=fun r => (fst (f r),
-        snd (f r))). apply injective_projections... }
+  2:{ instantiate (1:=
+        (* fun r => (⟦(hd_env (f r))⟧ₜₘ ⟦(tl_env (f r))⟧ₑ, ⟦(tl_env (f r))⟧ₑ)). *)
+        fun r => (fst (f r), snd (f r))).
+        apply injective_projections; quick; remember (f r);
+          dependent elimination e... }
   2:{ simp D. unfold compose. reflexivity. }
+    dependent destruction H.
     constructor...
-    simp S. splits...
-    admit.
-  (* 2:{ instantiate (1:=fun r => ( ⟦ hd_env (f r) ⟧ₜₘ ⟦ tl_env (f r) ⟧ₑ,
-        ⟦ tl_env (f r) ⟧ₑ))...
-      remember (f r). dependent elimination e.
-      simp hd_env tl_env denote_env... }
-  2:{ instantiate (1:=fun r => ( ⟦ Dtm (hd_env (f r)) ⟧ₜₘ
-        ⟦ Denv (tl_env (f r)) ⟧ₑ, ⟦ Denv (tl_env (f r)) ⟧ₑ))...
-      remember (f r). dependent elimination e.
-      simp hd_env tl_env. simpl. simp denote_env. reflexivity. }
-    constructor.*)
-    (* { apply ex_derive_id. }
-    { extensionality r. rewrite Derive_id... } } *)
-Admitted.
+    simp S. splits... }
+Qed.

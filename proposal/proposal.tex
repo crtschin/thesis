@@ -11,7 +11,7 @@
 \usepackage[cache]{minted}
 \setlength{\marginparwidth}{3cm}
 \usepackage{todonotes}
-% \usepackage{libertine}
+\usepackage{libertine}
 % \usepackage{libertinust1math}
 \usepackage{amsmath}
 \usepackage[justification=centering]{caption}
@@ -350,7 +350,7 @@ A similar, independent proof of correctness was given in \cite{barthe2020versati
 
 \subsection{Language definitions}
 
-We currently mimic the base types used in the paper\cite{huot2020correctness} extended with sum types, shown in snippet \ref{lst:stlc_types}. The paper initially makes use of standard types found in a simply typed lambda calculus with products and R as the only ground type. These are also the types used in \cite{barthe2020versatility}. In a later section Stanton, Huot and \Vakar{} extended their language with sum and inductive types. We have currently only extended our language with sums. Note that we use the unconventional symbol $<+>$ for sum types instead of the more common $+$, because Coq already uses the latter for their own sum types.
+We currently mimic the base types used in the paper\cite{huot2020correctness} extended with sum types, shown in snippet \ref{lst:stlc_types}. The paper initially makes use of standard types found in a simply typed lambda calculus with products and R as the only ground type. These are also the types used in \cite{barthe2020versatility}. In a later section Stanton, Huot and \Vakar{} extended their language with sum and inductive types. We have currently only extended our language with sums. Note that we use the unconventional symbol \texttt{<+>} for sum types instead of the more common \texttt{+}, because Coq already uses the latter for their own sum types.
 
 \begin{listing}
   \begin{minted}{coq}
@@ -484,23 +484,27 @@ Theorem semantic_correct_R :
 
 \section{Timetable and Planning}
 
+\subsection{Extensions}
+
+We will be looking to extend the current prototype proof to include more complex language structures. The first of which we will be looking at hardcoded inductive types in the form of lists. This is not expected to require much time or code. More complex will be how we would be able to include iteration or recursion.
+
+\todo{Fill in}
+
+\subsection{Deadlines}
+
 The hard deadlines for the first and second phases of the thesis are respectively May $1^{st}$ and September $18^{th}$. The ambition is to follow the following framework of deadlines.
+
+\todo{Fill in}
 
 \begin{center}
   \begin{tabular}{ | m{5cm} | m{5cm} | }
-   \hline
-   Deadline & Date  \\
-   \hline
-   - & - \\
-   \hline
+    \hline
+    Deadline          & Date  \\
+    \hline
+    Proposal deadline & 1/5/2020 \\
+    \hline
   \end{tabular}
 \end{center}
-
-\subsection{Deadlines}
-\todo{Fill in}
-
-\subsection{Extensions}
-\todo{Fill in}
 
 \printbibliography
 % \bibliographystyle{IEEEtran}
