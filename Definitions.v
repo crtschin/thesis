@@ -363,12 +363,12 @@ Proof with eauto.
     rewrite app_sub_id... }
 Qed.
 
-Lemma subst_cons_lift_cons :
+(* Lemma subst_cons_lift_cons :
   forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (s : tm Γ' σ) (sb : sub Γ Γ'),
   substitute (| s |) (substitute (substitute_lifted sb) t) =
     substitute (cons_sub s sb) t.
 Proof.
-Admitted.
+Admitted. *)
 
 (*
   Typing

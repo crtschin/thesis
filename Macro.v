@@ -149,7 +149,7 @@ Proof with quick.
     rewrite D_rename_lifted... }
 Qed. *)
 
-Lemma D_sub_lifted : forall Γ Γ' τ σ
+(* Lemma D_sub_lifted : forall Γ Γ' τ σ
   (t : tm (σ::Γ) τ)
   (sb : sub Γ Γ'),
   Dtm (substitute (substitute_lifted sb) t) =
@@ -208,7 +208,7 @@ Lemma D_sub' : forall Γ Γ' τ σ
   Dtm (substitute (cons_sub s sb) t) =
     substitute (cons_sub (Dtm s) (Dsub' sb)) (Dtm t).
 Proof with quick.
-Admitted.
+Admitted. *)
 (*
 Lemma D_sub_lifted : forall Γ τ σ ρ (t : tm (ρ::σ::Γ) τ) (s: tm Γ σ),
 Dtm (substitute (substitute_lifted (| s |)) t) =

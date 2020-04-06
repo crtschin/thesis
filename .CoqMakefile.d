@@ -31,9 +31,9 @@ Normalization.vos Normalization.vok Normalization.required_vos: Normalization.v 
 Semantics.vo Semantics.glob Semantics.v.beautified Semantics.required_vo: Semantics.v Definitions.vo Macro.vo Diffeology.vo
 Semantics.vio: Semantics.v Definitions.vio Macro.vio Diffeology.vio
 Semantics.vos Semantics.vok Semantics.required_vos: Semantics.v Definitions.vos Macro.vos Diffeology.vos
-Syntactic.vo Syntactic.glob Syntactic.v.beautified Syntactic.required_vo: Syntactic.v Definitions.vo Macro.vo Tactics.vo Normalization.vo Denotation.vo
-Syntactic.vio: Syntactic.v Definitions.vio Macro.vio Tactics.vio Normalization.vio Denotation.vio
-Syntactic.vos Syntactic.vok Syntactic.required_vos: Syntactic.v Definitions.vos Macro.vos Tactics.vos Normalization.vos Denotation.vos
+Syntactic.vo Syntactic.glob Syntactic.v.beautified Syntactic.required_vo: Syntactic.v 
+Syntactic.vio: Syntactic.v 
+Syntactic.vos Syntactic.vok Syntactic.required_vos: Syntactic.v 
 Tactics.vo Tactics.glob Tactics.v.beautified Tactics.required_vo: Tactics.v 
 Tactics.vio: Tactics.v 
 Tactics.vos Tactics.vok Tactics.required_vos: Tactics.v 

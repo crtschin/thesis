@@ -1,4 +1,4 @@
-\documentclass[12pt, final]{article}
+\documentclass[12pt, draft]{article}
 \usepackage{stmaryrd}
 \usepackage{mathtools}
 \usepackage{array,booktabs,ragged2e}
@@ -8,9 +8,9 @@
 \usepackage{fancyhdr}
 \usepackage{amsthm}
 \usepackage{microtype}
-\usepackage[cache]{minted}
+\usepackage[draft=false,cache]{minted}
 \setlength{\marginparwidth}{3cm}
-\usepackage{todonotes}
+\usepackage[obeyFinal]{todonotes}
 \usepackage{libertine}
 % \usepackage{libertinust1math}
 \usepackage{amsmath}
@@ -132,11 +132,11 @@
 
 \section{Introduction}
 
-AI and machine learning research has sparked a lot of new interest in recent times due to its many applications and ability to solve very difficult problems very quickly.
-One of the principle techniques in practice is the use of the gradient descent algorithm, which takes an optimization problem and tries to find a solution by iteratively moving towards the optimum.
+AI and machine learning research has sparked a lot of new interest in recent times due to its many applications and ability to solve complex problems very quickly.
+One of its principle techniques is the use of the gradient descent algorithm, which takes an optimization problem and tries to find a solution by iteratively moving towards the direction of steepest ascent/descent.
 
 This is regularly done using a technique called automatic differentiation.
-\todo{Name examples of recent papers}There has been a recent surge of interest in formulating languages for defining automatic differentiable functions.
+There has been a recent surge of interest in formulating languages for defining automatic differentiable functions\todo{Name examples of recent papers}.
 This could have many benefits such as both applying many of the established high and low level optimizations known in programming languages research, ease defining functions for use in a gradient descent optimization through higher order functions and correctness through the use of a possible type system.
 
 We aim to formalize an extendable proof of an implementation of automatic differentiation on a simply typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
@@ -502,12 +502,13 @@ The hard deadlines for the first and second phases of the thesis are respectivel
     Deadline          & Date  \\
     \hline
     Proposal deadline & 1/5/2020 \\
+    Finish proofs & 15/7/2020 \\
+    Finish first draft & 15/8/2020 \\
+    Submit camera ready paper & 1/9/2020 \\
     \hline
   \end{tabular}
 \end{center}
 
 \printbibliography
-% \bibliographystyle{IEEEtran}
-
 \makeatother
 \end{document}

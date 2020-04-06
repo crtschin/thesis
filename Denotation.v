@@ -240,7 +240,7 @@ Proof with quick.
   intros...
 Qed.
 
-Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦Γ⟧ₜₓ),
+(* Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦Γ⟧ₜₓ),
   denote_sub id_sub ctx = ctx.
 Proof with quick.
   induction Γ.
@@ -265,7 +265,7 @@ Proof with quick.
     rewrite denote_sub_tl_simpl.
     rewrite denote_sub_tl_simpl.
     rewrite denote_sub_id_ctx... }
-Admitted.
+Admitted. *)
 
 Lemma denote_sub_tl_cons :
   forall Γ Γ' τ (t : tm Γ' τ) ctx (sb : sub Γ Γ'),
@@ -334,7 +334,7 @@ Proof with quick.
     rewrite <- Ddenote_ren_tl_lift... }
 Qed.
 
-Lemma Ddenote_shift : forall Γ τ σ (t : tm Γ τ) ctx,
+(* Lemma Ddenote_shift : forall Γ τ σ (t : tm Γ τ) ctx,
     ⟦ Dtm (shift (σ:=σ) t) ⟧ₜₘ ctx = ⟦ Dtm t ⟧ₜₘ (snd ctx).
 Proof with quick.
   unfold shift. intros.
@@ -378,4 +378,4 @@ Proof with quick.
     (* erewrite Ddenote_sub_elim...  *)
     admit.
     }
-Admitted.
+Admitted. *)
