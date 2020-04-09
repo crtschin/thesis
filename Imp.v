@@ -66,7 +66,7 @@ Inductive com : forall (Γ : Ctx), Env Γ -> list (block Γ) -> Type :=
 .
 
 Notation "'SKIP'" :=
-   CSkip.
+  CSkip.
 Notation "c ;; 'init' t" :=
   (CInit t c) (at level 65, right associativity).
 Notation "c ;; v '::=' t" :=
