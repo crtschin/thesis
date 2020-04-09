@@ -14,11 +14,7 @@ Require Import Coquelicot.Hierarchy.
 Require Import Equations.Equations.
 Import EqNotations.
 
-Require Import AD.Definitions.
-Require Import AD.Tactics.
-Require Import AD.Normalization.
-Require Import AD.Direct.
-(* Require Import AD.Tangent. *)
+(* Require Import Tangent. *)
 
 Local Open Scope program_scope.
 Local Open Scope R_scope.

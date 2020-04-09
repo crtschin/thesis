@@ -12,12 +12,12 @@ Require Import Coquelicot.Hierarchy.
 Require Import Equations.Equations.
 Import EqNotations.
 
-Require Import AD.Definitions.
-Require Import AD.Macro.
-Require Import AD.Tactics.
-Require Import AD.Denotation.
-Require Import AD.Normalization.
-(* Require Import AD.Tangent. *)
+Require Import Definitions.
+Require Import Macro.
+Require Import Tactics.
+Require Import Denotation.
+Require Import Normalization.
+(* Require Import Tangent. *)
 
 Local Open Scope program_scope.
 Local Open Scope R_scope.

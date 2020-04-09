@@ -9,7 +9,7 @@ Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 
 Require Import Equations.Equations.
-From AD Require Import Tactics.
+Require Import AD.Tactics.
 
 Open Scope R_scope.
 

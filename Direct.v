@@ -207,13 +207,13 @@ Proof with quick.
   intros. simp S in H.
 Qed.
 
-Equations gen (n : nat) : R -> ⟦ repeat Real n ⟧ₜₓ :=
+(* Equations gen (n : nat) : R -> ⟦ repeat Real n ⟧ₜₓ :=
 gen O r := tt;
 gen (Datatypes.S n) r := (r, gen n r).
 
 Equations Dgen (n : nat) : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ :=
 Dgen O r := tt;
-Dgen (Datatypes.S n) r := ((r, 1), Dgen n r).
+Dgen (Datatypes.S n) r := ((r, 1), Dgen n r). *)
 
 Equations D n
   (f : R -> ⟦ repeat Real n ⟧ₜₓ): R -> ⟦ map Dt (repeat Real n) ⟧ₜₓ :=
@@ -221,7 +221,7 @@ D 0 f r := f r;
 D (Datatypes.S n) f r :=
   (((fst ∘ f) r, Derive (fst ∘ f) r), D n (snd ∘ f) r).
 
-Equations hd_env {n} : Env (Real :: repeat Real n) -> tm (repeat Real n) Real :=
+(* Equations hd_env {n} : Env (Real :: repeat Real n) -> tm (repeat Real n) Real :=
 hd_env (env_cons t E') := t.
 
 Equations tl_env {n} : Env (Real :: repeat Real n) -> Env (repeat Real n) :=
@@ -231,13 +231,12 @@ Equations DE n
   (f : R -> Env (repeat Real n)): R -> Env (map Dt (repeat Real n)) :=
 DE 0 f r := f r;
 DE (Datatypes.S n) f r :=
-  (env_cons (Dtm ((hd_env ∘ f) r)) (DE n (tl_env ∘ f) r)).
+  (env_cons (Dtm ((hd_env ∘ f) r)) (DE n (tl_env ∘ f) r)). *)
 
 Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop :=
   | differentiable_0 : differentiable 0 (fun _ => tt)
   | differentiable_Sn :
-    forall n,
-    forall (f : R -> ⟦ repeat Real n ⟧ₜₓ),
+    forall n (f : R -> ⟦ repeat Real n ⟧ₜₓ),
     forall (g : R -> R),
       differentiable n f ->
       (forall x, ex_derive g x) ->
@@ -298,8 +297,6 @@ Theorem semantic_correct_R :
         Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f x)) r)).
 Proof with quick.
   intros...
-  (* exists (gen n); exists (Dgen n). *)
-  (* pose proof (S_denote_derivable n f). *)
   unfold compose.
   eapply S_correct_R.
   eapply fundamental.

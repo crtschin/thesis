@@ -1,21 +1,27 @@
-Adequacy.vo Adequacy.glob Adequacy.v.beautified Adequacy.required_vo: Adequacy.v Definitions.vo Tactics.vo Normalization.vo Direct.vo
-Adequacy.vio: Adequacy.v Definitions.vio Tactics.vio Normalization.vio Direct.vio
-Adequacy.vos Adequacy.vok Adequacy.required_vos: Adequacy.v Definitions.vos Tactics.vos Normalization.vos Direct.vos
+Adequacy.vo Adequacy.glob Adequacy.v.beautified Adequacy.required_vo: Adequacy.v 
+Adequacy.vio: Adequacy.v 
+Adequacy.vos Adequacy.vok Adequacy.required_vos: Adequacy.v 
 Base.vo Base.glob Base.v.beautified Base.required_vo: Base.v 
 Base.vio: Base.v 
 Base.vos Base.vok Base.required_vos: Base.v 
+CpdtTactics.vo CpdtTactics.glob CpdtTactics.v.beautified CpdtTactics.required_vo: CpdtTactics.v 
+CpdtTactics.vio: CpdtTactics.v 
+CpdtTactics.vos CpdtTactics.vok CpdtTactics.required_vos: CpdtTactics.v 
 Definitions.vo Definitions.glob Definitions.v.beautified Definitions.required_vo: Definitions.v Tactics.vo
 Definitions.vio: Definitions.v Tactics.vio
 Definitions.vos Definitions.vok Definitions.required_vos: Definitions.v Tactics.vos
-Denotation.vo Denotation.glob Denotation.v.beautified Denotation.required_vo: Denotation.v Definitions.vo Macro.vo Tactics.vo Normalization.vo
-Denotation.vio: Denotation.v Definitions.vio Macro.vio Tactics.vio Normalization.vio
-Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v Definitions.vos Macro.vos Tactics.vos Normalization.vos
+Denotation.vo Denotation.glob Denotation.v.beautified Denotation.required_vo: Denotation.v Definitions.vo Macro.vo DepList.vo Tactics.vo Normalization.vo
+Denotation.vio: Denotation.v Definitions.vio Macro.vio DepList.vio Tactics.vio Normalization.vio
+Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v Definitions.vos Macro.vos DepList.vos Tactics.vos Normalization.vos
+DepList.vo DepList.glob DepList.v.beautified DepList.required_vo: DepList.v CpdtTactics.vo
+DepList.vio: DepList.v CpdtTactics.vio
+DepList.vos DepList.vok DepList.required_vos: DepList.v CpdtTactics.vos
 Diffeology.vo Diffeology.glob Diffeology.v.beautified Diffeology.required_vo: Diffeology.v Tactics.vo Definitions.vo Macro.vo
 Diffeology.vio: Diffeology.v Tactics.vio Definitions.vio Macro.vio
 Diffeology.vos Diffeology.vok Diffeology.required_vos: Diffeology.v Tactics.vos Definitions.vos Macro.vos
-Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Denotation.vo
-Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Denotation.vio
-Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Denotation.vos
+Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v 
+Direct.vio: Direct.v 
+Direct.vos Direct.vok Direct.required_vos: Direct.v 
 Domain.vo Domain.glob Domain.v.beautified Domain.required_vo: Domain.v 
 Domain.vio: Domain.v 
 Domain.vos Domain.vok Domain.required_vos: Domain.v 

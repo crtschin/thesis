@@ -1,4 +1,5 @@
 Require Import Lists.List.
+Require Import Vectors.Fin.
 Import ListNotations.
 Require Import Logic.FunctionalExtensionality.
 Require Import Strings.String.
@@ -7,7 +8,6 @@ Require Import Logic.JMeq.
 Require Import Reals.
 Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
-Require Import Arith_base.
 Require Import Coquelicot.Derive.
 Require Import Coquelicot.Continuity.
 Require Import Coquelicot.Hierarchy.
@@ -16,11 +16,13 @@ Import EqNotations.
 
 Require Import AD.Definitions.
 Require Import AD.Macro.
+Require Import AD.DepList.
 Require Import AD.Tactics.
 Require Import AD.Normalization.
 
 Local Open Scope program_scope.
-Local Open Scope R_scope.
+Local Open Scope type_scope.
+Set Universe Polymorphism.
 
 (* Notations:
 
@@ -36,28 +38,119 @@ Local Open Scope R_scope.
 (*
   Goal: Write out the logical relation over types with the goal of having both
     the proof of differentiability and witness in one.
-
-  Will piggyback on Coq's types
 *)
+
+(*
+Agda-style generics
+*)
+
+Inductive Functor : Type :=
+  | Id : Functor
+  | K : Set -> Functor
+  | Fprod : Functor -> Functor -> Functor
+  | Fadd : Functor -> Functor -> Functor.
+
+Fixpoint denote_functor (f : Functor): Set -> Set :=
+  fun s => match f with
+  | Id => s
+  | K a => a
+  | Fprod a b => (denote_functor a s) * (denote_functor b s)
+  | Fadd a b => (denote_functor a s) + (denote_functor b s)
+  end.
+Notation "⟦ f ⟧₋" := (denote_functor f).
+
+Inductive Fixed F : Set :=
+  | unfix : ⟦ F ⟧₋ (Fixed F) -> Fixed F
+.
+
+(*
+  CPDT-style universe types
+*)
+
+Record constructor : Type := Con {
+  nonrecursive : Type;
+  recursive : nat;
+}.
+Definition datatype := list constructor.
+Section denote.
+  Variable T : Type.
+  Definition denote_constructor (c : constructor) :=
+    nonrecursive c -> ilist T (recursive c) -> T.
+  Definition denote_datatype := hlist denote_constructor.
+End denote.
+Notation "[ v , r ~> x ]" := ((fun v r => x) : denote_constructor _ (Con _ _)).
+
+Definition Empty_set_dt : datatype := nil.
+Definition unit_dt : datatype := Con unit 0 :: nil.
+Definition bool_dt : datatype := Con unit 0 :: Con unit 0 :: nil.
+Definition nat_dt : datatype := Con unit 0 :: Con unit 1 :: nil.
+Definition list_dt (A : Type) : datatype := Con unit 0 :: Con A 1 :: nil.
+Definition reals_dt : datatype := Con R 0 :: nil.
+Definition fn_dt (A : Type) (B : Type) : datatype := Con (A -> B) 0 :: nil.
+Definition prod_dt (A : Type) (B : Type) : datatype := Con (A * B) 0 :: nil.
+Definition sum_dt (A : Type) (B : Type) : datatype := Con A 0 :: Con B 0 :: nil.
+Definition functor_dt (A : Type) (B : Type) : datatype :=
+  Con R 0 :: Con A 0 :: Con B 0 ::Con (A -> B) 0 :: Con (A * B) 0 :: nil.
+
+Definition Empty_set_den : denote_datatype Empty_set Empty_set_dt :=
+  HNil.
+Definition unit_den : denote_datatype unit unit_dt :=
+  [_, _ ~> tt] ::: HNil.
+Definition bool_den : denote_datatype bool bool_dt :=
+  [_, _ ~> true] ::: [_, _ ~> false] ::: HNil.
+Definition nat_den : denote_datatype nat nat_dt :=
+  [_, _ ~> O] ::: [_, r ~> S (hd r)] ::: HNil.
+Definition list_den (A : Type) : denote_datatype (list A) (list_dt A) :=
+  [_, _ ~> nil] ::: [x, r ~> x :: hd r] ::: HNil.
+Definition reals_den : denote_datatype R reals_dt :=
+  [a, r ~> a] ::: HNil.
+Definition prod_den (A : Type) (B : Type) : denote_datatype
+  (A * B) (prod_dt A B) :=
+  [a, r ~> a] ::: HNil.
+Definition fn_den (A : Type) (B : Type) : denote_datatype
+  (A -> B) (fn_dt A B) :=
+  [a, r ~> a] ::: HNil.
+Definition sum_den (A : Type) (B : Type) : denote_datatype
+  (sum A B) (sum_dt A B) :=
+  [a, r ~> Datatypes.inl a] ::: [a, r ~> Datatypes.inr a] ::: HNil.
+
+Definition fix_denote (T : Type) (dt : datatype) :=
+  forall (R : Type), denote_datatype R dt -> (T -> R).
+
 Reserved Notation "⟦ τ ⟧ₜ".
-Fixpoint denote_t τ : Set :=
+Fixpoint denote_t τ : datatype :=
   match τ with
-  | Real => R
-  | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
-  | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
-  | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ
+  | Real => reals_dt
+  | τ1 × τ2 => prod_dt (denote_datatype' ⟦τ1⟧ₜ) (denote_datatype' ⟦τ2⟧ₜ)
+  | τ1 → τ2 => fn_dt (denote_datatype' ⟦τ1⟧ₜ) (denote_datatype' ⟦τ2⟧ₜ)
+  | τ1 <+> τ2 => sum_dt (denote_datatype' ⟦τ1⟧ₜ) (denote_datatype' ⟦τ2⟧ₜ)
+  end
+with denote_datatype' (d : datatype) : Type :=
+  match d with
+  | [] => unit
+  | h :: f => denote_constructor _ h * denote_datatype f
+  end
+where "⟦ τ ⟧ₜ" := (denote_t τ).
+
+Reserved Notation "⟦ τ ⟧ₜ".
+Fixpoint denote_t τ : Functor :=
+  match τ with
+  | Real => K R
+  | τ1 × τ2 => Fprod ⟦τ1⟧ₜ ⟦τ2⟧ₜ
+  | τ1 → τ2 => Ffn ⟦τ1⟧ₜ ⟦τ2⟧ₜ
+  | τ1 <+> τ2 => Fadd ⟦τ1⟧ₜ ⟦τ2⟧ₜ
   end
 where "⟦ τ ⟧ₜ" := (denote_t τ).
 
 Reserved Notation "⟦ Γ ⟧ₜₓ".
-Fixpoint denote_ctx (Γ : Ctx) : Type :=
+Fixpoint denote_ctx (Γ : Ctx) : Functor :=
   match Γ with
-  | [] => unit
-  | h :: t => ⟦h⟧ₜ * ⟦t⟧ₜₓ
+  | [] => K unit
+  | h :: t => Fprod ⟦h⟧ₜ ⟦t⟧ₜₓ
   end
 where "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
 
-Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
+Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : Ffn ⟦Γ⟧ₜₓ ⟦τ⟧ₜ  :=
   match v with
   | Top Γ' τ' => fun gamma => fst gamma
   | Pop Γ' τ' σ x => fun gamma => denote_v x (snd gamma)
