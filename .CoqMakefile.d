@@ -19,12 +19,15 @@ DepList.vos DepList.vok DepList.required_vos: DepList.v CpdtTactics.vos
 Diffeology.vo Diffeology.glob Diffeology.v.beautified Diffeology.required_vo: Diffeology.v Tactics.vo Definitions.vo Macro.vo
 Diffeology.vio: Diffeology.v Tactics.vio Definitions.vio Macro.vio
 Diffeology.vos Diffeology.vok Diffeology.required_vos: Diffeology.v Tactics.vos Definitions.vos Macro.vos
-Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v 
-Direct.vio: Direct.v 
-Direct.vos Direct.vok Direct.required_vos: Direct.v 
+Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Denotation.vo
+Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Denotation.vio
+Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Denotation.vos
 Domain.vo Domain.glob Domain.v.beautified Domain.required_vo: Domain.v 
 Domain.vio: Domain.v 
 Domain.vos Domain.vok Domain.required_vos: Domain.v 
+Imp.vo Imp.glob Imp.v.beautified Imp.required_vo: Imp.v Definitions.vo Tactics.vo
+Imp.vio: Imp.v Definitions.vio Tactics.vio
+Imp.vos Imp.vok Imp.required_vos: Imp.v Definitions.vos Tactics.vos
 Macro.vo Macro.glob Macro.v.beautified Macro.required_vo: Macro.v Definitions.vo Tactics.vo
 Macro.vio: Macro.v Definitions.vio Tactics.vio
 Macro.vos Macro.vok Macro.required_vos: Macro.v Definitions.vos Tactics.vos

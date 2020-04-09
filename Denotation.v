@@ -21,8 +21,6 @@ Require Import AD.Tactics.
 Require Import AD.Normalization.
 
 Local Open Scope program_scope.
-Local Open Scope type_scope.
-Set Universe Polymorphism.
 
 (* Notations:
 
@@ -54,14 +52,14 @@ Fixpoint denote_functor (f : Functor): Set -> Set :=
   fun s => match f with
   | Id => s
   | K a => a
-  | Fprod a b => (denote_functor a s) * (denote_functor b s)
-  | Fadd a b => (denote_functor a s) + (denote_functor b s)
+  | Fprod a b => prod (denote_functor a s) (denote_functor b s)
+  | Fadd a b => sum (denote_functor a s) (denote_functor b s)
   end.
 Notation "⟦ f ⟧₋" := (denote_functor f).
 
-Inductive Fixed F : Set :=
+(* Inductive Fixed F : Set :=
   | unfix : ⟦ F ⟧₋ (Fixed F) -> Fixed F
-.
+. *)
 
 (*
   CPDT-style universe types
@@ -117,7 +115,7 @@ Definition sum_den (A : Type) (B : Type) : denote_datatype
 Definition fix_denote (T : Type) (dt : datatype) :=
   forall (R : Type), denote_datatype R dt -> (T -> R).
 
-Reserved Notation "⟦ τ ⟧ₜ".
+(* Reserved Notation "⟦ τ ⟧ₜ".
 Fixpoint denote_t τ : datatype :=
   match τ with
   | Real => reals_dt
@@ -130,27 +128,27 @@ with denote_datatype' (d : datatype) : Type :=
   | [] => unit
   | h :: f => denote_constructor _ h * denote_datatype f
   end
-where "⟦ τ ⟧ₜ" := (denote_t τ).
+where "⟦ τ ⟧ₜ" := (denote_t τ). *)
 
 Reserved Notation "⟦ τ ⟧ₜ".
-Fixpoint denote_t τ : Functor :=
+Fixpoint denote_t τ : Set :=
   match τ with
-  | Real => K R
-  | τ1 × τ2 => Fprod ⟦τ1⟧ₜ ⟦τ2⟧ₜ
-  | τ1 → τ2 => Ffn ⟦τ1⟧ₜ ⟦τ2⟧ₜ
-  | τ1 <+> τ2 => Fadd ⟦τ1⟧ₜ ⟦τ2⟧ₜ
+  | Real => R
+  | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
+  | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
+  | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ
   end
 where "⟦ τ ⟧ₜ" := (denote_t τ).
 
 Reserved Notation "⟦ Γ ⟧ₜₓ".
-Fixpoint denote_ctx (Γ : Ctx) : Functor :=
+Fixpoint denote_ctx (Γ : Ctx) : Type :=
   match Γ with
-  | [] => K unit
-  | h :: t => Fprod ⟦h⟧ₜ ⟦t⟧ₜₓ
+  | [] => unit
+  | h :: t => ⟦h⟧ₜ * ⟦t⟧ₜₓ
   end
 where "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
 
-Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : Ffn ⟦Γ⟧ₜₓ ⟦τ⟧ₜ  :=
+Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
   match v with
   | Top Γ' τ' => fun gamma => fst gamma
   | Pop Γ' τ' σ x => fun gamma => denote_v x (snd gamma)
