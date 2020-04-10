@@ -13,6 +13,14 @@ Require Import AD.Tactics.
 
 Open Scope R_scope.
 
+(* STLC with well-typed well-scoped debruijn *)
+(*
+  Adapted from:
+    - From Mathematics to Abstract Machine by Swierstra, et al.
+    - Strongly Typed Term Representations in Coq by Benton, et al.
+ *)
+Definition Ctx {x} : Type := list x.
+
 Inductive ty : Type :=
   | Real : ty
   | Arrow : ty -> ty -> ty
@@ -23,14 +31,6 @@ Inductive ty : Type :=
 Notation "A × B" := (Prod A B) (left associativity, at level 90).
 Notation "A <+> B" := (Sum A B) (left associativity, at level 90).
 Notation "A → B" := (Arrow A B) (right associativity, at level 20).
-
-(* STLC with well-typed well-scoped debruijn *)
-(*
-  Adapted from:
-    - From Mathematics to Abstract Machine by Swierstra, et al.
-    - Strongly Typed Term Representations in Coq by Benton, et al.
- *)
-Definition Ctx {x} : Type := list x.
 
 Inductive Var {T : Type} : list T -> T -> Type :=
   | Top : forall Γ τ, Var (τ::Γ) τ
