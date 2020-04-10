@@ -136,9 +136,9 @@
 \section{Introduction}
 
 AI and machine learning research has sparked a lot of new interest in recent times due to its many applications and ability to solve complex problems very quickly.
-
 This is regularly done using a technique called automatic differentiation.
-There has been a recent surge of interest in formulating languages for defining automatic differentiable functions\todo{Name examples of recent papers}.
+But programming inside current frameworks is very limited and cumbersome.
+One possible solution is to create a programming language that facilitates defining differentiable functions.
 This could have many benefits such as both applying many of the established high and low level optimizations known in programming languages research, ease defining functions for use in a gradient descent optimization through higher order functions and correctness through the use of a possible type system.
 
 We aim to formalize an extendable proof of an implementation of automatic differentiation on a simply typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
@@ -151,12 +151,16 @@ With this thesis we will aim for the following goals:
 \begin{itemize}
   \item Contribute a formalized proof of forward-mode automatic differentiation in \<Coq>.
   \item Formulate the proofs such that it facilitates further extensions.
-  \item (TODO: UNLIKELY) Extend the original proof with iteration and possibly recursion.
-  \item (TODO: MAYBE) Extend the original proof with inductive types.
-  \item (TODO: MAYBE) Extend the original proof with polymorphism.
-  \item (TODO: MAYBE) Adapt the proof to a small imperative language.
-  \item (TODO: LIKELY) Prove that well-known optimizations such as the partial evaluation, are correct with respect to automatic differentiation.
-  \item (TODO: LIKELY) Prove the correctness of the continuation-based automatic differentiation algorithm.
+  \item Extend the proof to polymorphic types.
+  \item Adapt the proof to a small imperative language.
+  \item Prove that well-known optimizations such as the partial evaluation, are correct with respect to automatic differentiation.
+  \item Prove the correctness of the continuation-based automatic differentiation algorithm.
+  % \item (TODO: UNLIKELY) Extend the original proof with iteration and possibly recursion.
+  % \item (TODO: MAYBE) Extend the original proof with inductive types.
+  % \item (TODO: MAYBE) Extend the original proof with polymorphism.
+  % \item (TODO: MAYBE) Adapt the proof to a small imperative language.
+  % \item (TODO: LIKELY) Prove that well-known optimizations such as the partial evaluation, are correct with respect to automatic differentiation.
+  % \item (TODO: LIKELY) Prove the correctness of the continuation-based automatic differentiation algorithm.
 \end{itemize}
 
 % Ideally?:
@@ -175,14 +179,14 @@ As a notational convention, we will use specialized notation in the definitions 
 
 One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function.
 The idea being to use the gradient in the gradient descent algorithm\cite{Baydin2015AutomaticDI}.
-Automatic differentiation has a long and rich history, where its purpose is to calculate the derivative of a function, or in other words, calculate the derivative of function described by an arbitrary program.
-So the semantics which one would normally expect in programming language is extended with relevant concepts such as derivative values and the chain rule.
+Automatic differentiation has a long and rich history, where its main purpose is to automatically calculate the derivative of a function, or more precisely, calculate this derivative of a function described by a program.
+So in addition to the standard semantics present in most functional programming languages, we also now deal with relevant concepts such as derivative values and the chain rule.
 
 Automatic or algorithmic differentiation is beneficial over other methods of automatically calculating the derivatives of functions such as numerical differentiation or symbolic differentiation due to its balance between speed and computational complexity.
 There are two main modes of automatic differentiation.
 These are namely forward and reverse mode AD. For the purposes of this paper, we will only discuss forward mode AD.
 
-In forward mode automatic differentiation the function trace is accompanied with a dual numbers representation which calculate the derivative of the function. These are also known as the respectively the primal and tangent traces. So every partial derivative of every sub function is calculated parallel to its counterpart. We will take the function $f(x, y) = x^2 + (x - y)$ as an example. The dependencies between the terms and operations of the function is visible in the computational graph in figure~\ref{fig:func_trace}. The corresponding traces are filled in table~\ref{table:func_trace} for the input values $x = 2, y = 1$. We can calculate the partial derivative $\frac{\delta f}{\delta x}$ by setting $x' = 1$ and $y' = 0$. In this paper we will prove the correctness of a simple forward mode automatic differentiation algorithm with respect to the semantics of a simply typed lambda calculus.
+In forward mode automatic differentiation the function trace is accompanied with a dual numbers representation which calculate the derivative of the function. These are also known as the respectively the primal and tangent traces. So every partial derivative of every sub function is calculated parallel to its counterpart. We will take the function $f(x, y) = x^2 + (x - y)$ as an example. The dependencies between the terms and operations of the function is visible in the computational graph in figure~\ref{fig:func_trace}. The corresponding traces are filled in table~\ref{table:func_trace} for the input values $x = 2, y = 1$. We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$. In this paper we will prove the correctness of a simple forward mode automatic differentiation algorithm with respect to the semantics of a simply typed lambda calculus.
 
 \begin{figure}[h]
   \centering
@@ -217,16 +221,16 @@ $f      $&$=$&$v_3$&$=$&$5$           &$f'$&$=$&$v'_3$&$=$&$5$ \\
 \subsection{Denotational semantics}
 % A formal semantics of programming language: An introduction
 
-The notion of denotational semantics tries to find underlying mathematical objects able to explain the properties of programming languages. The most well-known example is the solution given by Dana Scott and Christopher Strachey\cite{Scott1977} for lambda calculi.
+The notion of denotational semantics tries to find underlying mathematical models able to underpin the concepts known in programming languages. The most well-known example is the solution given by Dana Scott and Christopher Strachey\cite{Scott1977} for lambda calculi, also called domain theory.
 To be able to formalize non-termination and partiality, they thought to use concepts such as partial orderings and least fixed points\cite{aaby2020}.
-In this model, programs are interpreted as partial functions and computation by taking the fixpoint of such functions.
+In this model, programs are interpreted as partial functions and computations as taking the fixpoint of such functions.
 Non-termination, on the other hand, is formalized as a value \<bottom> that is lower in the ordering relation than any other element.
 
 In our specific case, we try to find a satisfactory model we can use to show that our implementation of forward mode automatic differentiation is correct when applied to a simply typed lambda calculus.
 In the original pen and paper proof of automatic differentiation this thesis is based on, the mathematical models used were diffeological spaces, which are generalization of smooth manifolds.
 For the purpose of this thesis, however, this was deemed excessive and much too difficult and time consuming to implement in a mathematically sound manner in \<Coq>.
 As such, we chose to make use of \<Coq>'s existing types as denotations and base the relation on the denotations instead of the syntactic structures.
-Due to the relative simplicity of the language, we did not yet require domain theoretical concepts. If recursion or iteration were to be added to the language, it is expected that these would be needed.
+Due to the relative simplicity of the language, we did not yet require domain theoretical concepts. If recursion or iteration were to be added to the language, it is currently expected that these would be needed.
 
 \todo{Fill in}
 
@@ -243,10 +247,10 @@ Due to its usefulness in proving propositions over functions, we will make use o
 \subsubsection{Language representation}
 \label{sec:language_repr}
 
-When defining a simply typed lambda calculus, there are two main representations\cite{plfa2019}.
+When defining a simply typed lambda calculus, there are two main possibilities\cite{plfa2019}.
 The arguably simpler variant, known as an extrinsic representation, is traditionally the one introduced to new students learning \<Coq>.
-In the extensional representation, the terms themselves are untyped and typing judgments are defined separately. A basic example of working with this is given in \cite{Pierce:SF2}. This required many additional lemmas and machinery to be proved, however.
-The other approach, also called an intrinsic representations makes use of just a single well-typed definition.
+In the extensional representation, the terms themselves are untyped and typing judgments are defined separately as relations between the types and terms. A basic example of working with this is given in \cite{Pierce:SF2}. This, however, required many additional lemmas and machinery to be proved.
+The other approach, also called an intrinsic representation, makes use of just a single well-typed definition.
 Ill-typed terms are made impossible by the type checker.
 This representation, while beneficial in the proof load, however complicates much of the normal machinery involved in programming language theory.
 One example is how one would define operations such as substitutions.
@@ -255,7 +259,7 @@ But even when choosing an intrinsic representation, the problem of variable bind
 Much meta-theoretical research has been done on possible approaches to this problem each with their own advantages and disadvantages.
 The POPLmark challenge gives a comprehensive overview of each of the possibilities in various proof assistants\cite{Aydemir2005}.
 An example of an approach is the nominal representation where every variable is named.
-While this does follow the standard format used in regular mathematics, problems such as alpha-conversion and capture-avoidance arises.
+While this does follow the standard format used in regular mathematics, problems such as alpha-conversion and capture-avoidance arise.
 
 \begin{listing}[h]
   \begin{minted}{coq}
@@ -355,17 +359,16 @@ Due to the intrinsic typeful representation this paper uses, much of this was in
 
 \subsection{Logical relations}
 
-Logical relations, otherwise known as Tait's method, is technique often employed when proving programming language properties\cite{skorstengaard2019introduction}.
-
-There are two main ways they are used, namely as unary and binary relations.
+Logical relations is technique often employed when proving programming language properties\cite{skorstengaard2019introduction}. There are two main ways they are used, namely as unary and binary relations.
 Unary logical relations, also known as logical predicates, are predicates over single terms and are typically used to prove language characteristics such as type safety or strong normalization.
-Binary logical relations on the other hand are used to prove program equivalences, usually in the context of denotational semantics.
-A logical relations proof essentially consists of 2 steps.
+Binary logical relations on the other hand are used to prove program equivalences, usually in the context of denotational semantics as we will do.
+Logical relations in essence are simply relations defined by induction on the types. A logical relations proof consists of 2 steps.
 The first usually states that well-typed terms are in the relation, while the second states that the property of interest follows from the relation.
-It should be evident that the proof itself is usually routine compared to defining the relation itself.
+The second step is easier to prove as it usually follows from the definition of the relation. The first on the other hand, will often require proving a generalized variant, called the fundamental property of the logical relation.
+In most cases this requires that the relation is correct with respect to applying substitutions.
 
-A well-known logical relations proof is the proof of strong normalization.
-An example of a logical relation using the intrinsic strongly-typed formulation is given in~\ref{lst:sn_logical_relation}.
+A well-known logical relations proof is the proof of strong normalization of well-typed terms, which states that all well-typed terms are either terminal values or can be reduced further.
+An example of a logical relation used in such a proof using the intrinsic strongly-typed formulation is given in snippet~\ref{lst:sn_logical_relation}.
 Noteworthy is the case for function types, which indicates that application should maintain the strongly normalization relation.
 The proof given in the paper this thesis is based on, is a logical relations proof on the denotation semantics using diffeological spaces as its domains\cite{huot2020correctness}.
 A similar, independent proof of correctness was given in \cite{barthe2020versatility} using an syntactic relation.
@@ -385,7 +388,10 @@ A similar, independent proof of correctness was given in \cite{barthe2020versati
 
 \subsection{Language definitions}
 
-We currently mimic the base types used in the paper\cite{huot2020correctness} extended with sum types, shown in snippet~\ref{lst:stlc_types}. The paper initially makes use of standard types found in a simply typed lambda calculus with products and R as the only ground type. These are also the types used in \cite{barthe2020versatility}. In a later section Stanton, Huot and \Vakar{} extended their language with sum and inductive types. We have currently only extended our language with sums. Note that we use the unconventional symbol \texttt{<+>} for sum types instead of the more common \texttt{+}, because Coq already uses the latter for their own sum types.
+We currently mimic the base types used in the paper~\cite{huot2020correctness} extended with sum types, shown in snippet~\ref{lst:stlc_types}.
+The paper itself initially makes use of the standard types found in a simply typed lambda calculus extended with products and R as the only ground type.
+These are also the types used in \cite{barthe2020versatility} which gives similar proof. In a later section Stanton, Huot and \Vakar{} extended their language with sum and inductive types.
+Note that we use the unconventional symbol \texttt{<+>} for sum types instead of the more common \texttt{+}, because Coq already uses the latter for their own sum types.
 
 \begin{listing}
   \begin{minted}{coq}
@@ -399,7 +405,8 @@ We currently mimic the base types used in the paper\cite{huot2020correctness} ex
   \label{lst:stlc_types}
 \end{listing}
 
-We have chosen the intrinsic strongly-typed formulation used in \cite{Benton2011} as the general framework to work in. This includes the various substitution and lifting operations for working with typing contexts included. Typing contexts themselves consists of lists of types, while variables are typed indices into this list shown in~\ref{lst:strong_stlc}.
+We have chosen the intrinsic strongly-typed formulation used in \cite{Benton2011} as the general framework to work in.
+This includes the various substitution and lifting operations for working with typing contexts. Typing contexts themselves consists of lists of types, while variables are typed indices into this list. We almost perfectly mimic the example shown in snippet~\ref{lst:strong_stlc}.
 
 We have simplified a few of the language constructs used in \cite{huot2020correctness}, shown in snippet~\ref{lst:stlc_terms}. For working with product types they make use of n-products and pattern matching, while we have opted for projection tuples. They proceeded to extended their base language with arbitrarily sized variant types, which we have substituted for standard sums reminiscent of the \<Either> type in Haskell along with specialized case expressions. Both of these changes were intended to simplify the language as much as possible while still retaining the same core functionality and types.
 
@@ -418,7 +425,7 @@ Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
   | abs : ~forall \tau \sigma,
     tm (\sigma::\Gamma) \tau \rightarrow tm \Gamma (\sigma \Rightarrow \tau)~
 
-  (* Operations on reals *)
+  (* Operations on the real numbers *)
   | const : ~R \rightarrow tm \Gamma Real~
   | add : ~tm \Gamma Real \rightarrow tm \Gamma Real \rightarrow tm \Gamma Real~
 
@@ -537,7 +544,11 @@ Theorem semantic_correct_R :
 
 \subsection{Extensions}
 
-We will be looking to extend the current prototype proof to include more complex language structures. The first of which we will be looking at hardcoded inductive types in the form of lists. This is not expected to require much time or code. More complex will be how we would be able to include iteration or recursion.
+We will be looking to extend the current prototype proof with the continuation-based AD macro mentioned in \cite{huot2020correctness}.
+We will also try to extend the proof with a small imperative language we are able to translate into the simply typed lambda calculus.
+The goal is to work towards results usable in the context of program optimizations.
+One possibility is to go towards a SSA (static single assignment) representation which has many benefits as a well-known possible internal representation for use in compilers\cite{Pop2006}.
+One other benefit is that this representation can also be transformed into a minimal functional language\cite{chakravarty2004347}.
 
 \todo{Fill in}
 
