@@ -19,8 +19,7 @@ Import EqNotations.
 Require Import AD.Definitions.
 Require Import AD.Tactics.
 
-Local Open Scope program_scope.
-Local Open Scope R_scope.
+Local Open Scope type_scope.
 
 
 (*
@@ -36,7 +35,7 @@ Equations lift_block {Γ τ} (t : tm Γ τ) :
   block Γ -> block (τ::Γ) :=
 lift_block t f (env_cons t γ) := env_cons t (f γ).
 
-Inductive subctx : Ctx -> Ctx -> Type :=
+(* Inductive subctx : Ctx -> Ctx -> Type :=
   | subctx_same : forall {Γ}, subctx Γ Γ
   | subctx_rem : forall {Γ Γ'} {τ : ty} {t: tm Γ τ},
     subctx Γ Γ' -> subctx (τ::Γ) Γ'.
@@ -46,31 +45,39 @@ Equations weaken {Γ Γ'}:
 weaken subctx_same b e := e;
 weaken (@subctx_rem Γ Γ' τ t s) b e := lift_block t (weaken s b) e.
 
-Inductive com : forall (Γ : Ctx), Env Γ -> list (block Γ) -> Type :=
-  | CSkip : forall {Γ γ φ}, com Γ γ φ
-  | CInit : forall {Γ τ γ φ} (t : tm Γ τ),
-    com Γ γ φ ->
-    com (τ::Γ) (env_cons t γ) (map (lift_block t) φ)
-  | CAss : forall {Γ τ γ φ} (t : tm Γ τ),
-    com Γ γ φ ->
-    τ ∈ Γ ->
-    com (τ::Γ) (env_cons t γ) (map (lift_block t) φ)
-  | CCall : forall {Γ f γ φ},
-    com Γ γ φ ->
-    In f φ ->
-    com Γ (f γ) φ
-  | CBlock : forall {Γ Γ' φ} {γ : Env Γ}
-    (f : Env Γ' -> Env Γ') (w : subctx Γ Γ'),
-    com Γ γ φ ->
-    com Γ γ (weaken w f::φ)
+Equations weaken_env {Γ Γ'}:
+  (subctx Γ Γ') -> Env Γ' -> Env Γ :=
+weaken_env subctx_same e := e;
+weaken_env (@subctx_rem Γ Γ' τ t s) e := env_cons t (weaken_env s e).
+
+Equations weaken_tm {Γ Γ' τ}:
+  (subctx Γ Γ') -> tm Γ' τ -> tm Γ τ :=
+weaken_tm subctx_same t := t;
+weaken_tm (@subctx_rem Γ Γ' σ r s) t := shift (weaken_tm s t). *)
+
+Definition State Γ := (Env Γ * list (block Γ)).
+Inductive com : forall (Γ Γ': Ctx),
+  State Γ -> State Γ' -> ty -> Type :=
+  | CReturn : forall {Γ γ φ τ},
+    tm Γ τ ->
+    com Γ Γ (γ, φ) (γ, φ) τ
+  | CInit : forall {Γ Γ' τ σ γ γ' φ φ'} (t : tm Γ' σ),
+    com Γ Γ' (γ, φ) (γ', φ') τ ->
+    com Γ (σ::Γ') (γ, φ) ((env_cons t γ'), (map (lift_block t) φ')) τ
+  | CCall : forall {Γ Γ' τ f γ γ' φ φ'},
+    com Γ Γ' (γ, φ) (γ', φ') τ ->
+    In f φ' ->
+    com Γ Γ' (γ, φ) ((f γ'), φ') τ
+  | CBlock : forall {Γ Γ' τ γ γ' φ φ'}
+    (f : Env Γ' -> Env Γ'),
+    com Γ Γ' (γ, φ) (γ', φ') τ ->
+    com Γ Γ' (γ, φ) (γ', f::φ') τ
 .
 
-Notation "'SKIP'" :=
-   CSkip.
+Notation "'RETURN' t" :=
+   (CReturn t) (at level 65).
 Notation "c ;; 'init' t" :=
   (CInit t c) (at level 65, right associativity).
-Notation "c ;; v '::=' t" :=
-  (CAss t c v) (at level 65, right associativity).
 Notation "c ;; 'call' f" :=
   (CCall c f) (at level 65, right associativity).
 Notation "c ;; w { f }" :=
