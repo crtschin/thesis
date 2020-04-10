@@ -46,25 +46,25 @@ Equations weaken {Γ Γ'}:
 weaken subctx_same b e := e;
 weaken (@subctx_rem Γ Γ' τ t s) b e := lift_block t (weaken s b) e.
 
-Inductive com : forall Γ, Env Γ -> list (block Γ) -> Type :=
-  | CSkip : forall {Γ γ φ}, com Γ γ φ
-  | CInit : forall {Γ τ γ φ} (t : tm Γ τ),
-    com Γ γ φ ->
-    com (τ::Γ) (env_cons t γ) (map (lift_block t) φ)
-  | CAss : forall {Γ τ γ φ} (t : tm Γ τ),
-    com Γ γ φ ->
+Inductive com : forall Γ, Env Γ -> list (block Γ) -> @ty [] -> Type :=
+  | CSkip : forall {Γ γ φ τ},
+    com Γ γ φ τ
+  | CInit : forall {Γ τ γ φ σ} (t : tm Γ τ),
+    com Γ γ φ σ ->
+    com (τ::Γ) (env_cons t γ) (map (lift_block t) φ) σ
+  | CAss : forall {Γ τ γ φ σ} (t : tm Γ τ),
+    com Γ γ φ σ ->
     τ ∈ Γ ->
-    com (τ::Γ) (env_cons t γ) (map (lift_block t) φ)
-  | CCall : forall {Γ f γ φ},
-    com Γ γ φ ->
+    com (τ::Γ) (env_cons t γ) (map (lift_block t) φ) σ
+  | CCall : forall {Γ f γ φ τ},
+    com Γ γ φ τ ->
     In f φ ->
-    com Γ (f γ) φ
-  | CBlock : forall {Γ Γ' φ} {γ : Env Γ}
+    com Γ (f γ) φ τ
+  | CBlock : forall {Γ Γ' φ τ} {γ : Env Γ}
     (f : Env Γ' -> Env Γ') (w : subctx Γ Γ'),
-    com Γ γ φ ->
-    com Γ γ (weaken w f::φ)
+    com Γ γ φ τ ->
+    com Γ γ (weaken w f::φ) τ
 .
-
 Notation "'SKIP'" :=
   CSkip.
 Notation "c ;; 'init' t" :=
@@ -75,3 +75,6 @@ Notation "c ;; 'call' f" :=
   (CCall c f) (at level 65, right associativity).
 Notation "c ;; w { f }" :=
   (CBlock f w c) (at level 65, right associativity).
+
+Equations transform Γ γ : com Γ γ [] Real -> tm Γ Real :=
+transform Γ γ c := const Γ 0.
