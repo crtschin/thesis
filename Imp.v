@@ -36,7 +36,7 @@ Equations lift_block {Γ τ} (t : tm Γ τ) :
   block Γ -> block (τ::Γ) :=
 lift_block t f (env_cons t γ) := env_cons t (f γ).
 
-Inductive subctx : Ctx -> Ctx -> Type :=
+Inductive subctx : TCtx -> TCtx -> Type :=
   | subctx_same : forall {Γ}, subctx Γ Γ
   | subctx_rem : forall {Γ Γ'} {τ : ty} {t: tm Γ τ},
     subctx Γ Γ' -> subctx (τ::Γ) Γ'.
@@ -46,7 +46,7 @@ Equations weaken {Γ Γ'}:
 weaken subctx_same b e := e;
 weaken (@subctx_rem Γ Γ' τ t s) b e := lift_block t (weaken s b) e.
 
-Inductive com : forall (Γ : Ctx), Env Γ -> list (block Γ) -> Type :=
+Inductive com : forall Γ, Env Γ -> list (block Γ) -> Type :=
   | CSkip : forall {Γ γ φ}, com Γ γ φ
   | CInit : forall {Γ τ γ φ} (t : tm Γ τ),
     com Γ γ φ ->

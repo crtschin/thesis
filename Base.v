@@ -10,20 +10,10 @@ Require Import Program.Equality.
 
 (*
 
-Questions about recursion/iteration
-  2 domain theory libraries: Benton and Dockins
-    Benton's does not compile due to some infinite loop when rewriting (auto does not end)?
-    Dockins' does not compile due to missing rewrite constraints
-  Realizability of recursion/iteration without domain theory
-  Alternative to domain theory for recursion?
-    Formalizing a syntactic relation based on operational semantics and extend with step-indexing?
+Does open types not correspond to polymorhism?
+So the terms would also have to be indexed by the kind of the type
+  instead of limiting the types to be closed.
 
-Our current logical relation is over the denotations of functions
-At some point a logical relation over the denotational semantics instead of the operational semantics will require something akin to cpos.
-Problem being that Coq does not have a user-friendly library for working with cpos.
-
-Questions about polymorphism
-  Question about possibly extending the proofs from stlc to system F.
 
 Notational conventions:
   capital greeks for typing environment

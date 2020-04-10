@@ -23,23 +23,23 @@ Local Open Scope R_scope.
 
 (* Functorial macro *)
 
-Fixpoint Dt τ : ty :=
+Fixpoint Dt {Δ : KCtx} (τ : @ty Δ) : @ty Δ :=
   match τ with
   | Real => Real × Real
-  | t1 × t2 => Dt t1 × Dt t2
-  | t1 → t2 => Dt t1 → Dt t2
-  | t1 <+> t2 => Dt t1 <+> Dt t2
+  | σ × ρ => Dt σ × Dt ρ
+  | σ → ρ => Dt σ → Dt ρ
+  | σ <+> ρ => Dt σ <+> Dt ρ
   end.
 
-Definition Dctx Γ : Ctx := map Dt Γ.
+Definition Dctx Δ Γ : TCtx := map (@Dt Δ) Γ.
 
-Fixpoint Dv {Γ τ} (v: τ ∈ Γ) : (Dt τ) ∈ (map Dt Γ) :=
+Fixpoint Dv {Δ Γ τ} (v: τ ∈ Γ) : (Dt τ) ∈ (Dctx Δ Γ) :=
   match v with
-  | Top Γ τ => Top (map Dt Γ) (Dt τ)
-  | Pop Γ τ σ t => Pop (map Dt Γ) (Dt τ) (Dt σ) (Dv t)
+  | Top Γ τ => Top (Dctx Δ Γ) (Dt τ)
+  | Pop Γ τ σ t => Pop (Dctx Δ Γ) (Dt τ) (Dt σ) (Dv t)
   end.
 
-Equations Dtm {Γ τ} (t : tm Γ τ) : tm (map Dt Γ) (Dt τ) :=
+Equations Dtm {Γ τ} (t : tm Γ τ) : tm (Dctx [] Γ) (Dt τ) :=
 Dtm (Γ:=Γ) (τ:=τ) (var Γ τ v) := var _ _ (Dv v);
 Dtm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) := app _ _ _ (Dtm t1) (Dtm t2);
 Dtm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm f);
@@ -63,21 +63,21 @@ Dtm (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm e).
 Denv (τ:=τ) env_nil => env_nil (Dt τ);
 Denv (τ:=τ) (env_cons Γ t G) => env_cons (Dt τ) (Dtm t) (Denv G). *)
 
-Fixpoint Denv {Γ} (G : Env Γ): Env (Dctx Γ) :=
+Fixpoint Denv {Γ} (G : Env Γ): Env (Dctx [] Γ) :=
   match G with
   | env_nil => env_nil
   | env_cons _ _ t G => env_cons (Dtm t) (Denv G)
   end.
 
 Definition Dsub (Γ Γ' : list ty) :=
-  forall τ, Var Γ τ -> tm (Dctx Γ') (Dt τ).
+  forall τ, Var Γ τ -> tm (Dctx [] Γ') (Dt τ).
 
 Definition Dren (Γ Γ' : list ty) :=
-  forall τ, Var Γ τ -> Var (Dctx Γ') (Dt τ).
+  forall τ, Var Γ τ -> Var (Dctx [] Γ') (Dt τ).
 
-Lemma Dt_lift_var : forall Γ τ, τ ∈ Γ -> (Dt τ) ∈ (map Dt Γ).
+Lemma Dt_lift_var : forall Δ Γ τ, τ ∈ Γ -> (Dt τ) ∈ (Dctx Δ Γ).
 Proof with eauto.
-  intros Γ τ H. induction H; constructor. assumption.
+  intros Δ Γ τ H. induction H; constructor. assumption.
 Qed.
 
 Lemma D_cons_sub: forall Γ τ σ (v: τ ∈ σ :: Γ) (s: tm Γ σ),
@@ -86,8 +86,8 @@ Proof with quick.
   dependent induction v...
 Qed.
 
-Equations Dsubstitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ)
-    : tm (Dctx Γ') (Dt τ) :=
+(* Equations Dsubstitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ)
+    : tm (Dctx [] Γ') (Dt τ) :=
 Dsubstitute (Γ:=Γ) (τ:=τ) s (var Γ τ v) := Dtm (s _ v);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (app Γ τ σ t1 t2) := app _ _ _ (Dsubstitute s t1) (Dsubstitute s t2);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (abs Γ τ σ f) := abs _ _ _ (Dsubstitute (substitute_lifted s) f);
@@ -105,7 +105,7 @@ Dsubstitute (Γ:=Γ) (τ:=τ) s (first Γ p) := first _ (Dsubstitute s p);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (second Γ p) := second _ (Dsubstitute s p);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (case Γ e c1 c2) := case _ (Dsubstitute s e) (Dsubstitute s c1) (Dsubstitute s c2);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (inl Γ _ _ e) := inl _ _ _ (Dsubstitute s e);
-Dsubstitute (Γ:=Γ) (τ:=τ) s (inr Γ _ _ e) := inr _ _ _ (Dsubstitute s e).
+Dsubstitute (Γ:=Γ) (τ:=τ) s (inr Γ _ _ e) := inr _ _ _ (Dsubstitute s e). *)
 
 (* Lemma D_rename_lifted : forall Γ Γ' τ σ
   (r : ren Γ Γ') (t : tm (σ::Γ) τ) ,

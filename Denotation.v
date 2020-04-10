@@ -131,7 +131,7 @@ with denote_datatype' (d : datatype) : Type :=
 where "⟦ τ ⟧ₜ" := (denote_t τ). *)
 
 Reserved Notation "⟦ τ ⟧ₜ".
-Fixpoint denote_t τ : Set :=
+Fixpoint denote_t (τ : @ty []) : Set :=
   match τ with
   | Real => R
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
@@ -141,7 +141,7 @@ Fixpoint denote_t τ : Set :=
 where "⟦ τ ⟧ₜ" := (denote_t τ).
 
 Reserved Notation "⟦ Γ ⟧ₜₓ".
-Fixpoint denote_ctx (Γ : Ctx) : Type :=
+Fixpoint denote_ctx (Γ : TCtx) : Type :=
   match Γ with
   | [] => unit
   | h :: t => ⟦h⟧ₜ * ⟦t⟧ₜₓ
@@ -253,7 +253,7 @@ Proof with quick.
 Qed.
 
 Lemma denote_ren_id : forall Γ,
-  denote_ren (@id_ren Γ) = Datatypes.id.
+  denote_ren (@id_ren [] Γ) = Datatypes.id.
 Proof with quick.
   intros. extensionality x.
   dependent induction Γ... destruct x...
@@ -278,7 +278,7 @@ Proof with eauto.
     (fun (ρ : ty) (x0 : ρ ∈ Γ) => Pop Γ ρ σ x0)).
   { apply functional_extensionality_dep... }
   rewrite <- H'. rewrite <- H.
-  fold (@id_ren Γ). rewrite denote_ren_commutes.
+  fold (@id_ren [] Γ). rewrite denote_ren_commutes.
   rewrite app_ren_id...
 Qed.
 
@@ -384,8 +384,8 @@ Proof with quick.
     constructor. }
 Qed.
 
-Program Fixpoint Ddenote_sub {Γ Γ'}
-  : sub Γ Γ' -> denote_ctx (Dctx Γ') -> denote_ctx (Dctx Γ) :=
+(* Program Fixpoint Ddenote_sub {Γ Γ'}
+  : sub Γ Γ' -> denote_ctx (Dctx [] Γ') -> denote_ctx (Dctx [] Γ) :=
   match Γ with
   | [] => fun s ctx => tt
   | h :: t => fun s ctx =>
@@ -394,7 +394,7 @@ Program Fixpoint Ddenote_sub {Γ Γ'}
 Notation "⟦ s ⟧ₛₛ" := (Ddenote_sub s).
 
 Program Fixpoint Ddenote_ren {Γ Γ'}
-  : ren Γ Γ' -> denote_ctx (Dctx Γ') -> denote_ctx (Dctx Γ) :=
+  : ren Γ Γ' -> denote_ctx (Dctx [] Γ') -> denote_ctx (Dctx [] Γ) :=
   match Γ with
   | [] => fun r ctx => tt
   | h :: t => fun r ctx =>
@@ -423,7 +423,7 @@ Proof with quick.
     apply functional_extensionality...
     rewrite <- IHt...
     rewrite <- Ddenote_ren_tl_lift... }
-Qed.
+Qed. *)
 
 (* Lemma Ddenote_shift : forall Γ τ σ (t : tm Γ τ) ctx,
     ⟦ Dtm (shift (σ:=σ) t) ⟧ₜₘ ctx = ⟦ Dtm t ⟧ₜₘ (snd ctx).

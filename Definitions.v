@@ -19,28 +19,28 @@ Open Scope R_scope.
     - From Mathematics to Abstract Machine by Swierstra, et al.
     - Strongly Typed Term Representations in Coq by Benton, et al.
  *)
-Definition Ctx {x} : Type := list x.
+Definition Ctx x : Type := list x.
+Definition KCtx := @Ctx unit.
+Inductive Var {T : Type} : list T -> T -> Type :=
+  | Top : forall Γ τ, Var (τ::Γ) τ
+  | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ
+.
+Notation "x ∈ Γ" := (Var Γ x) (at level 75).
+Derive Signature for Var.
 
-Inductive ty : Type :=
+Inductive ty {Δ : KCtx}: Type :=
   | Real : ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
   | Sum  : ty -> ty -> ty
 .
+Definition TCtx {Δ : KCtx}:= @Ctx (@ty Δ).
 
 Notation "A × B" := (Prod A B) (left associativity, at level 90).
 Notation "A <+> B" := (Sum A B) (left associativity, at level 90).
 Notation "A → B" := (Arrow A B) (right associativity, at level 20).
 
-Inductive Var {T : Type} : list T -> T -> Type :=
-  | Top : forall Γ τ, Var (τ::Γ) τ
-  | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ
-.
-Derive Signature for Var.
-
-Notation "x ∈ Γ" := (Var Γ x) (at level 75).
-
-Inductive tm (Γ : Ctx) : ty -> Type :=
+Inductive tm (Γ : TCtx) : @ty [] -> Type :=
   (* Base STLC *)
   | var : forall τ,
     τ ∈ Γ -> tm Γ τ
@@ -72,7 +72,7 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | inr : forall τ σ, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
-Inductive Env : Ctx -> Type :=
+Inductive Env : TCtx -> Type :=
   | env_nil : Env []
   | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
 .
@@ -125,12 +125,12 @@ Definition neuron :=
     with an expression with the same type typed in a different context.
     Effectively 'using up' one of the variables in the context.
 *)
-Definition gren (f : ty -> ty) Γ Γ'  :=
+(* Definition gren (f : ty -> ty) Γ Γ'  :=
   forall τ, Var (map f Γ) (f τ) -> Var (map f Γ') (f τ).
 Definition gsub (f : ty -> ty) Γ Γ' :=
-  forall τ, Var (map f Γ) (f τ) -> tm (map f Γ') (f τ).
+  forall τ, Var (map f Γ) (f τ) -> tm (map f Γ') (f τ). *)
 
-Definition ren (Γ Γ' : list ty) :=
+Definition ren {Δ} (Γ Γ' : list (@ty Δ)) :=
   (* gren Datatypes.id Γ Γ'. *)
   forall τ, Var Γ τ -> Var Γ' τ.
 Definition sub (Γ Γ' : list ty) :=
@@ -152,13 +152,13 @@ Definition hd_sub {Γ Γ' τ} (s : sub (τ::Γ) Γ') : tm Γ' τ := s τ (Top Γ
 Definition tl_sub {Γ Γ' τ} (s : sub (τ::Γ) Γ') : sub Γ Γ'
   := fun σ x => s σ (Pop Γ σ τ x).
 
-Definition id_ren {Γ} : ren Γ Γ := fun _ x => x.
+Definition id_ren {Δ Γ} : @ren Δ Γ Γ := fun _ x => x.
 Definition hd_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : tm Γ' τ := var Γ' τ (r τ (Top Γ τ)).
-Definition tl_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : ren Γ Γ'
+Definition tl_ren {Δ Γ Γ' τ} (r : @ren Δ (τ::Γ) Γ') : ren Γ Γ'
   := fun σ x => r σ (Pop Γ σ τ x).
 
-Equations rename_lifted {Γ Γ' τ} (r : ren Γ Γ')
-  : ren (τ::Γ) (τ::Γ') :=
+Equations rename_lifted {Δ Γ Γ' τ} (r : ren Γ Γ')
+  : @ren Δ (τ::Γ) (τ::Γ') :=
 rename_lifted r τ (Top Γ τ) => Top Γ' τ;
 rename_lifted r τ (Pop Γ τ σ v) => Pop Γ' τ σ (r τ v).
 
@@ -253,7 +253,7 @@ Lemma app_sub_id : forall Γ τ (t : tm Γ τ),
 Proof. induction t; Rewrites lift_sub_id. Qed.
 
 Lemma lift_ren_id : forall Γ τ,
-  rename_lifted (@id_ren Γ) = @id_ren (τ::Γ).
+  rename_lifted (@id_ren [] Γ) = @id_ren [] (τ::Γ).
 Proof. intros. ExtVar. Qed.
 
 Lemma app_ren_id : forall Γ τ (t : tm Γ τ),
@@ -261,16 +261,16 @@ Lemma app_ren_id : forall Γ τ (t : tm Γ τ),
 Proof. induction t; Rewrites lift_ren_id. Qed.
 
 (* Composing substitutions and renames *)
-Definition compose_ren_ren {Γ Γ' Γ''} (r : ren Γ' Γ'') (r' : ren Γ Γ')
-  : ren Γ Γ'' := (fun t v => r t (r' t v)).
-Definition compose_sub_ren {Γ Γ' Γ''} (s : sub Γ' Γ'') (r : ren Γ Γ')
+Definition compose_ren_ren {Δ Γ Γ' Γ''} (r : @ren Δ Γ' Γ'') (r' : @ren Δ Γ Γ')
+  : @ren Δ Γ Γ'' := (fun t v => r t (r' t v)).
+Definition compose_sub_ren {Γ Γ' Γ''} (s : sub Γ' Γ'') (r : @ren [] Γ Γ')
   : sub Γ Γ'' := (fun t v => s t (r t v)).
-Definition compose_ren_sub {Γ Γ' Γ''} (r : ren Γ' Γ'') (s : sub Γ Γ')
+Definition compose_ren_sub {Γ Γ' Γ''} (r : @ren [] Γ' Γ'') (s : sub Γ Γ')
   : sub Γ Γ'' := (fun t v => rename r (s t v)).
 Definition compose_sub_sub {Γ Γ' Γ''} (s : sub Γ' Γ'') (s' : sub Γ Γ')
   : sub Γ Γ'' := (fun t v => substitute s (s' t v)).
 
-Lemma lift_ren_ren : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (r' : ren Γ Γ'),
+Lemma lift_ren_ren : forall Δ Γ Γ' Γ'' τ (r : @ren Δ Γ' Γ'') (r' : @ren Δ Γ Γ'),
   rename_lifted (τ:=τ) (compose_ren_ren r r') =
     compose_ren_ren (rename_lifted r) (rename_lifted r').
 Proof. intros. ExtVar. Qed.

@@ -55,15 +55,19 @@ S (σ <+> ρ) f g :=
       f = Datatypes.inr ∘ g1 /\
       g = Datatypes.inr ∘ g2).
 
+Next Obligation.
+  induction τ; simp S...
+Defined.
+
 Inductive instantiation : forall Γ,
-    (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx Γ ⟧ₜₓ) -> Prop :=
+    (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx [] Γ ⟧ₜₓ) -> Prop :=
   | inst_empty :
       instantiation [] (Basics.const tt) (Basics.const tt)
   | inst_cons :
       forall Γ τ,
       forall g1 g2,
       forall (sb: R -> ⟦ Γ ⟧ₜₓ),
-      forall (Dsb: R -> ⟦ Dctx Γ ⟧ₜₓ),
+      forall (Dsb: R -> ⟦ Dctx [] Γ ⟧ₜₓ),
         instantiation Γ sb Dsb ->
         S τ g1 g2 ->
         instantiation (τ::Γ)
@@ -87,7 +91,7 @@ Lemma fundamental :
   forall Γ τ,
   forall (t : tm Γ τ),
   forall (sb : R -> ⟦ Γ ⟧ₜₓ),
-  forall (Dsb : R -> ⟦ Dctx Γ ⟧ₜₓ),
+  forall (Dsb : R -> ⟦ Dctx [] Γ ⟧ₜₓ),
   instantiation Γ sb Dsb ->
   S τ (fun x => ⟦t⟧ₜₘ (sb x))
     (fun x => ⟦Dtm (t)⟧ₜₘ (Dsb x)).
@@ -196,7 +200,7 @@ Qed.
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real),
   forall (f1 : R -> ⟦ Γ ⟧ₜₓ),
-  forall  (f2 : R -> ⟦ Dctx Γ ⟧ₜₓ),
+  forall  (f2 : R -> ⟦ Dctx [] Γ ⟧ₜₓ),
   S Real (fun r => ⟦ t ⟧ₜₘ (f1 r))
     (fun r => ⟦ Dtm t ⟧ₜₘ (f2 r)) ->
   (forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x) /\
@@ -211,12 +215,12 @@ Qed.
 gen O r := tt;
 gen (Datatypes.S n) r := (r, gen n r).
 
-Equations Dgen (n : nat) : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ :=
+Equations Dgen (n : nat) : R -> ⟦ Dctx [] (repeat Real n) ⟧ₜₓ :=
 Dgen O r := tt;
 Dgen (Datatypes.S n) r := ((r, 1), Dgen n r). *)
 
 Equations D n
-  (f : R -> ⟦ repeat Real n ⟧ₜₓ): R -> ⟦ map Dt (repeat Real n) ⟧ₜₓ :=
+  (f : R -> ⟦ repeat Real n ⟧ₜₓ): R -> ⟦ Dctx [] (repeat Real n) ⟧ₜₓ :=
 D 0 f r := f r;
 D (Datatypes.S n) f r :=
   (((fst ∘ f) r, Derive (fst ∘ f) r), D n (snd ∘ f) r).
