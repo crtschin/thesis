@@ -20,6 +20,7 @@ Require Import AD.Definitions.
 Require Import AD.Tactics.
 
 Local Open Scope type_scope.
+Local Open Scope list_scope.
 
 
 (*
@@ -56,29 +57,36 @@ weaken_tm subctx_same t := t;
 weaken_tm (@subctx_rem Γ Γ' σ r s) t := shift (weaken_tm s t). *)
 
 Definition State Γ := (Env Γ * list (block Γ)).
-Inductive com : forall (Γ Γ': Ctx),
+Fail Inductive com : forall (Γ Γ': Ctx),
   State Γ -> State Γ' -> ty -> Type :=
   | CReturn : forall {Γ γ φ τ},
     tm Γ τ ->
     com Γ Γ (γ, φ) (γ, φ) τ
-  | CInit : forall {Γ Γ' τ σ γ γ' φ φ'} (t : tm Γ' σ),
+  | CSeq : forall {Γ Γ' Γ'' τ σ γ γ' γ'' φ φ' φ''},
     com Γ Γ' (γ, φ) (γ', φ') τ ->
-    com Γ (σ::Γ') (γ, φ) ((env_cons t γ'), (map (lift_block t) φ')) τ
-  | CCall : forall {Γ Γ' τ f γ γ' φ φ'},
-    com Γ Γ' (γ, φ) (γ', φ') τ ->
-    In f φ' ->
-    com Γ Γ' (γ, φ) ((f γ'), φ') τ
+    com Γ' Γ'' (γ', φ') (γ'', φ'') σ ->
+    com Γ Γ'' (γ, φ) (γ'', φ'') σ
+  | CInit : forall {Γ τ σ γ φ} (t : tm Γ σ),
+    com Γ (σ::Γ) (γ, φ) ((env_cons t γ), (map (lift_block t) φ)) τ
+  | CCall : forall {Γ τ f γ φ},
+    In f φ ->
+    com Γ Γ (γ, φ) (f γ, φ) τ
   | CBlock : forall {Γ Γ' τ γ γ' φ φ'}
-    (f : Env Γ' -> Env Γ'),
-    com Γ Γ' (γ, φ) (γ', φ') τ ->
-    com Γ Γ' (γ, φ) (γ', f::φ') τ
-.
+    (c : com Γ Γ' (γ, φ) (γ', φ') τ),
+    com Γ Γ (γ, φ) (γ, compile c::φ) τ.
 
 Notation "'RETURN' t" :=
-   (CReturn t) (at level 65).
-Notation "c ;; 'init' t" :=
-  (CInit t c) (at level 65, right associativity).
-Notation "c ;; 'call' f" :=
-  (CCall c f) (at level 65, right associativity).
-Notation "c ;; w { f }" :=
-  (CBlock f w c) (at level 65, right associativity).
+  (CReturn t) (at level 65).
+Notation "'init' t" :=
+  (@CInit _ Real _ _ _ t) (at level 40, left associativity).
+Notation "c ;; c'" :=
+  (CSeq c c') (at level 65, right associativity).
+Notation "'call' f" :=
+  (CCall f) (at level 40, left associativity).
+Notation "'block' { f }" :=
+  (CBlock f) (at level 40, left associativity).
+
+Definition com_add_ex :=
+  @CInit [] Real Real env_nil [] (const [] 1) ;;
+  init (const _ 2) ;;
+  RETURN (add _ (var _ _ (Top _ Real)) (var _ _ (Pop _ _ _ (Top _ Real)))).
