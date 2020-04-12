@@ -1,4 +1,5 @@
 \documentclass[12pt, final]{article}
+\usepackage{mathpartir}
 \usepackage{stmaryrd}
 \usepackage{mathtools}
 \usepackage{array,booktabs,ragged2e}
@@ -34,6 +35,8 @@
 \RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}
 \renewcommand{\figurename}{Listing}
 \setminted[coq]{escapeinside=~~,mathescape}
+\newcommand{\br}[1]{\langle #1 \rangle}
+\def\Yields{\Downarrow}
 
 \addbibresource{references.bib}
 \setlength{\headheight}{15pt}
@@ -247,6 +250,23 @@ Due to its usefulness in proving propositions over functions, we will make use o
 \subsubsection{Language representation}
 \label{sec:language_repr}
 
+\begin{figure}
+  \begin{mathpar}
+    \inferrule*[Right=\textsc{TVar}]
+      {elem\ n\ \Gamma = \tau}
+      {\Gamma \vdash var\ n : \tau} \and
+    \inferrule*[Right=\textsc{TAbs}]
+      {(\sigma, \Gamma) \vdash t : \tau}
+      {\Gamma \vdash t : \sigma \rightarrow \tau} \\ \and
+    \inferrule*[Right=\textsc{TApp}]
+      {\Gamma \vdash t1 : \sigma \rightarrow \tau \\
+        \Gamma \vdash t2 : \sigma}
+      {\Gamma \vdash t1\ t2 : \tau}
+  \end{mathpar}
+  \label{fig:stlc_infer}
+  \caption{Type-inferrence rules for a simply typed lambda calculus using de-bruijn indices}
+\end{figure}
+
 When defining a simply typed lambda calculus, there are two main possibilities\cite{plfa2019}.
 The arguably simpler variant, known as an extrinsic representation, is traditionally the one introduced to new students learning \<Coq>.
 In the extensional representation, the terms themselves are untyped and typing judgments are defined separately as relations between the types and terms. A basic example of working with this is given in \cite{Pierce:SF2}. This, however, required many additional lemmas and machinery to be proved.
@@ -348,7 +368,7 @@ Due to the intrinsic typeful representation this paper uses, much of this was in
 \begin{listing}
   \begin{minted}{coq}
   Equations hd {A n} (ls : ilist A n) (pf : n <> 0%nat) : A :=
-  hd nil pf with pf eq_refl := { | x :=! x };
+  hd nil pf with pf eq_refl := {};
   hd (cons h n) _ := h.
   \end{minted}
   \caption{Definition of hd using \<Equations>}
