@@ -201,6 +201,7 @@ Qed.
 
 Equations Rel {Γ} τ (t : tm Γ τ): Prop :=
 Rel Real t := halts t;
+Rel (TVar Δ κ) t := halts t;
 Rel (τ1 × τ2) t :=
   halts t /\ (exists (r : tm Γ τ1) (s : tm Γ τ2),
     t -->* tuple Γ r s /\
@@ -277,6 +278,7 @@ Proof with quick.
   generalize dependent Γ.
   dependent induction τ; simp Rel in *...
   { apply (step_preserves_halting t t' H0)... }
+  { apply (step_preserves_halting t t' H0)... }
   { split; destruct H...
     { eapply (step_preserves_halting t t')... }
     { pose proof (H1 s H2).
@@ -322,6 +324,8 @@ Proof with quick.
   intros Γ τ.
   generalize dependent Γ.
   dependent induction τ...
+  { simp Rel in *.
+    rewrite step_preserves_halting... }
   { simp Rel in *.
     rewrite step_preserves_halting... }
   { simp Rel in *.

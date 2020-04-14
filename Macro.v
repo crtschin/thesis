@@ -26,6 +26,7 @@ Local Open Scope R_scope.
 Fixpoint Dt {Δ : KCtx} (τ : @ty Δ) : @ty Δ :=
   match τ with
   | Real => Real × Real
+  | TVar Δ κ => TVar Δ κ × TVar Δ κ
   | σ × ρ => Dt σ × Dt ρ
   | σ → ρ => Dt σ → Dt ρ
   | σ <+> ρ => Dt σ <+> Dt ρ

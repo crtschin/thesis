@@ -134,6 +134,7 @@ Reserved Notation "⟦ τ ⟧ₜ".
 Fixpoint denote_t (τ : @ty []) : Set :=
   match τ with
   | Real => R
+  | TVar Δ κ => R
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
   | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ

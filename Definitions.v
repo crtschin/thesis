@@ -30,6 +30,7 @@ Derive Signature for Var.
 
 Inductive ty {Δ : KCtx}: Type :=
   | Real : ty
+  | TVar : forall κ, κ ∈ Δ -> ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
   | Sum  : ty -> ty -> ty
