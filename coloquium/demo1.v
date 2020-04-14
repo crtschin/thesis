@@ -4,6 +4,7 @@ Inductive bool :=
   | false : bool
   | true : bool.
 Check bool.
+
 Inductive nat :=
   | O : nat
   | S : nat -> nat.
@@ -19,6 +20,7 @@ Qed.
 Variable (x : nat).
 Check (O <> S x).
 Check (O <> O).
+Reset x.
 
 Lemma O_refl_f : O <> O.
 Proof.
@@ -26,8 +28,11 @@ Proof.
   intros H.
 Abort.
 
-Definition succ (n : nat) : nat :=
-  S n.
+Fixpoint times_two (n : nat) : nat :=
+  match n with
+  | O => O
+  | S n => S (S (times_two n))
+  end.
 
 Definition pred1 (n : nat) :=
   match n return
@@ -47,10 +52,22 @@ Proof.
   - apply n.
 Defined.
 Check pred2.
-Print pred2.
 
 Require Import Equations.Equations.
 
 Equations pred (n : nat) (pf : n <> O): nat :=
 pred O pf with pf eq_refl := {};
 pred (S n) pf := n.
+
+(* Require Import Datatypes.
+Require Import Coq.micromega.Lia.
+
+Inductive ilist (A : Type): nat -> Type :=
+  | ilist_nil : ilist A 0
+  | ilist_cons : forall (a : A) (n : nat), ilist A n -> ilist A (S n)
+.
+
+Definition idx A (n m: nat) (l : ilist A m) : (n < m) -> A.
+  intros H.
+  destruct n; destruct l; try lia; assumption.
+Qed. *)

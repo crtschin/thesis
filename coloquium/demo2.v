@@ -48,12 +48,12 @@ End extrinsic.
 
 Section intrinsic.
   (* Intrinsic strongly-typed formulation *)
-  Inductive Var : Ctx -> ty -> Type :=
+  Inductive Var : Ctx -> ty -> Set :=
     | Top : forall Γ τ, Var (τ::Γ) τ
     | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ.
   Notation "x ∈ Γ" := (Var Γ x) (at level 75).
 
-  Inductive tm : Ctx -> ty -> Type :=
+  Inductive tm : Ctx -> ty -> Set :=
     | var : forall Γ τ,
       τ ∈ Γ -> tm Γ τ
     | app : forall Γ τ σ,
