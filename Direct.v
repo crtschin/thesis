@@ -35,6 +35,7 @@ S Real f g :=
   (forall (x : R), ex_derive f x) /\
   (fun r => g r) =
     (fun r => (f r, Derive f r));
+S (Array n τ) f g := True;
 S (σ × ρ) f g :=
   exists f1 f2 g1 g2,
   exists (s1 : S σ f1 f2) (s2 : S ρ g1 g2),

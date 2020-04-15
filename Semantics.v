@@ -51,7 +51,7 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ)
   match t with
   | var σ v => denote_v v
 
-  | const r => constant_smooth (r : carrier R_diffeology)
+  | rval r => constant_smooth (r : carrier R_diffeology)
   | add t1 t2 =>
       uncurry add_smooth ∘d product_smooth (denote_tm t1) (denote_tm t2)
 

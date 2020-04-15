@@ -16,9 +16,9 @@ Import EqNotations.
 
 Require Import AD.Definitions.
 Require Import AD.Macro.
-Require Import AD.DepList.
+(* Require AD.DepList. *)
 Require Import AD.Tactics.
-Require Import AD.Normalization.
+(* Require Import AD.Normalization. *)
 
 Local Open Scope program_scope.
 
@@ -42,7 +42,7 @@ Local Open Scope program_scope.
 Agda-style generics
 *)
 
-Inductive Functor : Type :=
+(* Inductive Functor : Type :=
   | Id : Functor
   | K : Set -> Functor
   | Fprod : Functor -> Functor -> Functor
@@ -55,7 +55,7 @@ Fixpoint denote_functor (f : Functor): Set -> Set :=
   | Fprod a b => prod (denote_functor a s) (denote_functor b s)
   | Fadd a b => sum (denote_functor a s) (denote_functor b s)
   end.
-Notation "⟦ f ⟧₋" := (denote_functor f).
+Notation "⟦ f ⟧₋" := (denote_functor f). *)
 
 (* Inductive Fixed F : Set :=
   | unfix : ⟦ F ⟧₋ (Fixed F) -> Fixed F
@@ -65,7 +65,7 @@ Notation "⟦ f ⟧₋" := (denote_functor f).
   CPDT-style universe types
 *)
 
-Record constructor : Type := Con {
+(* Record constructor : Type := Con {
   nonrecursive : Type;
   recursive : nat;
 }.
@@ -113,7 +113,7 @@ Definition sum_den (A : Type) (B : Type) : denote_datatype
   [a, r ~> Datatypes.inl a] ::: [a, r ~> Datatypes.inr a] ::: HNil.
 
 Definition fix_denote (T : Type) (dt : datatype) :=
-  forall (R : Type), denote_datatype R dt -> (T -> R).
+  forall (R : Type), denote_datatype R dt -> (T -> R). *)
 
 (* Reserved Notation "⟦ τ ⟧ₜ".
 Fixpoint denote_t τ : datatype :=
@@ -130,10 +130,17 @@ with denote_datatype' (d : datatype) : Type :=
   end
 where "⟦ τ ⟧ₜ" := (denote_t τ). *)
 
+Fixpoint denote_array_list n (s : Set) : Set :=
+  match n with
+  | O => unit
+  | S n => s * denote_array_list n s
+  end.
+
 Reserved Notation "⟦ τ ⟧ₜ".
 Fixpoint denote_t τ : Set :=
   match τ with
   | Real => R
+  | Array n τ => denote_array_list n ⟦ τ ⟧ₜ
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
   | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ
@@ -155,20 +162,38 @@ Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
   end.
 Notation "⟦ v ⟧ᵥ" := (denote_v v).
 
+Equations denote_idx {s : Set} {n}
+  (i : Fin.t n) : denote_array_list n s -> s :=
+denote_idx (@F1 n)    ar => fst ar;
+denote_idx (@FS n i') ar => denote_idx i' (snd ar).
+
 Reserved Notation "⟦ t ⟧ₜₘ".
 Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
   match t with
+  (* Base STLC *)
   | var σ v => fun ctx => denote_v v ctx
   | app σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx)
   | abs σ ρ f => fun ctx => fun x => ⟦ f ⟧ₜₘ (x, ctx)
 
-  | const r => fun ctx => r
+  (* STLC extra *)
+  (* Non-recursive let-bindings *)
+  | letn σ ρ t b => fun ctx => ⟦ b ⟧ₜₘ (⟦ t ⟧ₜₘ ctx, ctx)
+
+  (* Arrays *)
+  | build_nil σ => fun ctx => tt
+  | build_cons σ n t ta => fun ctx => (⟦ t ⟧ₜₘ ctx, ⟦ ta ⟧ₜₘ ctx)
+  | get σ n i t => fun ctx => denote_idx i (⟦ t ⟧ₜₘ ctx)
+
+  (* Reals *)
+  | rval r => fun ctx => r
   | add t1 t2 => fun ctx => ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx
 
+  (* Products *)
   | tuple σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx)
   | first σ ρ t => fun ctx => fst (⟦t⟧ₜₘ ctx)
   | second σ ρ t => fun ctx => snd (⟦t⟧ₜₘ ctx)
 
+  (* Sums *)
   | case τ σ ρ e c1 c2 => fun ctx =>
     match (⟦e⟧ₜₘ ctx) with
     | Datatypes.inl x => (⟦c1⟧ₜₘ ctx) x
@@ -220,7 +245,7 @@ Proof with quick.
   simp denote_env...
 Qed. *)
 
-Lemma denote_ren_tl_lift : forall Γ Γ' τ
+Lemma denote_ren_elim : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
   denote_ren r ctx = denote_ren (tl_ren (rename_lifted r)) (x, ctx).
 Proof with eauto.
@@ -240,7 +265,10 @@ Proof with quick.
     simpl in IHt. simp rename_lifted in IHt.
     apply functional_extensionality...
     rewrite <- IHt...
-    rewrite <- denote_ren_tl_lift... }
+    rewrite <- denote_ren_elim... }
+  { specialize IHt1 with Γ' r ctx.
+    specialize IHt2 with (σ::Γ') (rename_lifted r) (⟦ rename r t1 ⟧ₜₘ ctx, ctx).
+    erewrite denote_ren_elim... }
 Qed.
 
 Lemma denote_ren_shift : forall Γ Γ' τ (r:ren Γ Γ'),
@@ -268,7 +296,7 @@ Lemma denote_shift : forall Γ τ σ (t : tm Γ τ) ctx,
 Proof with eauto.
   unfold shift. intros.
   rewrite <- denote_ren_commutes...
-  pose proof denote_ren_tl_lift as H.
+  pose proof denote_ren_elim as H.
   destruct ctx as [x ctx].
   specialize H with Γ Γ σ (fun t x => x) x ctx.
   unfold tl_ren in H.
@@ -304,6 +332,10 @@ Proof with quick.
   { specialize IHt with (s:=substitute_lifted s)...
     apply functional_extensionality...
     rewrite <- IHt...
+    erewrite denote_sub_elim... }
+  { specialize IHt1 with Γ' s ctx.
+    specialize IHt2 with (σ::Γ') (substitute_lifted s)
+      (⟦ substitute s t1 ⟧ₜₘ ctx, ctx).
     erewrite denote_sub_elim... }
 Qed.
 
@@ -368,7 +400,7 @@ Proof with quick.
   fold (@id_sub Γ)...
 Qed.
 
-Theorem soundness : forall τ (t t' : tm [] τ),
+(* Theorem soundness : forall τ (t t' : tm [] τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
 Proof with quick.
   intros.
@@ -382,9 +414,9 @@ Proof with quick.
     destruct ctx... }
   { erewrite <- (IHstep t2 t2' t2')...
     constructor. }
-Qed.
+Qed. *)
 
-Program Fixpoint Ddenote_sub {Γ Γ'}
+(* Program Fixpoint Ddenote_sub {Γ Γ'}
   : sub Γ Γ' -> denote_ctx (Dctx Γ') -> denote_ctx (Dctx Γ) :=
   match Γ with
   | [] => fun s ctx => tt
@@ -402,7 +434,7 @@ Program Fixpoint Ddenote_ren {Γ Γ'}
   end.
 Notation "⟦ r ⟧ᵣ" := (denote_ren r).
 
-Lemma Ddenote_ren_tl_lift : forall Γ Γ' τ
+Lemma Ddenote_ren_elim : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ Dt τ ⟧ₜ) (ctx : ⟦ Dctx Γ' ⟧ₜₓ),
   Ddenote_ren r ctx = Ddenote_ren (tl_ren (rename_lifted r)) (x, ctx).
 Proof with eauto.
@@ -422,15 +454,15 @@ Proof with quick.
     simpl in IHt. simp rename_lifted in IHt.
     apply functional_extensionality...
     rewrite <- IHt...
-    rewrite <- Ddenote_ren_tl_lift... }
-Qed.
+    rewrite <- Ddenote_ren_elim... }
+Qed. *)
 
 (* Lemma Ddenote_shift : forall Γ τ σ (t : tm Γ τ) ctx,
     ⟦ Dtm (shift (σ:=σ) t) ⟧ₜₘ ctx = ⟦ Dtm t ⟧ₜₘ (snd ctx).
 Proof with quick.
   unfold shift. intros.
   rewrite <- Ddenote_ren_commutes...
-  pose proof Ddenote_ren_tl_lift as H.
+  pose proof Ddenote_ren_elim as H.
   destruct ctx as [x ctx]...
   specialize H with Γ Γ σ id_ren x ctx.
   rewrite lift_ren_id in *.

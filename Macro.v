@@ -14,6 +14,7 @@ Require Import Coquelicot.Hierarchy.
 Require Import Equations.Equations.
 Import EqNotations.
 
+From CoLoR Require Import Vector.VecUtil.
 From Equations Require Import Equations.
 From AD Require Import Definitions.
 From AD Require Import Tactics.
@@ -26,6 +27,7 @@ Local Open Scope R_scope.
 Fixpoint Dt τ : ty :=
   match τ with
   | Real => Real × Real
+  | Array n t => Array n (Dt t)
   | t1 × t2 => Dt t1 × Dt t2
   | t1 → t2 => Dt t1 → Dt t2
   | t1 <+> t2 => Dt t1 <+> Dt t2
@@ -39,11 +41,20 @@ Fixpoint Dv {Γ τ} (v: τ ∈ Γ) : (Dt τ) ∈ (map Dt Γ) :=
   | Pop Γ τ σ t => Pop (map Dt Γ) (Dt τ) (Dt σ) (Dv t)
   end.
 
-Equations Dtm {Γ τ} (t : tm Γ τ) : tm (map Dt Γ) (Dt τ) :=
+Equations Dtm {Γ τ} : tm Γ τ -> tm (map Dt Γ) (Dt τ) :=
+(* STLC *)
 Dtm (Γ:=Γ) (τ:=τ) (var Γ τ v) := var _ _ (Dv v);
 Dtm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) := app _ _ _ (Dtm t1) (Dtm t2);
 Dtm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm f);
-Dtm (Γ:=Γ) (τ:=τ) (const Γ r) := tuple _ (const _ r) (const _ 0);
+(* STLC extra *)
+Dtm (Γ:=Γ) (τ:=τ) (letn Γ τ σ t b) := letn _ _ _ (Dtm t) (Dtm b);
+(* Arrays *)
+Dtm (Γ:=Γ) (τ:=τ) (build_nil Γ τ) => build_nil _ _;
+Dtm (Γ:=Γ) (τ:=τ) (build_cons Γ τ n t ta) =>
+  build_cons _ _ _ (Dtm t) (Dtm ta);
+Dtm (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm ta);
+(* Reals *)
+Dtm (Γ:=Γ) (τ:=τ) (rval Γ r) := tuple _ (rval _ r) (rval _ 0);
 Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm t1 := {
   Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 with Dtm t2 := {
     Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 d2 :=
@@ -52,9 +63,11 @@ Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm t1 := {
         (add _ (second _ d1) (second _ d2))
   }
 };
+(* Products *)
 Dtm (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) := tuple _ (Dtm t1) (Dtm t2);
 Dtm (Γ:=Γ) (τ:=τ) (first Γ p) := first _ (Dtm p);
 Dtm (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm p);
+(* Sums *)
 Dtm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm e) (Dtm c1) (Dtm c2);
 Dtm (Γ:=Γ) (τ:=τ) (inl Γ _ _ e) := inl _ _ _ (Dtm e);
 Dtm (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm e).
@@ -86,12 +99,12 @@ Proof with quick.
   dependent induction v...
 Qed.
 
-Equations Dsubstitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ)
+(* Equations Dsubstitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ)
     : tm (Dctx Γ') (Dt τ) :=
 Dsubstitute (Γ:=Γ) (τ:=τ) s (var Γ τ v) := Dtm (s _ v);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (app Γ τ σ t1 t2) := app _ _ _ (Dsubstitute s t1) (Dsubstitute s t2);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (abs Γ τ σ f) := abs _ _ _ (Dsubstitute (substitute_lifted s) f);
-Dsubstitute (Γ:=Γ) (τ:=τ) s (const Γ r) := tuple _ (const _ r) (const _ 0);
+Dsubstitute (Γ:=Γ) (τ:=τ) s (rval Γ r) := tuple _ (rval _ r) (rval _ 0);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (add Γ t1 t2) with Dsubstitute s t1 := {
   Dsubstitute (Γ:=Γ) (τ:=τ) s (add Γ t1 t2) d1 with Dsubstitute s t2 := {
     Dsubstitute (Γ:=Γ) (τ:=τ) s (add Γ t1 t2) d1 d2 :=
@@ -105,7 +118,7 @@ Dsubstitute (Γ:=Γ) (τ:=τ) s (first Γ p) := first _ (Dsubstitute s p);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (second Γ p) := second _ (Dsubstitute s p);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (case Γ e c1 c2) := case _ (Dsubstitute s e) (Dsubstitute s c1) (Dsubstitute s c2);
 Dsubstitute (Γ:=Γ) (τ:=τ) s (inl Γ _ _ e) := inl _ _ _ (Dsubstitute s e);
-Dsubstitute (Γ:=Γ) (τ:=τ) s (inr Γ _ _ e) := inr _ _ _ (Dsubstitute s e).
+Dsubstitute (Γ:=Γ) (τ:=τ) s (inr Γ _ _ e) := inr _ _ _ (Dsubstitute s e). *)
 
 (* Lemma D_rename_lifted : forall Γ Γ' τ σ
   (r : ren Γ Γ') (t : tm (σ::Γ) τ) ,

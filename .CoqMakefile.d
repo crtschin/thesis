@@ -10,9 +10,9 @@ CpdtTactics.vos CpdtTactics.vok CpdtTactics.required_vos: CpdtTactics.v
 Definitions.vo Definitions.glob Definitions.v.beautified Definitions.required_vo: Definitions.v Tactics.vo
 Definitions.vio: Definitions.v Tactics.vio
 Definitions.vos Definitions.vok Definitions.required_vos: Definitions.v Tactics.vos
-Denotation.vo Denotation.glob Denotation.v.beautified Denotation.required_vo: Denotation.v Definitions.vo Macro.vo DepList.vo Tactics.vo Normalization.vo
-Denotation.vio: Denotation.v Definitions.vio Macro.vio DepList.vio Tactics.vio Normalization.vio
-Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v Definitions.vos Macro.vos DepList.vos Tactics.vos Normalization.vos
+Denotation.vo Denotation.glob Denotation.v.beautified Denotation.required_vo: Denotation.v Definitions.vo Macro.vo Tactics.vo
+Denotation.vio: Denotation.v Definitions.vio Macro.vio Tactics.vio
+Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v Definitions.vos Macro.vos Tactics.vos
 DepList.vo DepList.glob DepList.v.beautified DepList.required_vo: DepList.v CpdtTactics.vo
 DepList.vio: DepList.v CpdtTactics.vio
 DepList.vos DepList.vok DepList.required_vos: DepList.v CpdtTactics.vos
@@ -25,9 +25,9 @@ Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Ta
 Domain.vo Domain.glob Domain.v.beautified Domain.required_vo: Domain.v 
 Domain.vio: Domain.v 
 Domain.vos Domain.vok Domain.required_vos: Domain.v 
-Imp.vo Imp.glob Imp.v.beautified Imp.required_vo: Imp.v Definitions.vo Tactics.vo
-Imp.vio: Imp.v Definitions.vio Tactics.vio
-Imp.vos Imp.vok Imp.required_vos: Imp.v Definitions.vos Tactics.vos
+Imp.vo Imp.glob Imp.v.beautified Imp.required_vo: Imp.v Definitions.vo Normalization.vo Tactics.vo
+Imp.vio: Imp.v Definitions.vio Normalization.vio Tactics.vio
+Imp.vos Imp.vok Imp.required_vos: Imp.v Definitions.vos Normalization.vos Tactics.vos
 Macro.vo Macro.glob Macro.v.beautified Macro.required_vo: Macro.v Definitions.vo Tactics.vo
 Macro.vio: Macro.v Definitions.vio Tactics.vio
 Macro.vos Macro.vok Macro.required_vos: Macro.v Definitions.vos Tactics.vos

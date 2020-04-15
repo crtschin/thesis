@@ -31,7 +31,7 @@ Inductive eval : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | EV_Add : forall Γ t1 t1' t2 t2',
       t1 ⇓ (const Γ t1') ->
       t2 ⇓ (const Γ t2') ->
-      add Γ t1 t2 ⇓ const Γ (Rdefinitions.Rplus t1' t2')
+      add Γ t1 t2 ⇓ rval Γ (Rdefinitions.Rplus t1' t2')
 
   (* Pairs *)
   | EV_Tuple1 : forall Γ τ σ t1 t1' t2 t2',

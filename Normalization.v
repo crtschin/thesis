@@ -23,7 +23,13 @@ From AD Require Import Definitions.
 *)
 Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
   | v_real : forall {Γ r},
-    value (const Γ r)
+    value (rval Γ r)
+  | v_build_nil : forall {Γ τ},
+    value (build_nil Γ τ)
+  | v_build_cons : forall {Γ τ n t ta},
+    value ta ->
+    value t ->
+    value (build_cons Γ τ n t ta)
   | v_tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
     value t1 ->
     value t2 ->
@@ -53,9 +59,46 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       t2 --> t2' ->
         (app Γ τ σ v1 t2) --> (app Γ τ σ v1 t2')
 
+  (* STLC extra *)
+  (* Non-recursive let-bindings *)
+  | ST_Letn1 : forall Γ τ σ (t t' : tm Γ σ) b,
+    t --> t' ->
+    letn Γ τ σ t b --> letn Γ τ σ t' b
+  | ST_Letn2 : forall Γ τ σ (t : tm Γ σ) (b b' : tm (σ::Γ) τ),
+    value t ->
+    b --> b' ->
+    letn Γ τ σ t b --> letn Γ τ σ t b'
+  | ST_Letn : forall Γ τ σ (t : tm Γ σ) (b : tm (σ::Γ) τ),
+    value t ->
+    value b ->
+    letn Γ τ σ t b --> app Γ τ σ (abs Γ τ σ b) t
+
+  (* Arrays *)
+  (* | ST_Build : forall Γ τ n (f f' : Fin.t n -> tm Γ (Array n τ)),
+    (forall (i : Fin.t n), f i --> f' i) ->
+    build Γ f --> build Γ f' *)
+  | ST_BuildCons1 : forall Γ τ n t ta ta',
+    ta --> ta' ->
+    build_cons Γ τ n t ta --> build_cons Γ τ n t ta'
+  | ST_BuildCons2 : forall Γ τ n t t' ta,
+    value ta ->
+    t --> t' ->
+    build_cons Γ τ n t ta --> build_cons Γ τ n t' ta
+  | ST_Get : forall Γ τ n (t t' : tm Γ (Array n τ)) (ti : Fin.t n),
+    t --> t' ->
+    get Γ ti t --> get Γ ti t'
+  | ST_GetF1 : forall Γ τ n (t : tm Γ τ) (ta : tm Γ (Array n τ)),
+    value ta ->
+    value t ->
+    get Γ Fin.F1 (build_cons Γ τ n t ta) --> t
+  | ST_GetFS : forall Γ τ n i (t : tm Γ τ) ta,
+    value ta ->
+    value t ->
+    get Γ (Fin.FS i) (build_cons Γ τ n t ta) --> get Γ i ta
+
   (* Add *)
   | ST_Add : forall Γ v1 v2,
-      (add Γ (const Γ v1) (const Γ v2)) --> const Γ (Rdefinitions.Rplus v1 v2)
+      (add Γ (rval Γ v1) (rval Γ v2)) --> rval Γ (Rdefinitions.Rplus v1 v2)
   | ST_Add1 : forall Γ t1 t1' t2,
       t1 --> t1' ->
       (add Γ t1 t2) --> (add Γ t1' t2)
@@ -93,16 +136,11 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e' t1 t2)
   | ST_Case1 : forall Γ τ σ ρ (t2 : tm Γ (σ → ρ))
         (t1 t1' : tm Γ (τ → ρ)) (e e' : tm Γ (τ <+> σ)),
-      (* (@inl Γ τ σ e --> @inl Γ τ σ e') -> *)
-      (* (@inl Γ τ σ e --> @inl Γ τ σ e') -> *)
       value e ->
       (t1 --> t1') ->
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e t1' t2)
   | ST_Case2 : forall Γ τ σ ρ (t2 t2' : tm Γ (σ → ρ))
         (t1 : tm Γ (τ → ρ)) (e e' : tm Γ (τ <+> σ)),
-      (* (@inr Γ τ σ e --> @inr Γ τ σ e') -> *)
-      (* value e' -> *)
-      (* (@inr Γ τ σ e --> @inr Γ τ σ e') -> *)
       value e ->
       value t1 ->
       (t2 --> t2') ->
@@ -155,7 +193,12 @@ Proof with quick.
   intros Γ τ.
   induction τ;
     intros t Hv [t' Hstep];
-    dependent destruction Hstep; dependent destruction Hv; subst.
+    dependent destruction Hstep; dependent destruction Hv; subst...
+  - dependent induction Hv1; dependent destruction Hstep...
+    pose proof (IHτ t Hv1_2).
+    unfold step_normal_form in H0.
+    destruct H0. exists t'...
+  - apply (IHτ t0) in Hv2; apply Hv2...
   - apply (IHτ1 t1) in Hv1; apply Hv1...
   - apply (IHτ2 t2) in Hv2; apply Hv2...
   - apply (IHτ1 t1) in Hv; apply Hv...
@@ -199,8 +242,13 @@ Proof.
   assumption.
 Qed.
 
-Equations Rel {Γ} τ (t : tm Γ τ): Prop :=
+(*
+  Setup well-founded recursion between Rel (Array n τ)
+    and RelArr n τ?
+*)
+Equations Rel {Γ} τ (t : tm Γ τ): Prop by struct τ := {
 Rel Real t := halts t;
+Rel (Array n τ) t := RelArr n τ t;
 Rel (τ1 × τ2) t :=
   halts t /\ (exists (r : tm Γ τ1) (s : tm Γ τ2),
     t -->* tuple Γ r s /\
@@ -213,26 +261,13 @@ Rel (τ1 <+> τ2) t := halts t /\
   ((exists (r : tm Γ τ1),
     t -->* @inl Γ τ1 τ2 r /\ value r /\ Rel τ1 r) \/
   (exists (s : tm Γ τ2),
-    t -->* @inr Γ τ1 τ2 s /\ value s /\ Rel τ2 s)).
-
-(* Program Fixpoint Rel {Γ} τ (t : tm Γ τ): Prop :=
-  halts t /\
-  (match τ with
-   | Real => True
-   | τ1 × τ2 =>
-      (exists (r : tm Γ τ1) (s : tm Γ τ2),
-        t -->* tuple Γ r s /\
-        value r /\
-        value s /\
-        Rel τ1 r /\ Rel τ2 s)
-   | τ1 → τ2 =>
-      (forall (s : tm Γ τ1), Rel τ1 s -> Rel τ2 (app Γ τ2 τ1 t s))
-   | τ1 <+> τ2 =>
-      ((exists (r : tm Γ τ1),
-        t -->* @inl Γ τ1 τ2 r /\ value r /\ Rel τ1 r) \/
-      (exists (s : tm Γ τ2),
-        t -->* @inr Γ τ1 τ2 s /\ value s /\ Rel τ2 s))
-   end). *)
+    t -->* @inr Γ τ1 τ2 s /\ value s /\ Rel τ2 s)) }
+with RelArr {Γ} (n : nat) τ (t : tm Γ (Array n τ)): Prop by struct n :=
+RelArr 0 τ t := halts t;
+RelArr (S n) τ t :=
+  halts t /\ (exists (t' : tm Γ τ) (ta : tm Γ (Array n τ)),
+    t -->* build_cons Γ τ n t' ta /\
+      value t /\ value ta /\ Rel τ t' /\ RelArr n τ ta).
 
 Lemma R_halts : forall {Γ τ} {t : tm Γ τ}, Rel τ t -> halts t.
 Proof.
@@ -276,6 +311,7 @@ Proof with quick.
   intros Γ τ.
   generalize dependent Γ.
   dependent induction τ; simp Rel in *...
+  { apply (step_preserves_halting t t' H0)... }
   { apply (step_preserves_halting t t' H0)... }
   { split; destruct H...
     { eapply (step_preserves_halting t t')... }
@@ -322,6 +358,8 @@ Proof with quick.
   intros Γ τ.
   generalize dependent Γ.
   dependent induction τ...
+  { simp Rel in *.
+    rewrite step_preserves_halting... }
   { simp Rel in *.
     rewrite step_preserves_halting... }
   { simp Rel in *.
@@ -391,6 +429,58 @@ Proof with quick.
   - eapply multi_step. apply ST_App2... assumption.
 Qed.
 
+Lemma multistep_Letn1 : forall Γ τ σ (t t' : tm Γ σ) (b : tm (σ::Γ) τ),
+  (t -->* t') -> (letn Γ τ σ t b) -->* (letn Γ τ σ t' b).
+Proof with quick.
+  intros. induction H.
+  - constructor.
+  - eapply multi_step. constructor... assumption.
+Qed.
+
+Lemma multistep_Letn2 : forall Γ τ σ (t : tm Γ σ) (b b': tm (σ::Γ) τ),
+  value t -> b -->* b' -> letn Γ τ σ t b -->* letn Γ τ σ t b'.
+Proof with quick.
+  intros. induction H0.
+  - constructor.
+  - eapply multi_step. apply ST_Letn2... assumption.
+Qed.
+
+Lemma multistep_Letn : forall Γ τ σ (t : tm Γ σ) (b : tm (σ::Γ) τ),
+  value t -> value b -> letn Γ τ σ t b -->* app Γ τ σ (abs Γ τ σ b) t.
+Proof with quick.
+  intros. econstructor.
+  - apply ST_Letn...
+  - constructor.
+Qed.
+
+(*
+  | ST_BuildCons1 : forall Γ τ n t ta ta',
+    ta --> ta' ->
+    build_cons Γ τ n t ta --> build_cons Γ τ n t ta'
+  | ST_BuildCons2 : forall Γ τ n t t' ta,
+    value ta ->
+    t --> t' ->
+    build_cons Γ τ n t ta --> build_cons Γ τ n t' ta
+*)
+
+Lemma multistep_BuildCons1 :
+  forall Γ τ n (t: tm Γ τ) (ta ta' : tm Γ (Array n τ)),
+  ta -->* ta' -> build_cons Γ τ n t ta -->* build_cons Γ τ n t ta'.
+Proof with quick.
+  intros. induction H.
+  - constructor...
+  - econstructor. econstructor... assumption.
+Qed.
+
+Lemma multistep_BuildCons2 :
+  forall Γ τ n (t t': tm Γ τ) (ta : tm Γ (Array n τ)),
+  t -->* t' -> value ta -> build_cons Γ τ n t ta -->* build_cons Γ τ n t' ta.
+Proof with quick.
+  intros. induction H.
+  - econstructor.
+  - econstructor. apply ST_BuildCons2... assumption...
+Qed.
+
 Lemma multistep_Add1 : forall Γ (t t' : tm Γ Real) (t1 : tm Γ Real),
   (t -->* t') -> (add Γ t t1) -->* (add Γ t' t1).
 Proof with quick.
@@ -408,8 +498,8 @@ Proof with quick.
 Qed.
 
 Lemma multistep_Add : forall Γ r1 r2,
-  value (const Γ r1) -> value (const Γ r2) ->
-  (add Γ (const Γ r1) (const Γ r2)) -->* (const Γ (Rdefinitions.Rplus r1 r2)).
+  value (rval Γ r1) -> value (rval Γ r2) ->
+  (add Γ (rval Γ r1) (rval Γ r2)) -->* (rval Γ (Rdefinitions.Rplus r1 r2)).
 Proof with quick.
   intros. econstructor.
   all: constructor.
@@ -560,6 +650,40 @@ Proof with quick.
           simp substitute_lifted cons_sub.
           erewrite subst_shift_refl... }
         rewrite H''. constructor. } } }
+  { (* Letn *)
+    pose proof (IHt1 sb H) as H1; clear IHt1;
+      pose proof H1 as H1';
+      eapply R_halts in H1 as [t1' [Hst1 Hv1]];
+      eapply multistep_preserves_R in H1'...
+
+    pose proof (IHt2 (cons_sub t1' sb)) as H2.
+    eapply multistep_preserves_R'.
+    eapply H2.
+    constructor...
+
+    eapply multi_trans.
+    apply multistep_Letn1...
+    eapply multi_trans.
+    apply multistep_Letn2...
+    all: admit. }
+  { (* Build Nil *)
+    simp Rel. apply value_halts... }
+  { (* Build Cons *)
+    pose proof (IHt1 sb H); clear IHt1.
+    pose proof (IHt2 sb H); clear IHt2.
+    apply R_halts in H0 as [t1' [Hst1 Hv1]].
+    simp Rel in *.
+    destruct H1 as [t2' [Hst2 Hv2]].
+    unfold halts...
+    exists (build_cons Γ' τ n t1' t2').
+    splits...
+    eapply multi_trans.
+    eapply multistep_BuildCons1...
+    eapply multistep_BuildCons2... }
+  { (* Get *)
+    pose proof (IHt sb H) as H'; clear IHt.
+    simp Rel in H'.
+  }
   { (* Const *)
     simp Rel. apply value_halts... }
   { (* Add *)
@@ -586,7 +710,7 @@ Proof with quick.
     2: eassumption.
     simp Rel.
     unfold halts in *.
-    exists (const Γ0 (Rdefinitions.RbaseSymbolsImpl.Rplus r r0)).
+    exists (rval Γ0 (Rdefinitions.RbaseSymbolsImpl.Rplus r r0)).
     splits...
     econstructor. }
   { (* Tuple *)

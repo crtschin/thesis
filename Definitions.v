@@ -5,16 +5,21 @@ Require Import Strings.String.
 Require Import Relations.
 Require Import Logic.JMeq.
 Require Import Reals.
+Require Vectors.Fin.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
+Require Import Coq.Program.Basics.
 
+Require Import CoLoR.Util.Vector.VecUtil.
 Require Import Equations.Equations.
 Require Import AD.Tactics.
 
-Open Scope R_scope.
+Local Open Scope program_scope.
 
 Inductive ty : Type :=
   | Real : ty
+  (* | Nat : nat -> ty *)
+  | Array : nat -> ty -> ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
   | Sum  : ty -> ty -> ty
@@ -24,11 +29,14 @@ Notation "A × B" := (Prod A B) (left associativity, at level 90).
 Notation "A <+> B" := (Sum A B) (left associativity, at level 90).
 Notation "A → B" := (Arrow A B) (right associativity, at level 20).
 
-(* STLC with well-typed well-scoped debruijn *)
 (*
+  STLC with well-typed well-scoped debruijn
+
   Adapted from:
     - From Mathematics to Abstract Machine by Swierstra, et al.
     - Strongly Typed Term Representations in Coq by Benton, et al.
+    - Efficient Differentiable Programming in a
+        Functional Array-Processing Language by Amir Shaikhha, et al.
  *)
 Definition Ctx {x} : Type := list x.
 
@@ -51,8 +59,22 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | abs : forall τ σ,
     tm (σ::Γ) τ -> tm Γ (σ → τ)
 
+  (* STLC extra *)
+  (* Non-recursive let-bindings *)
+  | letn : forall τ σ,
+    tm Γ σ -> tm (σ::Γ) τ -> tm Γ τ
+
+  (* Arrays *)
+  | build_nil : forall τ,
+    tm Γ (Array 0 τ)
+  | build_cons : forall τ n (t : tm Γ τ),
+    (* (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ) *)
+    tm Γ (Array n τ) -> tm Γ (Array (S n) τ)
+  | get : forall {τ n},
+    Fin.t n -> tm Γ (Array n τ) -> tm Γ τ
+
   (* Reals *)
-  | const : R -> tm Γ Real
+  | rval : forall (r : R), tm Γ Real
   | add : tm Γ Real -> tm Γ Real -> tm Γ Real
 
   (* Products (currently using projection instead of pattern matching) *)
@@ -169,8 +191,17 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | app _ _ _ t1 t2 => app _ _ _ (rename r t1) (rename r t2)
   | abs _ _ _ f => abs _ _ _ (rename (rename_lifted r) f)
 
+  (* STLC extra *)
+  (* Non-recursive let-bindings *)
+  | letn _ _ _ t b => letn _ _ _ (rename r t) (rename (rename_lifted r) b)
+
+  (* Arrays *)
+  | build_nil _ _ => build_nil _ _
+  | build_cons _ _ _ t ta => build_cons _ _ _ (rename r t) (rename r ta)
+  | get _ ti ta => get _ ti (rename r ta)
+
   (* Reals *)
-  | const _ r => const _ r
+  | rval _ r => rval _ r
   | add _ t1 t2 => add _ (rename r t1) (rename r t2)
 
   (* Products *)
@@ -202,8 +233,18 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | app _ _ _ t1 t2 => app _ _ _ (substitute s t1) (substitute s t2)
   | abs _ _ _ f => abs _ _ _ (substitute (substitute_lifted s) f)
 
+  (* STLC extra *)
+  (* Non-recursive let-bindings *)
+  | letn _ _ _ t b =>
+      letn _ _ _ (substitute s t) (substitute (substitute_lifted s) b)
+
+  (* Arrays *)
+  | build_nil _ _ => build_nil _ _
+  | build_cons _ _ _ t ta => build_cons _ _ _ (substitute s t) (substitute s ta)
+  | get _ ti ta => get _ ti (substitute s ta)
+
   (* Reals *)
-  | const _ r => const _ r
+  | rval _ r => rval _ r
   | add _ t1 t2 => add _ (substitute s t1) (substitute s t2)
 
   (* Products *)
@@ -248,9 +289,19 @@ Lemma lift_sub_id : forall Γ τ,
   substitute_lifted (@id_sub Γ) = @id_sub (τ::Γ).
 Proof. intros. ExtVar. Qed.
 
+Lemma app_sub_id_map: forall Γ τ n (vc : Vector.t (tm Γ τ) n),
+  Vmap (substitute id_sub) vc = vc.
+Proof with quick.
+  induction vc; simpl...
+  rewrite IHvc.
+Admitted.
+
 Lemma app_sub_id : forall Γ τ (t : tm Γ τ),
   substitute id_sub t = t.
-Proof. induction t; Rewrites lift_sub_id. Qed.
+Proof with quick.
+  induction t; rewrites;
+  try (rewrite lift_sub_id; rewrites).
+Qed.
 
 Lemma lift_ren_id : forall Γ τ,
   rename_lifted (@id_ren Γ) = @id_ren (τ::Γ).
@@ -258,7 +309,9 @@ Proof. intros. ExtVar. Qed.
 
 Lemma app_ren_id : forall Γ τ (t : tm Γ τ),
   rename id_ren t = t.
-Proof. induction t; Rewrites lift_ren_id. Qed.
+Proof.
+  induction t; Rewrites lift_ren_id.
+Qed.
 
 (* Composing substitutions and renames *)
 Definition compose_ren_ren {Γ Γ' Γ''} (r : ren Γ' Γ'') (r' : ren Γ Γ')
@@ -357,10 +410,10 @@ Proof with eauto.
   unfold shift.
   rewrite <- app_sub_ren...
   generalize dependent σ.
-  induction t; rewrites.
-  { unfold compose_sub_ren in *...
-    rewrite lift_sub_id.
-    rewrite app_sub_id... }
+  induction t; rewrites;
+  try (unfold compose_sub_ren in *; quick;
+    rewrite lift_sub_id;
+    rewrite app_sub_id)...
 Qed.
 
 (* Lemma subst_cons_lift_cons :
