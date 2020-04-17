@@ -7,6 +7,7 @@ Require Import Logic.JMeq.
 Require Import Vector.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
+Require Import Coq.micromega.Lia.
 Require Reals.
 
 From Equations Require Import Equations.
@@ -24,12 +25,12 @@ From AD Require Import Definitions.
 Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
   | v_real : forall {Γ r},
     value (rval Γ r)
-  | v_build_nil : forall {Γ τ},
-    value (build_nil Γ τ)
-  | v_build_cons : forall {Γ τ n t ta},
+  | v_build : forall {Γ τ n f},
+    value (build Γ τ n f)
+  (* | v_build_cons : forall {Γ τ n t ta},
     value ta ->
     value t ->
-    value (build_cons Γ τ n t ta)
+    value (build_cons Γ τ n t ta) *)
   | v_tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
     value t1 ->
     value t2 ->
@@ -77,24 +78,22 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   (* | ST_Build : forall Γ τ n (f f' : Fin.t n -> tm Γ (Array n τ)),
     (forall (i : Fin.t n), f i --> f' i) ->
     build Γ f --> build Γ f' *)
-  | ST_BuildCons1 : forall Γ τ n t ta ta',
+  (* | ST_BuildCons1 : forall Γ τ n t ta ta',
     ta --> ta' ->
     build_cons Γ τ n t ta --> build_cons Γ τ n t ta'
   | ST_BuildCons2 : forall Γ τ n t t' ta,
     value ta ->
     t --> t' ->
-    build_cons Γ τ n t ta --> build_cons Γ τ n t' ta
+    build_cons Γ τ n t ta --> build_cons Γ τ n t' ta *)
   | ST_Get : forall Γ τ n (t t' : tm Γ (Array n τ)) (ti : Fin.t n),
     t --> t' ->
     get Γ ti t --> get Γ ti t'
-  | ST_GetF1 : forall Γ τ n (t : tm Γ τ) (ta : tm Γ (Array n τ)),
+  | ST_GetBuild : forall Γ τ n i (f : Fin.t n -> tm Γ τ),
+    get Γ i (build Γ τ n f) --> f i
+  (* | ST_GetFS : forall Γ τ n i (t : tm Γ τ) ta,
     value ta ->
     value t ->
-    get Γ Fin.F1 (build_cons Γ τ n t ta) --> t
-  | ST_GetFS : forall Γ τ n i (t : tm Γ τ) ta,
-    value ta ->
-    value t ->
-    get Γ (Fin.FS i) (build_cons Γ τ n t ta) --> get Γ i ta
+    get Γ (Fin.FS i) (build_cons Γ τ n t ta) --> get Γ i ta *)
 
   (* Add *)
   | ST_Add : forall Γ v1 v2,
@@ -194,11 +193,6 @@ Proof with quick.
   induction τ;
     intros t Hv [t' Hstep];
     dependent destruction Hstep; dependent destruction Hv; subst...
-  - dependent induction Hv1; dependent destruction Hstep...
-    pose proof (IHτ t Hv1_2).
-    unfold step_normal_form in H0.
-    destruct H0. exists t'...
-  - apply (IHτ t0) in Hv2; apply Hv2...
   - apply (IHτ1 t1) in Hv1; apply Hv1...
   - apply (IHτ2 t2) in Hv2; apply Hv2...
   - apply (IHτ1 t1) in Hv; apply Hv...
@@ -242,13 +236,36 @@ Proof.
   assumption.
 Qed.
 
-(*
-  Setup well-founded recursion between Rel (Array n τ)
-    and RelArr n τ?
-*)
-Equations Rel {Γ} τ (t : tm Γ τ): Prop by struct τ := {
+(* Fixpoint ty_wf (τ : ty) : nat :=
+  match τ with
+  | Real => 1
+  | Array n σ => n * ty_wf σ
+  | σ × ρ => ty_wf σ * ty_wf ρ
+  | σ → ρ => ty_wf σ ^ ty_wf ρ
+  | σ <+> ρ => ty_wf σ + ty_wf ρ
+  end.
+
+Definition ty_order (τ σ : ty) :=
+  ty_wf τ <= ty_wf σ.
+
+Lemma ty_order_wf' :
+  forall τ n, ty_wf τ <= n -> Acc ty_order τ.
+Proof with quick.
+  induction n...
+  unfold ty_wf in *.
+  induction τ.
+  - lia.
+  all: admit.
+Admitted.
+
+Theorem ty_order_wf : well_founded ty_order.
+  red; intro; eapply ty_order_wf'; eauto.
+Defined. *)
+
+Equations Rel {Γ} τ (t : tm Γ τ): Prop :=
 Rel Real t := halts t;
-Rel (Array n τ) t := RelArr n τ t;
+Rel (Array n τ) t := halts t /\ (exists (f : Fin.t n -> tm Γ τ),
+  t -->* build Γ τ n f /\ forall i, Rel τ (f i));
 Rel (τ1 × τ2) t :=
   halts t /\ (exists (r : tm Γ τ1) (s : tm Γ τ2),
     t -->* tuple Γ r s /\
@@ -261,13 +278,7 @@ Rel (τ1 <+> τ2) t := halts t /\
   ((exists (r : tm Γ τ1),
     t -->* @inl Γ τ1 τ2 r /\ value r /\ Rel τ1 r) \/
   (exists (s : tm Γ τ2),
-    t -->* @inr Γ τ1 τ2 s /\ value s /\ Rel τ2 s)) }
-with RelArr {Γ} (n : nat) τ (t : tm Γ (Array n τ)): Prop by struct n :=
-RelArr 0 τ t := halts t;
-RelArr (S n) τ t :=
-  halts t /\ (exists (t' : tm Γ τ) (ta : tm Γ (Array n τ)),
-    t -->* build_cons Γ τ n t' ta /\
-      value t /\ value ta /\ Rel τ t' /\ RelArr n τ ta).
+    t -->* @inr Γ τ1 τ2 s /\ value s /\ Rel τ2 s)).
 
 Lemma R_halts : forall {Γ τ} {t : tm Γ τ}, Rel τ t -> halts t.
 Proof.
@@ -312,7 +323,10 @@ Proof with quick.
   generalize dependent Γ.
   dependent induction τ; simp Rel in *...
   { apply (step_preserves_halting t t' H0)... }
-  { apply (step_preserves_halting t t' H0)... }
+  { simp Rel. splits...
+    { apply (step_preserves_halting t t' H0).
+      apply R_halts in H... }
+    { admit. } }
   { split; destruct H...
     { eapply (step_preserves_halting t t')... }
     { pose proof (H1 s H2).

@@ -130,17 +130,17 @@ with denote_datatype' (d : datatype) : Type :=
   end
 where "⟦ τ ⟧ₜ" := (denote_t τ). *)
 
-Fixpoint denote_array_list n (s : Set) : Set :=
+Fixpoint denote_array_type n (s : Set) : Set :=
   match n with
   | O => unit
-  | S n => s * denote_array_list n s
+  | S n => s * denote_array_type n s
   end.
 
 Reserved Notation "⟦ τ ⟧ₜ".
 Fixpoint denote_t τ : Set :=
   match τ with
   | Real => R
-  | Array n τ => denote_array_list n ⟦ τ ⟧ₜ
+  | Array n τ => denote_array_type n ⟦ τ ⟧ₜ
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
   | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ
@@ -163,9 +163,13 @@ Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
 Notation "⟦ v ⟧ᵥ" := (denote_v v).
 
 Equations denote_idx {s : Set} {n}
-  (i : Fin.t n) : denote_array_list n s -> s :=
+  (i : Fin.t n) : denote_array_type n s -> s :=
 denote_idx (@F1 n)    ar => fst ar;
 denote_idx (@FS n i') ar => denote_idx i' (snd ar).
+
+Equations nat_to_fin n : Fin.t (S n) :=
+nat_to_fin 0 := F1;
+nat_to_fin (S n) := FS (nat_to_fin n).
 
 Reserved Notation "⟦ t ⟧ₜₘ".
 Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
@@ -180,8 +184,8 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
   | letn σ ρ t b => fun ctx => ⟦ b ⟧ₜₘ (⟦ t ⟧ₜₘ ctx, ctx)
 
   (* Arrays *)
-  | build_nil σ => fun ctx => tt
-  | build_cons σ n t ta => fun ctx => (⟦ t ⟧ₜₘ ctx, ⟦ ta ⟧ₜₘ ctx)
+  (* | build_nil σ => fun ctx => tt *)
+  | build σ n f => fun ctx => denote_array (nat_to_fin n) f ctx
   | get σ n i t => fun ctx => denote_idx i (⟦ t ⟧ₜₘ ctx)
 
   (* Reals *)
@@ -201,6 +205,13 @@ Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
     end
   | inl τ σ e => fun ctx => Datatypes.inl (⟦e⟧ₜₘ ctx)
   | inr τ σ e => fun ctx => Datatypes.inr (⟦e⟧ₜₘ ctx)
+  end
+with denote_array {Γ τ n} (i : Fin.t (S n)) (f : Fin.t n -> tm Γ τ)
+  : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ :=
+  fun ctx =>
+  match i with
+  | F1 n' => ⟦ f F1 ⟧ₜₘ ctx
+  | FS n' i' => (⟦ f (FS i') ⟧ₜₘ ctx, (denote_array i' f) ctx)
   end
 where "⟦ t ⟧ₜₘ" := (denote_tm t).
 
@@ -400,7 +411,7 @@ Proof with quick.
   fold (@id_sub Γ)...
 Qed.
 
-(* Theorem soundness : forall τ (t t' : tm [] τ),
+Theorem soundness : forall τ (t t' : tm [] τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
 Proof with quick.
   intros.
@@ -414,7 +425,7 @@ Proof with quick.
     destruct ctx... }
   { erewrite <- (IHstep t2 t2' t2')...
     constructor. }
-Qed. *)
+Qed.
 
 (* Program Fixpoint Ddenote_sub {Γ Γ'}
   : sub Γ Γ' -> denote_ctx (Dctx Γ') -> denote_ctx (Dctx Γ) :=

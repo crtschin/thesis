@@ -65,11 +65,14 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
     tm Γ σ -> tm (σ::Γ) τ -> tm Γ τ
 
   (* Arrays *)
-  | build_nil : forall τ,
-    tm Γ (Array 0 τ)
-  | build_cons : forall τ n (t : tm Γ τ),
-    (* (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ) *)
-    tm Γ (Array n τ) -> tm Γ (Array (S n) τ)
+  (* | build_nil : forall τ,
+    tm Γ (Array τ) *)
+  | build :
+    forall τ n,
+    (* forall (t : tm Γ τ), *)
+    (* Vector.t (tm Γ τ) n -> tm Γ (Array τ) *)
+    (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ)
+    (* tm Γ (Array n τ) -> tm Γ (Array (S n) τ) *)
   | get : forall {τ n},
     Fin.t n -> tm Γ (Array n τ) -> tm Γ τ
 
@@ -102,6 +105,10 @@ Derive Signature for Env.
 
 Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
 shave_env (env_cons t G) := G.
+
+Lemma build_congr : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
+  ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
+Proof with quick. intros. rewrites. Qed.
 
 (* Examples *)
 Definition ex_id :=
@@ -196,8 +203,8 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | letn _ _ _ t b => letn _ _ _ (rename r t) (rename (rename_lifted r) b)
 
   (* Arrays *)
-  | build_nil _ _ => build_nil _ _
-  | build_cons _ _ _ t ta => build_cons _ _ _ (rename r t) (rename r ta)
+  (* | build_nil _ _ => build_nil _ _ *)
+  | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
   | get _ ti ta => get _ ti (rename r ta)
 
   (* Reals *)
@@ -239,8 +246,8 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
       letn _ _ _ (substitute s t) (substitute (substitute_lifted s) b)
 
   (* Arrays *)
-  | build_nil _ _ => build_nil _ _
-  | build_cons _ _ _ t ta => build_cons _ _ _ (substitute s t) (substitute s ta)
+  (* | build_nil _ _ => build_nil _ _ *)
+  | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)
   | get _ ti ta => get _ ti (substitute s ta)
 
   (* Reals *)
@@ -301,6 +308,9 @@ Lemma app_sub_id : forall Γ τ (t : tm Γ τ),
 Proof with quick.
   induction t; rewrites;
   try (rewrite lift_sub_id; rewrites).
+  unfold compose.
+  erewrite build_congr...
+  extensionality x...
 Qed.
 
 Lemma lift_ren_id : forall Γ τ,
@@ -309,8 +319,11 @@ Proof. intros. ExtVar. Qed.
 
 Lemma app_ren_id : forall Γ τ (t : tm Γ τ),
   rename id_ren t = t.
-Proof.
+Proof with quick.
   induction t; Rewrites lift_ren_id.
+  unfold compose.
+  erewrite build_congr...
+  extensionality x...
 Qed.
 
 (* Composing substitutions and renames *)
@@ -331,9 +344,13 @@ Proof. intros. ExtVar. Qed.
 Lemma app_ren_ren : forall Γ Γ' Γ'' τ
     (t : tm Γ τ) (r : ren Γ' Γ'') (r' : ren Γ Γ'),
   rename (compose_ren_ren r r') t = rename r (rename r' t).
-Proof.
+Proof with quick.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_ren_ren.
+  unfold compose.
+  rewrite build_congr with
+    (ta':=(fun x : Fin.t n => rename r (rename r' (t x))))...
+  extensionality x...
 Qed.
 
 Lemma lift_sub_ren : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (r : ren Γ Γ'),
@@ -345,9 +362,12 @@ Lemma app_sub_ren : forall Γ Γ' Γ'' τ
     (t : tm Γ τ) (s : sub Γ' Γ'') (r : ren Γ Γ'),
   substitute (compose_sub_ren s r) t =
     substitute s (rename r t).
-Proof with eauto.
+Proof with quick.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_ren.
+  erewrite build_congr...
+  unfold compose.
+  extensionality x...
 Qed.
 
 Lemma lift_ren_sub : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (s : sub Γ Γ'),
@@ -366,6 +386,8 @@ Lemma app_ren_sub : forall Γ Γ' Γ'' τ
 Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_ren_sub.
+  erewrite build_congr...
+  extensionality x...
 Qed.
 
 Lemma lift_sub_sub : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (s' : sub Γ Γ'),
@@ -384,6 +406,8 @@ Lemma app_sub_sub : forall Γ Γ' Γ'' τ
 Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_sub.
+  erewrite build_congr...
+  extensionality x...
 Qed.
 
 (* Helpers *)
@@ -414,6 +438,8 @@ Proof with eauto.
   try (unfold compose_sub_ren in *; quick;
     rewrite lift_sub_id;
     rewrite app_sub_id)...
+  erewrite build_congr...
+  extensionality x...
 Qed.
 
 (* Lemma subst_cons_lift_cons :
