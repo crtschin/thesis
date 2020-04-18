@@ -18,7 +18,7 @@ Require Import AD.Definitions.
 Require Import AD.Macro.
 (* Require AD.DepList. *)
 Require Import AD.Tactics.
-(* Require Import AD.Normalization. *)
+Require Import AD.Normalization.
 
 Local Open Scope program_scope.
 
@@ -171,47 +171,46 @@ Equations nat_to_fin n : Fin.t (S n) :=
 nat_to_fin 0 := F1;
 nat_to_fin (S n) := FS (nat_to_fin n).
 
+Equations shave_fin {Γ τ n} (f : Fin.t (S n) -> tm Γ τ) : Fin.t n -> tm Γ τ :=
+shave_fin f i := f (FS i).
+
 Reserved Notation "⟦ t ⟧ₜₘ".
-Fixpoint denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
-  match t with
-  (* Base STLC *)
-  | var σ v => fun ctx => denote_v v ctx
-  | app σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx)
-  | abs σ ρ f => fun ctx => fun x => ⟦ f ⟧ₜₘ (x, ctx)
+Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ by struct t := {
+(* STLC *)
+denote_tm (Γ:=Γ) (τ:=τ) (var Γ τ v) ctx := denote_v v ctx;
+denote_tm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) ctx := (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx);
+denote_tm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x, ctx);
+(* STLC extra *)
+denote_tm (Γ:=Γ) (τ:=τ) (letn Γ τ σ t b) ctx := ⟦ b ⟧ₜₘ (⟦ t ⟧ₜₘ ctx, ctx);
+(* Arrays *)
+denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n i f) ctx := denote_array n f ctx;
+denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := denote_idx i (⟦ ta ⟧ₜₘ ctx);
+(* Reals *)
+denote_tm (Γ:=Γ) (τ:=τ) (rval Γ r) ctx := r;
+denote_tm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx;
+(* Products *)
+denote_tm (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) ctx := (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx);
+denote_tm (Γ:=Γ) (τ:=τ) (first Γ t) ctx := fst (⟦t⟧ₜₘ ctx);
+denote_tm (Γ:=Γ) (τ:=τ) (second Γ t) ctx := snd (⟦t⟧ₜₘ ctx);
+(* Sums *)
+denote_tm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) ctx with ⟦e⟧ₜₘ ctx := {
+  denote_tm (case Γ e c1 c2) ctx (Datatypes.inl x) := (⟦c1⟧ₜₘ ctx) x;
+  denote_tm (case Γ e c1 c2) ctx (Datatypes.inr x) := (⟦c2⟧ₜₘ ctx) x
+};
+denote_tm (Γ:=Γ) (τ:=τ) (inl Γ τ σ e) ctx := Datatypes.inl (⟦e⟧ₜₘ ctx);
+denote_tm (Γ:=Γ) (τ:=τ) (inr Γ σ τ e) ctx := Datatypes.inr (⟦e⟧ₜₘ ctx) }
+where "⟦ t ⟧ₜₘ" := (denote_tm t)
+where denote_array {Γ τ} n (f : Fin.t n -> tm Γ τ)
+  : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ by struct n :=
+denote_array 0 f ctx := tt;
+denote_array (S n) f ctx := (⟦ f (nat_to_fin n) ⟧ₜₘ ctx,
+  (denote_array n (shave_fin f)) ctx).
 
-  (* STLC extra *)
-  (* Non-recursive let-bindings *)
-  | letn σ ρ t b => fun ctx => ⟦ b ⟧ₜₘ (⟦ t ⟧ₜₘ ctx, ctx)
-
-  (* Arrays *)
-  (* | build_nil σ => fun ctx => tt *)
-  | build σ n f => fun ctx => denote_array (nat_to_fin n) f ctx
-  | get σ n i t => fun ctx => denote_idx i (⟦ t ⟧ₜₘ ctx)
-
-  (* Reals *)
-  | rval r => fun ctx => r
-  | add t1 t2 => fun ctx => ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx
-
-  (* Products *)
-  | tuple σ ρ t1 t2 => fun ctx => (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx)
-  | first σ ρ t => fun ctx => fst (⟦t⟧ₜₘ ctx)
-  | second σ ρ t => fun ctx => snd (⟦t⟧ₜₘ ctx)
-
-  (* Sums *)
-  | case τ σ ρ e c1 c2 => fun ctx =>
-    match (⟦e⟧ₜₘ ctx) with
-    | Datatypes.inl x => (⟦c1⟧ₜₘ ctx) x
-    | Datatypes.inr x => (⟦c2⟧ₜₘ ctx) x
-    end
-  | inl τ σ e => fun ctx => Datatypes.inl (⟦e⟧ₜₘ ctx)
-  | inr τ σ e => fun ctx => Datatypes.inr (⟦e⟧ₜₘ ctx)
-  end
-with denote_array {Γ τ n} (i : Fin.t (S n)) (f : Fin.t n -> tm Γ τ)
+with denote_array {Γ τ n} (i : Fin.t n) (f : Fin.t n -> tm Γ τ)
   : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ :=
-  fun ctx =>
   match i with
-  | F1 n' => ⟦ f F1 ⟧ₜₘ ctx
-  | FS n' i' => (⟦ f (FS i') ⟧ₜₘ ctx, (denote_array i' f) ctx)
+  denote_tm (F1 n') => fun ctx => (⟦ f () ⟧ₜₘ ctx, tt)
+  denote_tm (FS n' i') => fun ctx => (⟦ f (FS i') ⟧ₜₘ ctx, (denote_array i' f) ctx)
   end
 where "⟦ t ⟧ₜₘ" := (denote_tm t).
 

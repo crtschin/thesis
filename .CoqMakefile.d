@@ -4,6 +4,9 @@ Adequacy.vos Adequacy.vok Adequacy.required_vos: Adequacy.v
 Base.vo Base.glob Base.v.beautified Base.required_vo: Base.v 
 Base.vio: Base.v 
 Base.vos Base.vok Base.required_vos: Base.v 
+coquelicotComplements.vo coquelicotComplements.glob coquelicotComplements.v.beautified coquelicotComplements.required_vo: coquelicotComplements.v 
+coquelicotComplements.vio: coquelicotComplements.v 
+coquelicotComplements.vos coquelicotComplements.vok coquelicotComplements.required_vos: coquelicotComplements.v 
 CpdtTactics.vo CpdtTactics.glob CpdtTactics.v.beautified CpdtTactics.required_vo: CpdtTactics.v 
 CpdtTactics.vio: CpdtTactics.v 
 CpdtTactics.vos CpdtTactics.vok CpdtTactics.required_vos: CpdtTactics.v 
@@ -49,3 +52,6 @@ Tactics.vos Tactics.vok Tactics.required_vos: Tactics.v
 Tangent.vo Tangent.glob Tangent.v.beautified Tangent.required_vo: Tangent.v 
 Tangent.vio: Tangent.v 
 Tangent.vos Tangent.vok Tangent.required_vos: Tangent.v 
+vect.vo vect.glob vect.v.beautified vect.required_vo: vect.v coquelicotComplements.vo
+vect.vio: vect.v coquelicotComplements.vio
+vect.vos vect.vok vect.required_vos: vect.v coquelicotComplements.vos

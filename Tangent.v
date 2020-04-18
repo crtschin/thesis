@@ -7,9 +7,15 @@ Require Import Logic.JMeq.
 Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
 
+Require Import Coquelicot.Derive.
+Require Import Coquelicot.Continuity.
+Require Import Coquelicot.Hierarchy.
+
 Import EqNotations.
 
 Open Scope type_scope.
+
+Check Derive.
 (*
 Parameter Derived :
   forall {X : Type}, X -> Prop.

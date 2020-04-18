@@ -68,7 +68,7 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   (* | build_nil : forall τ,
     tm Γ (Array τ) *)
   | build :
-    forall τ n,
+    forall τ n (i : Fin.t n),
     (* forall (t : tm Γ τ), *)
     (* Vector.t (tm Γ τ) n -> tm Γ (Array τ) *)
     (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ)
@@ -106,8 +106,8 @@ Derive Signature for Env.
 Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
 shave_env (env_cons t G) := G.
 
-Lemma build_congr : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
-  ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
+Lemma build_congr : forall Γ τ n i (ta ta' : Fin.t n -> tm Γ τ),
+  ta = ta' -> build Γ τ n i ta = build Γ τ n i ta'.
 Proof with quick. intros. rewrites. Qed.
 
 (* Examples *)
@@ -204,7 +204,7 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
 
   (* Arrays *)
   (* | build_nil _ _ => build_nil _ _ *)
-  | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
+  | build _ _ _ i ta => build _ _ _ i (rename r ∘ ta)
   | get _ ti ta => get _ ti (rename r ta)
 
   (* Reals *)
@@ -247,7 +247,7 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
 
   (* Arrays *)
   (* | build_nil _ _ => build_nil _ _ *)
-  | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)
+  | build _ _ _ i ta => build _ _ _ i (substitute s ∘ ta)
   | get _ ti ta => get _ ti (substitute s ta)
 
   (* Reals *)

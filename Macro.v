@@ -50,8 +50,8 @@ Dtm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm f);
 Dtm (Γ:=Γ) (τ:=τ) (letn Γ τ σ t b) := letn _ _ _ (Dtm t) (Dtm b);
 (* Arrays *)
 (* Dtm (Γ:=Γ) (τ:=τ) (build_nil Γ τ) => build_nil _ _; *)
-Dtm (Γ:=Γ) (τ:=τ) (build Γ τ n ta) =>
-  build _ _ _ (Dtm ∘ ta);
+Dtm (Γ:=Γ) (τ:=τ) (build Γ τ n i ta) =>
+  build _ _ _ i (Dtm ∘ ta);
 Dtm (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm ta);
 (* Reals *)
 Dtm (Γ:=Γ) (τ:=τ) (rval Γ r) := tuple _ (rval _ r) (rval _ 0);

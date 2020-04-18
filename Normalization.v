@@ -7,12 +7,15 @@ Require Import Logic.JMeq.
 Require Import Vector.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
+Require Import Coq.Program.Basics.
 Require Import Coq.micromega.Lia.
 Require Reals.
 
 From Equations Require Import Equations.
 From AD Require Import Tactics.
 From AD Require Import Definitions.
+
+Local Open Scope program_scope.
 
 (*
   Strong Normalization
@@ -25,8 +28,8 @@ From AD Require Import Definitions.
 Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
   | v_real : forall {Γ r},
     value (rval Γ r)
-  | v_build : forall {Γ τ n f},
-    value (build Γ τ n f)
+  | v_build : forall {Γ τ n i f},
+    value (build Γ τ n i f)
   (* | v_build_cons : forall {Γ τ n t ta},
     value ta ->
     value t ->
@@ -88,8 +91,8 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | ST_Get : forall Γ τ n (t t' : tm Γ (Array n τ)) (ti : Fin.t n),
     t --> t' ->
     get Γ ti t --> get Γ ti t'
-  | ST_GetBuild : forall Γ τ n i (f : Fin.t n -> tm Γ τ),
-    get Γ i (build Γ τ n f) --> f i
+  | ST_GetBuild : forall Γ τ n i c (f : Fin.t n -> tm Γ τ),
+    get Γ i (build Γ τ n c f) --> f i
   (* | ST_GetFS : forall Γ τ n i (t : tm Γ τ) ta,
     value ta ->
     value t ->
@@ -264,8 +267,8 @@ Defined. *)
 
 Equations Rel {Γ} τ (t : tm Γ τ): Prop :=
 Rel Real t := halts t;
-Rel (Array n τ) t := halts t /\ (exists (f : Fin.t n -> tm Γ τ),
-  t -->* build Γ τ n f /\ forall i, Rel τ (f i));
+Rel (Array n τ) t := halts t /\ (exists c (f : Fin.t n -> tm Γ τ),
+  t -->* build Γ τ n c f /\ forall i, Rel τ (f i));
 Rel (τ1 × τ2) t :=
   halts t /\ (exists (r : tm Γ τ1) (s : tm Γ τ2),
     t -->* tuple Γ r s /\
@@ -326,7 +329,11 @@ Proof with quick.
   { simp Rel. splits...
     { apply (step_preserves_halting t t' H0).
       apply R_halts in H... }
-    { admit. } }
+    { simp Rel in H. destruct H as [Hh [c [f [Hst H']]]].
+      exists c. exists f. splits...
+      dependent destruction Hst.
+      { dependent destruction H0. }
+      { rewrite <- (step_deterministic _ _ _ _ _ H H0)... } } }
   { split; destruct H...
     { eapply (step_preserves_halting t t')... }
     { pose proof (H1 s H2).
@@ -374,8 +381,12 @@ Proof with quick.
   dependent induction τ...
   { simp Rel in *.
     rewrite step_preserves_halting... }
-  { simp Rel in *.
-    rewrite step_preserves_halting... }
+  { simp Rel. splits...
+    { apply (step_preserves_halting t t' H0).
+      apply R_halts in H... }
+    { simp Rel in H. destruct H as [Hh [c [f [Hst H']]]].
+      exists c. exists f. splits...
+      econstructor... } }
   { simp Rel in *.
     split; destruct H as [Hh Ht]...
     rewrite step_preserves_halting...
@@ -477,7 +488,7 @@ Qed.
     build_cons Γ τ n t ta --> build_cons Γ τ n t' ta
 *)
 
-Lemma multistep_BuildCons1 :
+(* Lemma multistep_BuildCons1 :
   forall Γ τ n (t: tm Γ τ) (ta ta' : tm Γ (Array n τ)),
   ta -->* ta' -> build_cons Γ τ n t ta -->* build_cons Γ τ n t ta'.
 Proof with quick.
@@ -493,7 +504,7 @@ Proof with quick.
   intros. induction H.
   - econstructor.
   - econstructor. apply ST_BuildCons2... assumption...
-Qed.
+Qed. *)
 
 Lemma multistep_Add1 : forall Γ (t t' : tm Γ Real) (t1 : tm Γ Real),
   (t -->* t') -> (add Γ t t1) -->* (add Γ t' t1).
@@ -625,6 +636,15 @@ Proof with quick.
   - econstructor. apply ST_Inr... assumption.
 Qed.
 
+Lemma multistep_Get : forall Γ τ n i (t t' : tm Γ (Array n τ)),
+  (t -->* t') ->
+    get Γ i t -->* get Γ i t'.
+Proof with quick.
+  intros. induction H...
+  - econstructor.
+  - econstructor. econstructor... assumption.
+Qed.
+
 Lemma subst_R :
   forall {Γ Γ' τ} (t : tm Γ τ) (s : sub Γ Γ'),
     instantiation s ->
@@ -633,16 +653,19 @@ Proof with quick.
   intros Γ Γ' τ t s.
   generalize dependent Γ.
   generalize dependent Γ'.
-  dependent induction t; simpl; intros sb H.
+  dependent induction t; simpl.
   { (* Variables *)
+    intros sb H.
     dependent induction H.
     { inversion v. }
     { dependent induction v; simp cons_sub... } }
   { (* App *)
+    intros sb H.
     pose proof (IHt1 sb H).
     pose proof (IHt2 sb H).
     simp Rel in H0. destruct H0 as [Hh H']... }
   { (* Abs *)
+    intros sb H.
     simp Rel. split.
     { apply value_halts. constructor. }
     { simpl. intros s Hrs.
@@ -665,6 +688,7 @@ Proof with quick.
           erewrite subst_shift_refl... }
         rewrite H''. constructor. } } }
   { (* Letn *)
+    intros sb H.
     pose proof (IHt1 sb H) as H1; clear IHt1;
       pose proof H1 as H1';
       eapply R_halts in H1 as [t1' [Hst1 Hv1]];
@@ -680,27 +704,28 @@ Proof with quick.
     eapply multi_trans.
     apply multistep_Letn2...
     all: admit. }
-  { (* Build Nil *)
-    simp Rel. apply value_halts... }
-  { (* Build Cons *)
-    pose proof (IHt1 sb H); clear IHt1.
-    pose proof (IHt2 sb H); clear IHt2.
-    apply R_halts in H0 as [t1' [Hst1 Hv1]].
-    simp Rel in *.
-    destruct H1 as [t2' [Hst2 Hv2]].
-    unfold halts...
-    exists (build_cons Γ' τ n t1' t2').
+  { (* Build *)
+    intros sb H'.
+    simp Rel.
     splits...
-    eapply multi_trans.
-    eapply multistep_BuildCons1...
-    eapply multistep_BuildCons2... }
+    { apply value_halts... }
+    { exists i. exists (substitute sb ∘ t).
+      splits... constructor. } }
   { (* Get *)
+    intros sb H.
     pose proof (IHt sb H) as H'; clear IHt.
     simp Rel in H'.
-  }
+    destruct H' as [Hh [c [f [Hst Hr]]]].
+    eapply multistep_preserves_R'...
+    eapply multi_trans.
+    eapply multistep_Get...
+    econstructor. eapply ST_GetBuild.
+    constructor. }
   { (* Const *)
+    intros sb H.
     simp Rel. apply value_halts... }
   { (* Add *)
+    intros sb H.
     intros.
     pose proof (IHt1 sb H) as P1; clear IHt1.
     pose proof (IHt2 sb H) as P2; clear IHt2.
@@ -728,6 +753,7 @@ Proof with quick.
     splits...
     econstructor. }
   { (* Tuple *)
+    intros sb H.
     intros.
     pose proof (IHt1 sb H) as H1; clear IHt1.
     pose proof (IHt2 sb H) as H2; clear IHt2.
@@ -745,6 +771,7 @@ Proof with quick.
     { intros. exists t1'. exists t2'.
       splits... } }
   { (* First *)
+    intros sb H.
     intros. simpl.
     pose proof (IHt sb H) as H'.
     pose proof (R_halts H'); destruct H0 as [t' [Hst Hvt]].
@@ -760,6 +787,7 @@ Proof with quick.
     2: apply Hst'''.
     induction τ... }
   { (* Second *)
+    intros sb H.
     intros. simpl.
     pose proof (IHt sb H) as H'.
     pose proof (R_halts H') as [t' [Hst Hvt]].
@@ -775,6 +803,7 @@ Proof with quick.
     2: apply Hst'''.
     induction τ... }
   { (* Case *)
+    intros sb H.
     intros. simpl.
     pose proof (IHt1 sb H) as IHt1'; clear IHt1.
     pose proof (IHt2 sb H) as IHt2'; clear IHt2.
@@ -808,6 +837,7 @@ Proof with quick.
     2:{ apply multistep_CaseInr... }
       destruct H3' as [Hh3 Hs3]... } }
   { (* Inl *)
+    intros sb H.
     intros.
     pose proof (IHt sb H) as H'.
     apply R_halts in H'.
@@ -820,6 +850,7 @@ Proof with quick.
       apply multistep_Inl...
       eapply multistep_preserves_R... } }
   { (* Inr *)
+    intros sb H.
     intros.
     pose proof (IHt sb H) as H'.
     apply R_halts in H'.
@@ -831,7 +862,7 @@ Proof with quick.
       splits...
       apply multistep_Inr...
       eapply multistep_preserves_R... } }
-Qed.
+Admitted.
 
 Theorem normalization :
   forall τ (t : tm [] τ), halts t.

@@ -208,31 +208,11 @@ Proof with quick.
   intros. simp S in H.
 Qed.
 
-(* Equations gen (n : nat) : R -> ⟦ repeat Real n ⟧ₜₓ :=
-gen O r := tt;
-gen (Datatypes.S n) r := (r, gen n r).
-
-Equations Dgen (n : nat) : R -> ⟦ Dctx (repeat Real n) ⟧ₜₓ :=
-Dgen O r := tt;
-Dgen (Datatypes.S n) r := ((r, 1), Dgen n r). *)
-
 Equations D n
   (f : R -> ⟦ repeat Real n ⟧ₜₓ): R -> ⟦ map Dt (repeat Real n) ⟧ₜₓ :=
 D 0 f r := f r;
 D (Datatypes.S n) f r :=
   (((fst ∘ f) r, Derive (fst ∘ f) r), D n (snd ∘ f) r).
-
-(* Equations hd_env {n} : Env (Real :: repeat Real n) -> tm (repeat Real n) Real :=
-hd_env (env_cons t E') := t.
-
-Equations tl_env {n} : Env (Real :: repeat Real n) -> Env (repeat Real n) :=
-tl_env (env_cons t E) := E.
-
-Equations DE n
-  (f : R -> Env (repeat Real n)): R -> Env (map Dt (repeat Real n)) :=
-DE 0 f r := f r;
-DE (Datatypes.S n) f r :=
-  (env_cons (Dtm ((hd_env ∘ f) r)) (DE n (tl_env ∘ f) r)). *)
 
 Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop :=
   | differentiable_0 : differentiable 0 (fun _ => tt)
@@ -242,51 +222,6 @@ Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop 
       differentiable n f ->
       (forall x, ex_derive g x) ->
       differentiable (Datatypes.S n) (fun x => (g x, f x)).
-
-(* Definition diff_eq : forall n f1 f2,
-  f1 = f2 -> differentiable n f1 = differentiable n f2.
-Proof. quick; rewrite H; trivial. Qed.
-
-Lemma S_tm_derivable :
-    forall n (t : R -> tm (repeat Real n) Real),
-    forall (ctx : R -> Env (repeat Real n)),
-  forall x, ex_derive (fun x => ⟦ t x ⟧ₜₘ ⟦ctx x⟧ₑ) x.
-Proof.
-  intros.
-  (* apply S_correct_R. *)
-  (* specialize H with (repeat Real n) t (denote_env ∘ ctx)
-    (denote_env ∘ Denv ∘ ctx). *)
-  (* eapply fundamental. *)
-  admit.
-Admitted.
-
-Lemma S_denote_derivable :
-  forall n,
-  forall (f : R -> Env (repeat Real n)),
-  differentiable n (denote_env ∘ f).
-Proof with quick.
-  intros.
-  induction n.
-  { assert (Heq: f = fun _ => env_nil).
-    { extensionality x. remember (f x). dependent destruction e... }
-    rewrite Heq; clear Heq.
-    unfold compose.
-    eapply differentiable_0. }
-  { simpl in f.
-    assert (Heq: f = fun r => env_cons (hd_env (f r)) (tl_env (f r))).
-    { extensionality x. remember (f x). dependent destruction e... }
-    rewrite Heq. clear Heq.
-    unfold compose.
-    (* rewrite Heq. *)
-    erewrite diff_eq.
-    instantiate
-      (1:=fun r => (⟦(hd_env (f r))⟧ₜₘ ⟦(tl_env (f r))⟧ₑ, ⟦(tl_env (f r))⟧ₑ)).
-    constructor.
-    { eapply IHn. }
-    (* pose proof S_tm_derivable. *)
-    { apply (S_tm_derivable n (hd_env ∘ f) (tl_env ∘ f)). }
-    { extensionality x... } }
-Qed. *)
 
 Theorem semantic_correct_R :
   forall n,
@@ -306,16 +241,13 @@ Proof with quick.
   { erewrite inst_eq;
       try (extensionality r).
   2:{ remember (f r) as e. dependent destruction e.
-      (* simpl. simp denote_env.  *)
       reflexivity. }
   2:{ simp D. remember (f r) as e. dependent destruction e.
-      (* simpl. simp denote_env.  *)
       reflexivity. }
     fold (@Basics.const unit R tt); constructor. }
   { erewrite inst_eq;
       try (extensionality r).
   2:{ instantiate (1:=
-        (* fun r => (⟦(hd_env (f r))⟧ₜₘ ⟦(tl_env (f r))⟧ₑ, ⟦(tl_env (f r))⟧ₑ)). *)
         fun r => (fst (f r), snd (f r))).
         apply injective_projections; quick; remember (f r);
           dependent elimination e... }
