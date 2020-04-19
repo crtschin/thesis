@@ -28,13 +28,40 @@ Proof.
   intros H.
 Abort.
 
-Fixpoint times_two (n : nat) : nat :=
-  match n with
-  | O => O
-  | S n => S (S (times_two n))
+Require Import List.
+Local Open Scope list_scope.
+
+Fail Definition hd {A : Set} (l : list A) : A :=
+  match l with
+  | h :: t => h
+  | nil => whoknows
   end.
 
-Definition pred1 (n : nat) :=
+Inductive li_list {A : Set} : nat -> Set :=
+  | li_nil : li_list O
+  | li_cons : forall n, A -> li_list n -> li_list (S n).
+
+Definition hd' {A : Set} {n} (l : li_list n) :=
+  match l in (li_list n) return
+    (match n with
+    | O => unit
+    | S _ => A
+    end) with
+  | li_nil => tt
+  | li_cons _ h t => h
+  end.
+Check hd'.
+
+Definition hd {A : Set} {n} (l : li_list (S n)) : A := hd' l.
+Check hd.
+
+Reset hd.
+Definition hd {A : Set} {n} (l : li_list (S n)) : A :=
+  match l with
+  | li_cons _ h t => h
+  end.
+
+Definition pred' (n : nat) :=
   match n return
       (match n with
       | O => unit
@@ -42,32 +69,19 @@ Definition pred1 (n : nat) :=
   | O => tt
   | S n => n
   end.
-Check pred1.
+Check pred'.
 
-Definition pred2 (n : nat) : n <> O -> nat.
+Definition pred'' (n : nat) : n <> O -> nat.
 Proof.
   intros H.
   destruct n.
   - contradiction H. reflexivity.
   - apply n.
 Defined.
-Check pred2.
+Check pred''.
 
 Require Import Equations.Equations.
 
 Equations pred (n : nat) (pf : n <> O): nat :=
 pred O pf with pf eq_refl := {};
 pred (S n) pf := n.
-
-(* Require Import Datatypes.
-Require Import Coq.micromega.Lia.
-
-Inductive ilist (A : Type): nat -> Type :=
-  | ilist_nil : ilist A 0
-  | ilist_cons : forall (a : A) (n : nat), ilist A n -> ilist A (S n)
-.
-
-Definition idx A (n m: nat) (l : ilist A m) : (n < m) -> A.
-  intros H.
-  destruct n; destruct l; try lia; assumption.
-Qed. *)

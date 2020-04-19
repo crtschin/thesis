@@ -239,32 +239,6 @@ Proof.
   assumption.
 Qed.
 
-(* Fixpoint ty_wf (τ : ty) : nat :=
-  match τ with
-  | Real => 1
-  | Array n σ => n * ty_wf σ
-  | σ × ρ => ty_wf σ * ty_wf ρ
-  | σ → ρ => ty_wf σ ^ ty_wf ρ
-  | σ <+> ρ => ty_wf σ + ty_wf ρ
-  end.
-
-Definition ty_order (τ σ : ty) :=
-  ty_wf τ <= ty_wf σ.
-
-Lemma ty_order_wf' :
-  forall τ n, ty_wf τ <= n -> Acc ty_order τ.
-Proof with quick.
-  induction n...
-  unfold ty_wf in *.
-  induction τ.
-  - lia.
-  all: admit.
-Admitted.
-
-Theorem ty_order_wf : well_founded ty_order.
-  red; intro; eapply ty_order_wf'; eauto.
-Defined. *)
-
 Equations Rel {Γ} τ (t : tm Γ τ): Prop :=
 Rel Real t := halts t;
 Rel (Array n τ) t := halts t /\ (exists c (f : Fin.t n -> tm Γ τ),
@@ -441,208 +415,135 @@ Qed.
 Lemma multistep_App1 : forall Γ τ σ (t t' : tm Γ (σ → τ)) (b : tm Γ σ),
   (t -->* t') -> (app _ _ _ t b) -->* (app _ _ _ t' b).
 Proof with quick.
-  intros. induction H.
-  - constructor.
-  - eapply multi_step. apply ST_App1... assumption.
+  intros. induction H; econstructor. apply ST_App1... assumption.
 Qed.
 
 Lemma multistep_App2 : forall Γ τ σ (v : tm Γ (σ → τ)) (t t' : tm Γ σ),
   value v -> (t -->* t') -> (app _ _ _ v t) -->* (app _ _ _ v t').
 Proof with quick.
-  intros. induction H0.
-  - constructor.
-  - eapply multi_step. apply ST_App2... assumption.
+  intros. induction H0; econstructor. apply ST_App2... assumption.
 Qed.
 
 Lemma multistep_Letn1 : forall Γ τ σ (t t' : tm Γ σ) (b : tm (σ::Γ) τ),
   (t -->* t') -> (letn Γ τ σ t b) -->* (letn Γ τ σ t' b).
 Proof with quick.
-  intros. induction H.
-  - constructor.
-  - eapply multi_step. constructor... assumption.
+  intros. induction H; econstructor. constructor... assumption.
 Qed.
 
 Lemma multistep_Letn2 : forall Γ τ σ (t : tm Γ σ) (b b': tm (σ::Γ) τ),
   value t -> b -->* b' -> letn Γ τ σ t b -->* letn Γ τ σ t b'.
 Proof with quick.
-  intros. induction H0.
-  - constructor.
-  - eapply multi_step. apply ST_Letn2... assumption.
+  intros. induction H0; econstructor. apply ST_Letn2... assumption.
 Qed.
 
 Lemma multistep_Letn : forall Γ τ σ (t : tm Γ σ) (b : tm (σ::Γ) τ),
   value t -> value b -> letn Γ τ σ t b -->* app Γ τ σ (abs Γ τ σ b) t.
 Proof with quick.
-  intros. econstructor.
-  - apply ST_Letn...
-  - constructor.
+  intros. econstructor. apply ST_Letn... constructor.
 Qed.
-
-(*
-  | ST_BuildCons1 : forall Γ τ n t ta ta',
-    ta --> ta' ->
-    build_cons Γ τ n t ta --> build_cons Γ τ n t ta'
-  | ST_BuildCons2 : forall Γ τ n t t' ta,
-    value ta ->
-    t --> t' ->
-    build_cons Γ τ n t ta --> build_cons Γ τ n t' ta
-*)
-
-(* Lemma multistep_BuildCons1 :
-  forall Γ τ n (t: tm Γ τ) (ta ta' : tm Γ (Array n τ)),
-  ta -->* ta' -> build_cons Γ τ n t ta -->* build_cons Γ τ n t ta'.
-Proof with quick.
-  intros. induction H.
-  - constructor...
-  - econstructor. econstructor... assumption.
-Qed.
-
-Lemma multistep_BuildCons2 :
-  forall Γ τ n (t t': tm Γ τ) (ta : tm Γ (Array n τ)),
-  t -->* t' -> value ta -> build_cons Γ τ n t ta -->* build_cons Γ τ n t' ta.
-Proof with quick.
-  intros. induction H.
-  - econstructor.
-  - econstructor. apply ST_BuildCons2... assumption...
-Qed. *)
 
 Lemma multistep_Add1 : forall Γ (t t' : tm Γ Real) (t1 : tm Γ Real),
   (t -->* t') -> (add Γ t t1) -->* (add Γ t' t1).
 Proof with quick.
-  intros. induction H.
-  - constructor.
-  - eapply multi_step. apply ST_Add1... assumption.
+  intros. induction H; econstructor. apply ST_Add1... assumption.
 Qed.
 
 Lemma multistep_Add2 : forall Γ (t t' : tm Γ Real) (v : tm Γ Real),
   value v -> (t -->* t') -> (add Γ v t) -->* (add Γ v t').
 Proof with quick.
-  intros. induction H0.
-  - constructor.
-  - eapply multi_step. apply ST_Add2... assumption.
+  intros. induction H0; econstructor. apply ST_Add2... assumption.
 Qed.
 
 Lemma multistep_Add : forall Γ r1 r2,
   value (rval Γ r1) -> value (rval Γ r2) ->
   (add Γ (rval Γ r1) (rval Γ r2)) -->* (rval Γ (Rdefinitions.Rplus r1 r2)).
-Proof with quick.
-  intros. econstructor.
-  all: constructor.
-Qed.
+Proof with quick. intros. repeat econstructor. Qed.
 
 Lemma multistep_Tuple1 : forall Γ τ σ (t t' : tm Γ τ) (t1 : tm Γ σ),
   (t -->* t') -> (tuple Γ t t1) -->* (tuple Γ t' t1).
 Proof with quick.
-  intros. induction H.
-  - constructor.
-  - eapply multi_step. apply ST_Tuple1... assumption.
+  intros. induction H; econstructor. apply ST_Tuple1... assumption.
 Qed.
 
 Lemma multistep_Tuple2 : forall Γ τ σ (t t' : tm Γ σ) (v : tm Γ τ),
   value v -> (t -->* t') -> (tuple Γ v t) -->* (tuple Γ v t').
 Proof with quick.
-  intros. induction H0.
-  - constructor.
-  - eapply multi_step. apply ST_Tuple2... assumption.
+  intros. induction H0; econstructor. apply ST_Tuple2... assumption.
 Qed.
 
 Lemma multistep_First : forall Γ τ σ (t t' : tm Γ (τ × σ)),
   (t -->* t') -> (first Γ t) -->* (first Γ t').
 Proof with quick.
-  intros. induction H.
-  - constructor.
-  - eapply multi_step. apply ST_Fst... assumption.
+  intros. induction H; econstructor. apply ST_Fst... assumption.
 Qed.
 
 Lemma multistep_FirstTuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
   value t1 -> value t2 -> (first Γ (tuple Γ t1 t2)) -->* t1.
 Proof with quick.
-  intros. econstructor.
-  apply ST_FstTuple... constructor.
+  intros. econstructor. apply ST_FstTuple... constructor.
 Qed.
 
 Lemma multistep_Second : forall Γ τ σ (t t' : tm Γ (τ × σ)),
   (t -->* t') -> (second Γ t) -->* (second Γ t').
 Proof with quick.
-  intros. induction H.
-  - constructor.
-  - eapply multi_step. apply ST_Snd... assumption.
+  intros. induction H; econstructor. apply ST_Snd... assumption.
 Qed.
 
 Lemma multistep_SecondTuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
   value t1 -> value t2 -> (second Γ (tuple Γ t1 t2)) -->* t2.
-Proof with quick.
-  intros. econstructor.
-  apply ST_SndTuple... constructor.
-Qed.
+Proof with quick. intros. econstructor. apply ST_SndTuple... constructor. Qed.
 
 Lemma multistep_Case : forall Γ τ σ ρ e e' c1 c2,
   (e -->* e') -> (@case Γ τ σ ρ e c1 c2) -->* (@case Γ τ σ ρ e' c1 c2).
 Proof with quick.
-  intros. induction H.
-  - constructor.
-  - eapply multi_step. apply ST_Case... assumption.
+  intros. induction H; econstructor. apply ST_Case... assumption.
 Qed.
 
 Lemma multistep_Case1 : forall Γ τ σ ρ e c1 c1' c2,
   value e -> (c1 -->* c1') -> (@case Γ τ σ ρ e c1 c2) -->* (@case Γ τ σ ρ e c1' c2).
 Proof with quick.
-  intros. induction H0.
-  - constructor.
-  - eapply multi_step. apply ST_Case1... assumption.
+  intros. induction H0; econstructor. apply ST_Case1... assumption.
 Qed.
 
 Lemma multistep_Case2 : forall Γ τ σ ρ e c1 c2 c2',
   value e -> value c1 -> (c2 -->* c2') -> (@case Γ τ σ ρ e c1 c2) -->* (@case Γ τ σ ρ e c1 c2').
 Proof with quick.
-  intros. induction H1.
-  - constructor.
-  - eapply multi_step. apply ST_Case2... assumption.
+  intros. induction H1; econstructor. apply ST_Case2... assumption.
 Qed.
 
 Lemma multistep_CaseInl : forall Γ τ σ ρ e c1 c2,
   value e -> value c1 -> value c2 ->
     (@case Γ τ σ ρ (inl Γ _ _ e) c1 c2) -->* (@app Γ ρ τ c1 e).
 Proof with quick.
-  intros. econstructor...
-  - apply ST_CaseInl...
-  - constructor.
+  intros. econstructor... apply ST_CaseInl... constructor.
 Qed.
 
 Lemma multistep_CaseInr : forall Γ τ σ ρ e c1 c2,
   value e -> value c1 -> value c2 ->
     (@case Γ τ σ ρ (inr Γ _ _ e) c1 c2) -->* (@app Γ ρ σ c2 e).
 Proof with quick.
-  intros. econstructor...
-  - apply ST_CaseInr...
-  - constructor.
+  intros. econstructor... apply ST_CaseInr... constructor.
 Qed.
 
 Lemma multistep_Inl : forall Γ τ σ e e',
   (e -->* e') ->
     (@inl Γ τ σ e) -->* (@inl Γ τ σ e').
 Proof with quick.
-  intros. induction H...
-  - constructor.
-  - econstructor. apply ST_Inl... assumption.
+  intros. induction H; econstructor... apply ST_Inl...
 Qed.
 
 Lemma multistep_Inr : forall Γ τ σ e e',
   (e -->* e') ->
     (@inr Γ τ σ e) -->* (@inr Γ τ σ e').
 Proof with quick.
-  intros. induction H...
-  - constructor.
-  - econstructor. apply ST_Inr... assumption.
+  intros. induction H; econstructor. apply ST_Inr... assumption.
 Qed.
 
 Lemma multistep_Get : forall Γ τ n i (t t' : tm Γ (Array n τ)),
   (t -->* t') ->
     get Γ i t -->* get Γ i t'.
 Proof with quick.
-  intros. induction H...
-  - econstructor.
-  - econstructor. econstructor... assumption.
+  intros. induction H; econstructor... econstructor. assumption.
 Qed.
 
 Lemma subst_R :

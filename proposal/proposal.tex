@@ -160,8 +160,11 @@
 
 AI and machine learning research has sparked a lot of new interest in recent times. It has been used in fields such as computer vision, natural language processing, and as opponents in various games such as chess and Go.
 Researchers set up functions referred to as layers between the input and output data and through an algorithm called back propagation, try to optimize the functions such that the network has learned how to solve the problem implied by the data. Back propagation which makes heavy use of automatic differentiation, but programming in an environment which allows for automatic differentiation can be limited.
+
 Frameworks such as Tangent\fancyfootnote{https://github.com/google/tangent} or autograd\fancyfootnote{https://github.com/HIPS/autograd} make use of source code transformations and operator overloading, which can limit which optimizations one is able to apply to generated code. Support for higher order derivatives is also limited.
-Programming language research has a rich history with many well-known both high- and low-level optimization techniques such as partial evaluation or deforestation. If instead of a framework, we were to have a programming language that is able to facilitate automatic differentiation, we would be able to apply many of these techniques.
+
+Programming language research has a rich history with many well-known both high- and low-level optimization techniques such as partial evaluation or deforestation.
+If instead of a framework, we were to have a programming language that is able to facilitate automatic differentiation, we would be able to apply many of these techniques.
 We would get benefits from other results from programming languages research such as: ease defining functions for use in a gradient descent optimization through higher order functions and correctness through the use of a possible type system.
 
 In this thesis, we will aim to formalize an extendable proof of an implementation of automatic differentiation on a simply typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
@@ -174,10 +177,11 @@ With this thesis we will aim for the following goals:
 \begin{itemize}
   \item Formalize the proof of forward-mode automatic differentiation specified by Stanton, Huot, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
   % \item Formulate the proofs such that it facilitates further extensions.
-  \item Extend the proof to polymorphic types.
+  % \item Extend the proof to polymorphic types.
   % \item Adapt the proof to a small imperative language.
-  \item Prove that well-known optimizations such as the partial evaluation, are correct with respect to automatic differentiation.
+  \item Prove that well-known compile-time optimizations such as the partial evaluation, are correct with respect to automatic differentiation.
   \item Prove the correctness of the continuation-based automatic differentiation algorithm.
+  \item Extend the proof with array types.
   % \item (TODO: UNLIKELY) Extend the original proof with iteration and possibly recursion.
   % \item (TODO: MAYBE) Extend the original proof with inductive types.
   % \item (TODO: MAYBE) Extend the original proof with polymorphism.
