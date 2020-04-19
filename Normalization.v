@@ -5,6 +5,7 @@ Require Import Strings.String.
 Require Import Relations.
 Require Import Logic.JMeq.
 Require Import Vector.
+Require Import CoLoR.Util.Vector.VecUtil.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
@@ -28,8 +29,8 @@ Local Open Scope program_scope.
 Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
   | v_real : forall {Γ r},
     value (rval Γ r)
-  | v_build : forall {Γ τ n i f},
-    value (build Γ τ n i f)
+  | v_build : forall {Γ τ n ta},
+    value (build Γ τ n ta)
   (* | v_build_cons : forall {Γ τ n t ta},
     value ta ->
     value t ->
@@ -48,6 +49,14 @@ Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
     value (inr Γ τ σ t)
 .
 Hint Constructors value : ad.
+
+Definition F_nth {A n} (i : Fin.t n) : vector A n -> A.
+Proof with quick.
+  intros v.
+  induction i...
+  - pose proof (Vhead v)...
+  - apply (IHi (Vtail v)).
+Defined.
 
 Reserved Notation "t1 --> t2" (at level 40).
 Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
@@ -91,8 +100,8 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | ST_Get : forall Γ τ n (t t' : tm Γ (Array n τ)) (ti : Fin.t n),
     t --> t' ->
     get Γ ti t --> get Γ ti t'
-  | ST_GetBuild : forall Γ τ n i c (f : Fin.t n -> tm Γ τ),
-    get Γ i (build Γ τ n c f) --> f i
+  | ST_GetBuild : forall Γ τ n i (ta : vector (tm Γ τ) n),
+    get Γ i (build Γ τ n ta) --> F_nth i ta
   (* | ST_GetFS : forall Γ τ n i (t : tm Γ τ) ta,
     value ta ->
     value t ->
@@ -241,8 +250,8 @@ Qed.
 
 Equations Rel {Γ} τ (t : tm Γ τ): Prop :=
 Rel Real t := halts t;
-Rel (Array n τ) t := halts t /\ (exists c (f : Fin.t n -> tm Γ τ),
-  t -->* build Γ τ n c f /\ forall i, Rel τ (f i));
+Rel (Array n τ) t := halts t /\ (exists (ta : vector (tm Γ τ) n),
+  t -->* build Γ τ n ta /\ forall i, Rel τ (F_nth i ta));
 Rel (τ1 × τ2) t :=
   halts t /\ (exists (r : tm Γ τ1) (s : tm Γ τ2),
     t -->* tuple Γ r s /\
@@ -303,8 +312,8 @@ Proof with quick.
   { simp Rel. splits...
     { apply (step_preserves_halting t t' H0).
       apply R_halts in H... }
-    { simp Rel in H. destruct H as [Hh [c [f [Hst H']]]].
-      exists c. exists f. splits...
+    { simp Rel in H. destruct H as [Hh [ta [Hst H']]].
+      exists ta. splits...
       dependent destruction Hst.
       { dependent destruction H0. }
       { rewrite <- (step_deterministic _ _ _ _ _ H H0)... } } }
@@ -358,8 +367,8 @@ Proof with quick.
   { simp Rel. splits...
     { apply (step_preserves_halting t t' H0).
       apply R_halts in H... }
-    { simp Rel in H. destruct H as [Hh [c [f [Hst H']]]].
-      exists c. exists f. splits...
+    { simp Rel in H. destruct H as [Hh [ta [Hst H']]].
+      exists ta. splits...
       econstructor... } }
   { simp Rel in *.
     split; destruct H as [Hh Ht]...
@@ -610,13 +619,14 @@ Proof with quick.
     simp Rel.
     splits...
     { apply value_halts... }
-    { exists i. exists (substitute sb ∘ t).
-      splits... constructor. } }
+    { exists (Vmap (substitute sb) t).
+      splits... constructor.
+      admit. } }
   { (* Get *)
     intros sb H.
     pose proof (IHt sb H) as H'; clear IHt.
-    simp Rel in H'.
-    destruct H' as [Hh [c [f [Hst Hr]]]].
+    simp Rel in *.
+    destruct H' as [Hh [ta [Hst H']]].
     eapply multistep_preserves_R'...
     eapply multi_trans.
     eapply multistep_Get...

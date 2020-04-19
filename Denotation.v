@@ -11,6 +11,7 @@ Require Import Coq.Program.Basics.
 Require Import Coquelicot.Derive.
 Require Import Coquelicot.Continuity.
 Require Import Coquelicot.Hierarchy.
+Require Import CoLoR.Util.Vector.VecUtil.
 Require Import Equations.Equations.
 Import EqNotations.
 
@@ -175,7 +176,7 @@ Equations shave_fin {Γ τ n} (f : Fin.t (S n) -> tm Γ τ) : Fin.t n -> tm Γ �
 shave_fin f i := f (FS i).
 
 Reserved Notation "⟦ t ⟧ₜₘ".
-Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ by struct t := {
+Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ := {
 (* STLC *)
 denote_tm (Γ:=Γ) (τ:=τ) (var Γ τ v) ctx := denote_v v ctx;
 denote_tm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) ctx := (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx);
@@ -183,7 +184,7 @@ denote_tm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x,
 (* STLC extra *)
 denote_tm (Γ:=Γ) (τ:=τ) (letn Γ τ σ t b) ctx := ⟦ b ⟧ₜₘ (⟦ t ⟧ₜₘ ctx, ctx);
 (* Arrays *)
-denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n i f) ctx := denote_array n f ctx;
+denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n f) ctx := denote_array n f ctx;
 denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := denote_idx i (⟦ ta ⟧ₜₘ ctx);
 (* Reals *)
 denote_tm (Γ:=Γ) (τ:=τ) (rval Γ r) ctx := r;
@@ -200,11 +201,11 @@ denote_tm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) ctx with ⟦e⟧ₜₘ ctx := {
 denote_tm (Γ:=Γ) (τ:=τ) (inl Γ τ σ e) ctx := Datatypes.inl (⟦e⟧ₜₘ ctx);
 denote_tm (Γ:=Γ) (τ:=τ) (inr Γ σ τ e) ctx := Datatypes.inr (⟦e⟧ₜₘ ctx) }
 where "⟦ t ⟧ₜₘ" := (denote_tm t)
-where denote_array {Γ τ} n (f : Fin.t n -> tm Γ τ)
-  : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ by struct n :=
-denote_array 0 f ctx := tt;
-denote_array (S n) f ctx := (⟦ f (nat_to_fin n) ⟧ₜₘ ctx,
-  (denote_array n (shave_fin f)) ctx).
+where denote_array {Γ τ} n (f : vector (tm Γ τ) n)
+  : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ :=
+denote_array 0 ta ctx := tt;
+denote_array (S n) ta ctx := (⟦ F_nth (nat_to_fin n) ta ⟧ₜₘ ctx,
+  (denote_array n (Vtail ta)) ctx).
 
 with denote_array {Γ τ n} (i : Fin.t n) (f : Fin.t n -> tm Γ τ)
   : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ :=

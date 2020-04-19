@@ -68,10 +68,10 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   (* | build_nil : forall τ,
     tm Γ (Array τ) *)
   | build :
-    forall τ n (i : Fin.t n),
+    forall τ n,
     (* forall (t : tm Γ τ), *)
-    (* Vector.t (tm Γ τ) n -> tm Γ (Array τ) *)
-    (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ)
+    Vector.t (tm Γ τ) n -> tm Γ (Array n τ)
+    (* (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ) *)
     (* tm Γ (Array n τ) -> tm Γ (Array (S n) τ) *)
   | get : forall {τ n},
     Fin.t n -> tm Γ (Array n τ) -> tm Γ τ
@@ -106,8 +106,8 @@ Derive Signature for Env.
 Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
 shave_env (env_cons t G) := G.
 
-Lemma build_congr : forall Γ τ n i (ta ta' : Fin.t n -> tm Γ τ),
-  ta = ta' -> build Γ τ n i ta = build Γ τ n i ta'.
+Lemma build_congr : forall Γ τ n (ta ta' : vector (tm Γ τ) n),
+  ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
 Proof with quick. intros. rewrites. Qed.
 
 (* Examples *)
@@ -204,7 +204,7 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
 
   (* Arrays *)
   (* | build_nil _ _ => build_nil _ _ *)
-  | build _ _ _ i ta => build _ _ _ i (rename r ∘ ta)
+  | build _ _ _ ta => build _ _ _ (Vmap (rename r) ta)
   | get _ ti ta => get _ ti (rename r ta)
 
   (* Reals *)
@@ -247,7 +247,7 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
 
   (* Arrays *)
   (* | build_nil _ _ => build_nil _ _ *)
-  | build _ _ _ i ta => build _ _ _ i (substitute s ∘ ta)
+  | build _ _ _ ta => build _ _ _ (Vmap (substitute s) ta)
   | get _ ti ta => get _ ti (substitute s ta)
 
   (* Reals *)
@@ -296,22 +296,18 @@ Lemma lift_sub_id : forall Γ τ,
   substitute_lifted (@id_sub Γ) = @id_sub (τ::Γ).
 Proof. intros. ExtVar. Qed.
 
-Lemma app_sub_id_map: forall Γ τ n (vc : Vector.t (tm Γ τ) n),
-  Vmap (substitute id_sub) vc = vc.
-Proof with quick.
-  induction vc; simpl...
-  rewrite IHvc.
-Admitted.
-
 Lemma app_sub_id : forall Γ τ (t : tm Γ τ),
   substitute id_sub t = t.
 Proof with quick.
+  (* intros.
+  remember (substitute id_sub t). *)
   induction t; rewrites;
   try (rewrite lift_sub_id; rewrites).
-  unfold compose.
   erewrite build_congr...
-  extensionality x...
-Qed.
+  induction t...
+  rewrite IHt.
+  admit.
+Admitted.
 
 Lemma lift_ren_id : forall Γ τ,
   rename_lifted (@id_ren Γ) = @id_ren (τ::Γ).
@@ -321,10 +317,11 @@ Lemma app_ren_id : forall Γ τ (t : tm Γ τ),
   rename id_ren t = t.
 Proof with quick.
   induction t; Rewrites lift_ren_id.
-  unfold compose.
   erewrite build_congr...
-  extensionality x...
-Qed.
+  induction t...
+  rewrite IHt.
+  admit.
+Admitted.
 
 (* Composing substitutions and renames *)
 Definition compose_ren_ren {Γ Γ' Γ''} (r : ren Γ' Γ'') (r' : ren Γ Γ')
@@ -349,9 +346,10 @@ Proof with quick.
   induction t; Rewrites lift_ren_ren.
   unfold compose.
   rewrite build_congr with
-    (ta':=(fun x : Fin.t n => rename r (rename r' (t x))))...
-  extensionality x...
-Qed.
+    (ta':=(Vmap (rename r) (Vmap (rename r') t)))...
+  induction t...
+  rewrite IHt.
+Admitted.
 
 Lemma lift_sub_ren : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (r : ren Γ Γ'),
   substitute_lifted (τ:=τ) (compose_sub_ren s r) =
@@ -366,9 +364,9 @@ Proof with quick.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_ren.
   erewrite build_congr...
-  unfold compose.
-  extensionality x...
-Qed.
+  induction t...
+  rewrite IHt.
+Admitted.
 
 Lemma lift_ren_sub : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (s : sub Γ Γ'),
   substitute_lifted (τ:=τ) (compose_ren_sub r s) =
@@ -387,8 +385,8 @@ Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_ren_sub.
   erewrite build_congr...
-  extensionality x...
-Qed.
+  induction t...
+Admitted.
 
 Lemma lift_sub_sub : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (s' : sub Γ Γ'),
   substitute_lifted (τ:=τ) (compose_sub_sub s s') =
@@ -407,8 +405,8 @@ Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_sub.
   erewrite build_congr...
-  extensionality x...
-Qed.
+  induction t...
+Admitted.
 
 (* Helpers *)
 Lemma rename_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (r : ren Γ Γ'),
@@ -439,8 +437,8 @@ Proof with eauto.
     rewrite lift_sub_id;
     rewrite app_sub_id)...
   erewrite build_congr...
-  extensionality x...
-Qed.
+  induction t...
+Admitted.
 
 (* Lemma subst_cons_lift_cons :
   forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (s : tm Γ' σ) (sb : sub Γ Γ'),
