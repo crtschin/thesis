@@ -53,6 +53,8 @@
         \listcseadd{\listname}{\n\ #1}}%
     \fancypagestyle{fancyfootnote}{%
         \fancyfoot[L]{\makefootnotelist{\listname}}%
+        \fancyfoot[C]{}%
+        \fancyfoot[R]{\thepage}%
     }\thispagestyle{fancyfootnote}}%
 \fancypagestyle{plain}{%
   \fancyfoot[C]{\thepage}
@@ -62,11 +64,12 @@
 \setlength{\headheight}{15pt}
 \pagestyle{fancy}
 \lhead{Utrecht University}
-\cfoot{\thepage}
-\rfoot{Curtis Chin Jen Sem}
+\rfoot{\thepage}
+\cfoot{ }
 \renewcommand{\headrulewidth}{0.5pt}
 \renewcommand{\footrulewidth}{0.5pt}
 \renewcommand{\listingscaption}{Code snippet}
+
 \def\Vakar{V\'{a}k\'{a}r}
 \def\<#1>{\csname keyword@@#1\endcsname}
 \begingroup
@@ -79,7 +82,11 @@
 \def\keyword@style#1{\texttt{#1}}
 \do{bottom}
 \do{Equations}
+\do{Coquelicot}
 \do{Program}
+\do{Set}
+\do{Prop}
+\do{Type}
 \do{return}
 \do{simpl}
 \do{Either}
@@ -190,12 +197,6 @@ With this thesis we will aim for the following goals:
   % \item (TODO: LIKELY) Prove the correctness of the continuation-based automatic differentiation algorithm.
 \end{itemize}
 
-% Ideally?:
-% Contributing an extendable proof of a simply typed lambda calculus
-% On which both the correctness of optimizations and language
-% extensions could be proven
-% Proof of optimizations maintaining correctness (partial evaluation)
-
 As a notational convention, we will use specialized notation in the definitions themselves. Coq requires that pretty printed notation be defined separately from the definitions they reference.
 
 \section{Background}
@@ -250,14 +251,18 @@ $f      $&$=$&$v_3$&$=$&$5$           &$f'$&$=$&$v'_3$&$=$&$5$ \\
 
 The notion of denotational semantics tries to find underlying mathematical models able to underpin the concepts known in programming languages. The most well-known example is the solution given by Dana Scott and Christopher Strachey\cite{Scott1977} for lambda calculi, also called domain theory.
 To be able to formalize non-termination and partiality, they thought to use concepts such as partial orderings and least fixed points\cite{aaby2020}.
-In this model, programs are interpreted as partial functions and computations as taking the fixpoint of such functions.
+In this model, programs are interpreted as partial functions, and recursive computations as taking the fixpoint of such functions.
 Non-termination, on the other hand, is formalized as a value \<bottom> that is lower in the ordering relation than any other element.
 
 In our specific case, we try to find a satisfactory model we can use to show that our implementation of forward mode automatic differentiation is correct when applied to a simply typed lambda calculus.
 In the original pen and paper proof of automatic differentiation this thesis is based on, the mathematical models used were diffeological spaces, which are generalization of smooth manifolds.
 For the purpose of this thesis, however, this was deemed excessive and much too difficult and time consuming to implement in a mathematically sound manner in \<Coq>.
-As such, we chose to make use of \<Coq>'s existing types as denotations and base the relation on the denotations instead of the syntactic structures.
-Due to the relative simplicity of the language, we did not yet require domain theoretical concepts. If recursion or iteration were to be added to the language, it is currently expected that these would be needed.
+We avoided using many of the concepts dependent on traditional domain theory due to its limited support in Coq.
+There are possible libraries we could have used which have resulted from experiments trying to encode domain theoretical models in Coq\cite{Benton2009}\cite{Dockins2014}, but these were incompatible with recent versions.
+As a part of its type system, \<Coq> contains a set-theoretical model available under the sort \<Set>.
+Because recursion, iteration and other concepts dealing with non-termination and partiality are left out of the scope of this thesis, this set-theoretical model was satisfactory for encoding the denotational semantics.
+
+Because we use the real numbers as the ground type in our language, we also had need for an encoding of the real numbers in Coq. The library for real numbers in \<Coq> has improved in recent times from one based on a completely axiomatic definition to one involving Cauchy sequences\fancyfootnote{https://coq.inria.fr/library/Coq.Reals.ConstructiveCauchyReals.html}. For the purposes of this thesis, however, we needed differentiability as the denotational result of applying the macro operation. Instead of encoding this by hand, we opted for the more comprehensive library \<Coquelicot>\cite{Boldo2015CoquelicotAU}.
 
 \todo{Fill in}
 
@@ -267,8 +272,8 @@ Due to the relative simplicity of the language, we did not yet require domain th
 In the 30 years since it has been released, research has contributed to extending the proof assistant with additional features such as inductive and co-inductive data types\cite{Coquand1990}, dependent pattern matching\cite{Sozeau2010} and advanced modular constructions for organizing large mathematical proofs\cite{Sozeau2008}\cite{Mahboubi2013}.
 
 The core of this type theory is based on constructive logic and so many of the laws known in classical logic are not provable.
-Examples include the law of the excluded middle, $\forall A, A \vee \neg A$, or the law of functional extensionality, $(\forall x, f(x) = g(x)) \rightarrow f = g$.
-In some cases they can, however, be safely added to \<Coq> without making its logic inconsistent.
+An Examples include the law of the excluded middle, $\forall A, A \vee \neg A$.
+In some cases they can, however, be safely added to \<Coq> without making its logic inconsistent. These are readily available in the standard library.
 Due to its usefulness in proving propositions over functions, we will make use of the functional extensionality axiom in \<Coq>.
 
 \subsubsection{Language representation}
@@ -305,7 +310,7 @@ But even when choosing an intrinsic representation, the problem of variable bind
 Much meta-theoretical research has been done on possible approaches to this problem each with their own advantages and disadvantages.
 The POPLmark challenge gives a comprehensive overview of each of the possibilities in various proof assistants\cite{Aydemir2005}.
 An example of an approach is the nominal representation where every variable is named.
-While this does follow the standard format used in regular mathematics, problems such as alpha-conversion and capture-avoidance arise.
+While this does follow the standard format used in regular mathematics, problems such as alpha-conversion and capture-avoidance appears.
 
 \begin{listing}[h]
   \begin{minted}{coq}
@@ -452,10 +457,10 @@ Note that we use the unconventional symbol \texttt{<+>} for sum types instead of
   \label{lst:stlc_types}
 \end{listing}
 
-We have chosen the intrinsic strongly-typed formulation used in \cite{Benton2011} as the general framework to work in.
+We have chosen the intrinsic strongly-typed formulation used by Nick Benton et. al.\cite{Benton2011} as the general framework to work in.
 This includes the various substitution and lifting operations for working with typing contexts. Typing contexts themselves consists of lists of types, while variables are typed indices into this list. We almost perfectly mimic the example shown in snippet~\ref{lst:strong_stlc}.
 
-We have simplified a few of the language constructs used in \cite{huot2020correctness}, shown in snippet~\ref{lst:stlc_terms}. For working with product types they make use of n-products and pattern matching, while we have opted for projection tuples. They proceeded to extended their base language with arbitrarily sized variant types, which we have substituted for standard sums reminiscent of the \<Either> type in Haskell along with specialized case expressions. Both of these changes were intended to simplify the language as much as possible while still retaining the same core functionality and types.
+We have simplified a few of the language constructs used in the main paper by Stanton, Huot, and \Vakar{}\cite{huot2020correctness}, shown in snippet~\ref{lst:stlc_terms}. For working with product types they make use of n-products and pattern matching, while we have opted for projection tuples. They proceeded to extended their base language with arbitrarily sized variant types, which we have substituted for standard sums reminiscent of the \<Either> type in Haskell along with specialized case expressions. Both of these changes were intended to simplify the language as much as possible while still retaining the same core functionality and types.
 
 \begin{listing}
   \begin{minted}{coq}
@@ -591,11 +596,10 @@ Theorem semantic_correct_R :
 
 \subsection{Extensions}
 
-We will be looking to extend the current prototype proof with the continuation-based AD macro mentioned in \cite{huot2020correctness}.
-We will also try to extend the proof with a small imperative language we are able to translate into the simply typed lambda calculus.
-The goal is to work towards results usable in the context of program optimizations.
-One possibility is to go towards a SSA (static single assignment) representation which has many benefits as a well-known possible internal representation for use in compilers\cite{Pop2006}.
-One other benefit is that this representation can also be transformed into a minimal functional language\cite{chakravarty2004347}.
+We will be looking to extend the current prototype proof with the continuation-based AD macro mentioned by Stanton, Huot, and \Vakar{}\cite{huot2020correctness}.
+We will also try to extend the proof with array types which should be better for performance than the n-tuples used in the original proof.
+We will be working off of the results achieved by Shaikhha, et. al.\cite{Shaikha2019}, where they also successfully implement several compile-time optimizations. % One possibility is to go towards a SSA (static single assignment) representation which has many benefits as a well-known possible internal representation for use in compilers\cite{Pop2006}.
+% One other benefit is that this representation can also be transformed into a minimal functional language\cite{chakravarty2004347}.
 
 \todo{Fill in}
 
