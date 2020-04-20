@@ -19,6 +19,7 @@ Require Import AD.Macro.
 (* Require AD.DepList. *)
 Require Import AD.Tactics.
 Require Import AD.Normalization.
+Require Import AD.vect.
 
 Local Open Scope program_scope.
 
@@ -37,98 +38,6 @@ Local Open Scope program_scope.
   Goal: Write out the logical relation over types with the goal of having both
     the proof of differentiability and witness in one.
 *)
-
-(*
-Agda-style generics
-*)
-
-(* Inductive Functor : Type :=
-  | Id : Functor
-  | K : Set -> Functor
-  | Fprod : Functor -> Functor -> Functor
-  | Fadd : Functor -> Functor -> Functor.
-
-Fixpoint denote_functor (f : Functor): Set -> Set :=
-  fun s => match f with
-  | Id => s
-  | K a => a
-  | Fprod a b => prod (denote_functor a s) (denote_functor b s)
-  | Fadd a b => sum (denote_functor a s) (denote_functor b s)
-  end.
-Notation "⟦ f ⟧₋" := (denote_functor f). *)
-
-(* Inductive Fixed F : Set :=
-  | unfix : ⟦ F ⟧₋ (Fixed F) -> Fixed F
-. *)
-
-(*
-  CPDT-style universe types
-*)
-
-(* Record constructor : Type := Con {
-  nonrecursive : Type;
-  recursive : nat;
-}.
-Definition datatype := list constructor.
-Section denote.
-  Variable T : Type.
-  Definition denote_constructor (c : constructor) :=
-    nonrecursive c -> ilist T (recursive c) -> T.
-  Definition denote_datatype := hlist denote_constructor.
-End denote.
-Notation "[ v , r ~> x ]" := ((fun v r => x) : denote_constructor _ (Con _ _)).
-
-Definition Empty_set_dt : datatype := nil.
-Definition unit_dt : datatype := Con unit 0 :: nil.
-Definition bool_dt : datatype := Con unit 0 :: Con unit 0 :: nil.
-Definition nat_dt : datatype := Con unit 0 :: Con unit 1 :: nil.
-Definition list_dt (A : Type) : datatype := Con unit 0 :: Con A 1 :: nil.
-Definition reals_dt : datatype := Con R 0 :: nil.
-Definition fn_dt (A : Type) (B : Type) : datatype := Con (A -> B) 0 :: nil.
-Definition prod_dt (A : Type) (B : Type) : datatype := Con (A * B) 0 :: nil.
-Definition sum_dt (A : Type) (B : Type) : datatype := Con A 0 :: Con B 0 :: nil.
-Definition functor_dt (A : Type) (B : Type) : datatype :=
-  Con R 0 :: Con A 0 :: Con B 0 ::Con (A -> B) 0 :: Con (A * B) 0 :: nil.
-
-Definition Empty_set_den : denote_datatype Empty_set Empty_set_dt :=
-  HNil.
-Definition unit_den : denote_datatype unit unit_dt :=
-  [_, _ ~> tt] ::: HNil.
-Definition bool_den : denote_datatype bool bool_dt :=
-  [_, _ ~> true] ::: [_, _ ~> false] ::: HNil.
-Definition nat_den : denote_datatype nat nat_dt :=
-  [_, _ ~> O] ::: [_, r ~> S (hd r)] ::: HNil.
-Definition list_den (A : Type) : denote_datatype (list A) (list_dt A) :=
-  [_, _ ~> nil] ::: [x, r ~> x :: hd r] ::: HNil.
-Definition reals_den : denote_datatype R reals_dt :=
-  [a, r ~> a] ::: HNil.
-Definition prod_den (A : Type) (B : Type) : denote_datatype
-  (A * B) (prod_dt A B) :=
-  [a, r ~> a] ::: HNil.
-Definition fn_den (A : Type) (B : Type) : denote_datatype
-  (A -> B) (fn_dt A B) :=
-  [a, r ~> a] ::: HNil.
-Definition sum_den (A : Type) (B : Type) : denote_datatype
-  (sum A B) (sum_dt A B) :=
-  [a, r ~> Datatypes.inl a] ::: [a, r ~> Datatypes.inr a] ::: HNil.
-
-Definition fix_denote (T : Type) (dt : datatype) :=
-  forall (R : Type), denote_datatype R dt -> (T -> R). *)
-
-(* Reserved Notation "⟦ τ ⟧ₜ".
-Fixpoint denote_t τ : datatype :=
-  match τ with
-  | Real => reals_dt
-  | τ1 × τ2 => prod_dt (denote_datatype' ⟦τ1⟧ₜ) (denote_datatype' ⟦τ2⟧ₜ)
-  | τ1 → τ2 => fn_dt (denote_datatype' ⟦τ1⟧ₜ) (denote_datatype' ⟦τ2⟧ₜ)
-  | τ1 <+> τ2 => sum_dt (denote_datatype' ⟦τ1⟧ₜ) (denote_datatype' ⟦τ2⟧ₜ)
-  end
-with denote_datatype' (d : datatype) : Type :=
-  match d with
-  | [] => unit
-  | h :: f => denote_constructor _ h * denote_datatype f
-  end
-where "⟦ τ ⟧ₜ" := (denote_t τ). *)
 
 Fixpoint denote_array_type n (s : Set) : Set :=
   match n with
@@ -200,19 +109,12 @@ denote_tm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) ctx with ⟦e⟧ₜₘ ctx := {
 denote_tm (Γ:=Γ) (τ:=τ) (inl Γ τ σ e) ctx := Datatypes.inl (⟦e⟧ₜₘ ctx);
 denote_tm (Γ:=Γ) (τ:=τ) (inr Γ σ τ e) ctx := Datatypes.inr (⟦e⟧ₜₘ ctx) }
 where "⟦ t ⟧ₜₘ" := (denote_tm t)
+(* Helper for arrays *)
 where denote_array {Γ τ} n (f : Fin.t n -> tm Γ τ)
   : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ by struct n :=
 denote_array 0 f ctx := tt;
 denote_array (S n) f ctx := (⟦ f (nat_to_fin n) ⟧ₜₘ ctx,
   (denote_array n (shave_fin f)) ctx).
-
-with denote_array {Γ τ n} (i : Fin.t n) (f : Fin.t n -> tm Γ τ)
-  : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ :=
-  match i with
-  denote_tm (F1 n') => fun ctx => (⟦ f () ⟧ₜₘ ctx, tt)
-  denote_tm (FS n' i') => fun ctx => (⟦ f (FS i') ⟧ₜₘ ctx, (denote_array i' f) ctx)
-  end
-where "⟦ t ⟧ₜₘ" := (denote_tm t).
 
 Equations denote_env {Γ} (G : Env Γ): ⟦ Γ ⟧ₜₓ :=
 denote_env env_nil => tt;

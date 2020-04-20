@@ -18,7 +18,6 @@ Local Open Scope program_scope.
 
 Inductive ty : Type :=
   | Real : ty
-  (* | Nat : nat -> ty *)
   | Array : nat -> ty -> ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
