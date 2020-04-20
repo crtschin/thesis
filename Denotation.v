@@ -110,7 +110,7 @@ denote_tm (Γ:=Γ) (τ:=τ) (inl Γ τ σ e) ctx := Datatypes.inl (⟦e⟧ₜₘ
 denote_tm (Γ:=Γ) (τ:=τ) (inr Γ σ τ e) ctx := Datatypes.inr (⟦e⟧ₜₘ ctx) }
 where "⟦ t ⟧ₜₘ" := (denote_tm t)
 (* Helper for arrays *)
-where denote_array {Γ τ} n (f : Fin.t n -> tm Γ τ)
+where denote_array {Γ τ} n (f : Fin.t n -> ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ)
   : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ by struct n :=
 denote_array 0 f ctx := tt;
 denote_array (S n) f ctx := (⟦ f (nat_to_fin n) ⟧ₜₘ ctx,

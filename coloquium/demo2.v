@@ -1,4 +1,16 @@
+Require Import Lists.List.
+Import ListNotations.
+Require Import Logic.FunctionalExtensionality.
+Require Import Relations.
+Require Import Logic.JMeq.
+Require Vectors.Fin.
+Require Import Arith.PeanoNat.
+Require Import Coq.Program.Equality.
+Require Import Coq.Program.Basics.
+
+Require Import CoLoR.Util.Vector.VecUtil.
 Require Import Equations.Equations.
+
 Open Scope list_scope.
 
 Inductive ty :=
@@ -84,10 +96,13 @@ End extrinsic.
 Reset extrinsic.
 
 Section intrinsic.
+  Reserved Notation "τ '∈' Γ" (at level 75).
   Inductive Var : Ctx -> ty -> Set :=
-    | Top : forall Γ τ, Var (τ::Γ) τ
-    | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ.
-  Notation "x ∈ Γ" := (Var Γ x) (at level 75).
+    | Top : forall Γ τ, τ ∈ (τ::Γ)
+    | Pop : forall Γ τ σ, τ ∈ Γ -> τ ∈ (σ::Γ)
+  where "x ∈ Γ" := (Var Γ x).
+
+  Derive Signature for Var.
 
   Inductive tm : Ctx -> ty -> Set :=
     | var : forall Γ τ,
@@ -99,6 +114,43 @@ Section intrinsic.
     | tru : forall Γ, tm Γ bool
     | fls : forall Γ, tm Γ bool.
 
+  Definition ren (Γ Γ' : list ty) :=
+    forall τ, Var Γ τ -> Var Γ' τ.
+
+  Definition sub (Γ Γ' : list ty) :=
+    forall τ, Var Γ τ -> tm Γ' τ.
+
+  Equations rename_lifted {Γ Γ' τ} (r : ren Γ Γ')
+    : ren (τ::Γ) (τ::Γ') :=
+  rename_lifted r τ (Top Γ τ) => Top Γ' τ;
+  rename_lifted r τ (Pop Γ τ σ v) => Pop Γ' τ σ (r τ v).
+
+  Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
+    match t with
+    | var v => var (r v)
+    | app t1 t2 => app (rename r t1) (rename r t2)
+    | abs f => abs (rename (rename_lifted r) f)
+    | tru => tru
+    | fls => fls
+    end.
+
+  Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
+    := rename (fun ρ x => Pop Γ ρ σ x).
+
+  Equations substitute_lifted {Γ Γ' τ} (s : sub Γ Γ')
+    : sub (τ::Γ) (τ::Γ') :=
+  substitute_lifted s τ (Top Γ σ) := var (σ::Γ') σ (Top Γ' σ);
+  substitute_lifted s τ (Pop Γ τ σ v) := shift (s τ v).
+
+  Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
+    match t with
+    | var v => s v
+    | app t1 t2 => app (substitute s t1) (substitute s t2)
+    | abs f => abs (substitute (substitute_lifted s) f)
+    | tru => tru
+    | fls => fls
+    end.
+
   Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
     | v_abs : forall Γ τ σ (t : tm (σ::Γ) τ),
         value (abs Γ τ σ t)
@@ -109,7 +161,7 @@ Section intrinsic.
   Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     | ST_AppAbs : forall t v,
           value v ->
-          app (abs t) v --> substitute 0 v t
+          app (abs t) v --> substitute (cons_sub v id_sub) t
     | ST_App1 : forall t1 t1' t2,
           t1 --> t1' ->
           app t1 t2 --> app t1' t2

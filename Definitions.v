@@ -159,15 +159,14 @@ Definition gsub (f : ty -> ty) Γ Γ' :=
   forall τ, Var (map f Γ) (f τ) -> tm (map f Γ') (f τ).
 
 Definition ren (Γ Γ' : list ty) :=
-  (* gren Datatypes.id Γ Γ'. *)
   forall τ, Var Γ τ -> Var Γ' τ.
 Definition sub (Γ Γ' : list ty) :=
-  (* gsub Datatypes.id Γ Γ'. *)
   forall τ, Var Γ τ -> tm Γ' τ.
 
 (* Helper functions for defining substitutions on the i'th variable *)
 Definition id_sub {Γ} : sub Γ Γ := var Γ.
-Equations cons_sub {Γ Γ' τ} (e: tm Γ' τ) (s: sub Γ Γ') : sub (τ::Γ) Γ' :=
+Equations cons_sub {Γ Γ' τ} (e: tm Γ' τ) (s: sub Γ Γ')
+  : sub (τ::Γ) Γ' :=
 cons_sub e s τ (Top Γ σ) := e;
 cons_sub e s τ (Pop Γ τ σ v) := s τ v.
 
@@ -229,8 +228,8 @@ Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
 
 Equations substitute_lifted {Γ Γ' τ} (s : sub Γ Γ')
   : sub (τ::Γ) (τ::Γ') :=
-substitute_lifted s τ (Top _ _) := var (_::Γ') _ (Top Γ' _);
-substitute_lifted s τ (Pop _ _ _ v) := shift (s _ v).
+substitute_lifted s τ (Top Γ σ) := var (σ::Γ') σ (Top Γ' σ);
+substitute_lifted s τ (Pop Γ τ σ v) := shift (s τ v).
 
 Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   match t with
