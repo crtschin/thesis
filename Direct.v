@@ -14,6 +14,7 @@ Require Import Coquelicot.Derive.
 Require Import Coquelicot.Continuity.
 Require Import Coquelicot.Hierarchy.
 Require Import Equations.Equations.
+Require Vectors.Fin.
 Import EqNotations.
 
 Require Import AD.Definitions.
@@ -30,12 +31,12 @@ Local Open Scope R_scope.
       Diffeologies and Categorical Gluing by Huot, Staton and Vakar.
 *)
 Equations S τ :
-  (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
+  (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop := {
 S Real f g :=
   (forall (x : R), ex_derive f x) /\
   (fun r => g r) =
     (fun r => (f r, Derive f r));
-S (Array n τ) f g := True;
+S (Array n τ) f g := SA n (S τ) f g;
 S (σ × ρ) f g :=
   exists f1 f2 g1 g2,
   exists (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
@@ -54,7 +55,19 @@ S (σ <+> ρ) f g :=
   (exists g1 g2,
     S ρ g1 g2 /\
       f = Datatypes.inr ∘ g1 /\
-      g = Datatypes.inr ∘ g2).
+      g = Datatypes.inr ∘ g2) }
+where SA {τ} n
+  (S' : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ (Dt τ) ⟧ₜ) -> Prop)
+  (f : R -> ⟦ Array n τ ⟧ₜ)
+  (g : R -> ⟦ Array n (Dt τ) ⟧ₜ) : Prop :=
+SA (τ:=τ) 0 S' f g := True;
+SA (τ:=τ) (Datatypes.S n) S' f g :=
+  forall f' g' f1 g1,
+    S' f1 g1 ->
+    SA n S' f' g' /\
+  forall r,
+    f r = (f1 r, f' r) /\
+      g r = (g1 r, g' r).
 
 Inductive instantiation : forall Γ,
     (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx Γ ⟧ₜₓ) -> Prop :=
@@ -78,6 +91,10 @@ Lemma S_eq : forall τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
 Proof. intros; rewrites. Qed.
 
+Lemma SA_eq : forall n τ S f1 f2 g1 g2,
+  g1 = f1 -> g2 = f2 -> @SA n τ S f1 f2 = @SA n τ S g1 g2.
+Proof. intros. rewrites. Qed.
+
 (*
   Plain words:
     Given a context Γ for which t is well-typed (Γ ⊢ t : τ) and every typing
@@ -96,17 +113,21 @@ Proof with quick.
   unfold compose.
   intros Γ τ t sb Dsb.
   (* pose proof (H τ) as H'. clear H. *)
-  induction t; unfold compose in *.
+  induction t; simp denote_tm in *; unfold compose in *.
   { (* Var *)
     (* Using Inductive Instantiation *)
-    intros. dependent induction v; dependent induction H;
-      quick; simp cons_sub Dtm... }
+    intros; dependent induction v; dependent induction H;
+      quick; simp denote_tm cons_sub Dtm...
+    erewrite S_eq. eapply IHv...
+    all: extensionality x... }
   { (* App *)
     intros.
     specialize IHt1 with sb Dsb; specialize IHt2 with sb Dsb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
     pose proof (IHt2 H) as IHt2'; clear IHt2...
-    simp S in IHt1'. }
+    simp S in IHt1'.
+    erewrite S_eq. eapply IHt1'...
+    all: extensionality x; simp denote_tm Dtm... }
   { (* Abs *)
     intros. simp S. intros.
     unfold compose in *.
@@ -114,12 +135,52 @@ Proof with quick.
     specialize IHt with
       (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r))...
     eapply IHt. constructor; assumption. }
+  { (* Build *)
+    quick. simp S... clear H.
+    induction n.
+    { simp S... }
+    { pose proof (IHn (shave_fin t)).
+      simp S in *...
+      splits.
+      erewrite SA_eq; quick;
+        extensionality x; simp Dtm denote_tm; unfold compose.
+      all: admit.
+      (* exists (fun r => denote_array n (shave_fin (denote_tm ∘ t)) (sb r)).
+      exists (fun r => snd (⟦ Dtm (build Γ τ (Datatypes.S n) t) ⟧ₜₘ (Dsb r))).
+      exists (fun r => (denote_tm ∘ t) (nat_to_fin n) (sb r)).
+      exists (fun r => fst (⟦ Dtm (build Γ τ (Datatypes.S n) t) ⟧ₜₘ (Dsb r)))...  *)
+      } }
+  { (* Get *)
+    quick.
+    pose proof (IHt sb Dsb H) as H'; clear IHt.
+    simp S in *.
+    induction n...
+    { dependent destruction t. }
+    { erewrite S_eq. apply IHn...
+      eapply H'.
+      all: admit.
+      (* destruct H' as [f' [g' [f1 [g1 H']]]].
+      destruct H'.
+      erewrite S_eq. apply IHn...
+      { admit. }
+      { extensionality x... simp denote_tm.
+        admit. }
+      { extensionality x... simp denote_tm.
+        admit. }
+      admit.  *)
+      } }
   { (* Const *)
     quick. simp S... unfold compose.
     splits...
-    { subst. apply ex_derive_const. }
-    { apply functional_extensionality...
-      simp Dtm...
+    { assert (H': (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
+      { extensionality r'. simp denote_tm. unfold const... }
+      rewrite H'. apply ex_derive_const. }
+    { extensionality x...
+      simp Dtm denote_tm...
+      assert (H': (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
+      { extensionality r'. simp denote_tm. unfold const... }
+      rewrite H'. apply injective_projections...
+      unfold const.
       rewrite Derive_const... } }
   { (* Add *)
     simpl in *. intros.
@@ -136,7 +197,13 @@ Proof with quick.
       extensionality x.
       eapply equal_f in Heq1'.
       eapply equal_f in Heq2'.
+      simp denote_tm.
       rewrite Heq1'. rewrite Heq2'...
+      assert
+        (H': (fun x0 : R => ⟦ add Γ t1 t2 ⟧ₜₘ (sb x0)) =
+          fun x0 : R => ⟦ t1 ⟧ₜₘ (sb x0) + ⟦ t2 ⟧ₜₘ (sb x0)).
+      { extensionality r. simp denote_tm... }
+      rewrite H'.
       rewrite Derive_plus... } }
   { (* Tuples *)
     intros... simp S.
@@ -155,16 +222,16 @@ Proof with quick.
     simp S in IHt; pose proof (IHt H) as H'; clear IHt.
     destruct H' as [f1 [f2 [g1 [g2 [Hs1 [Hs2 [Heq1 Heq2]]]]]]].
     erewrite S_eq; quick; extensionality x...
-    { eapply equal_f in Heq1. erewrite Heq1... }
-    { eapply equal_f in Heq2. erewrite Heq2... } }
+    { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
+    { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
   { (* Projection 2 *)
     intros. unfold compose in *... simp Dtm... simpl.
     specialize IHt with sb Dsb.
     simp S in IHt; pose proof (IHt H) as H'; clear IHt.
     destruct H' as [f1 [f2 [g1 [g2 [Hs1 [Hs2 [Heq1 Heq2]]]]]]].
     erewrite S_eq; quick; extensionality x...
-    { eapply equal_f in Heq1. erewrite Heq1... }
-    { eapply equal_f in Heq2. erewrite Heq2... } }
+    { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
+    { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
   { (* Case *)
     intros.
     pose proof (IHt1 sb Dsb H) as IH1; clear IHt1.
@@ -175,15 +242,15 @@ Proof with quick.
     { destruct H' as [Hs [Heq1 Heq2]].
       erewrite S_eq. eapply IH2...
       { extensionality x. eapply equal_f in Heq1.
-        rewrite Heq1... }
+        simp denote_tm. rewrite Heq1... }
       { extensionality x. eapply equal_f in Heq2.
-        rewrite Heq2... } }
+        simp denote_tm. rewrite Heq2... } }
     { destruct H' as [Hs [Heq1 Heq2]].
       erewrite S_eq. eapply IH3...
       { extensionality x. eapply equal_f in Heq1.
-        rewrite Heq1... }
+        simp denote_tm. rewrite Heq1... }
       { extensionality x. eapply equal_f in Heq2.
-        rewrite Heq2... } } }
+        simp denote_tm. rewrite Heq2... } } }
   { (* Inl *)
     intros... simp S... left...
     exists (⟦ t ⟧ₜₘ ∘ sb );
@@ -192,7 +259,7 @@ Proof with quick.
     intros... simp S... right...
     exists (⟦ t ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
-Qed.
+Admitted.
 
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real),

@@ -174,20 +174,20 @@ Programming language research has a rich history with many well-known both high-
 If instead of a framework, we were to have a programming language that is able to facilitate automatic differentiation, we would be able to apply many of these techniques.
 We would get benefits from other results from programming language research such as: ease defining functions for use in a gradient descent optimization through higher-order functions and correctness through the use of a possible type system.
 
-In this thesis, we will aim to formalize an extendable proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
-Our formalization is based on a recent proof by Stanton, Huot, and \Vakar{} \cite{huot2020correctness}.
+In this thesis, we will aim to formalize an extendable correctness proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
+Our formalization is based on a recent proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}.
 They proved, using a denotational model of diffeological spaces, that their forward mode emulating macro is correct when applied to a simply-typed lambda calculus with products, co-products and inductive types.
 
 \todo{Fill in}
 
 With this thesis we will aim for the following goals:
 \begin{itemize}
-  \item Formalize the proof of forward-mode automatic differentiation specified by Stanton, Huot, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
+  \item Formalize the proof of forward-mode automatic differentiation specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
   % \item Formulate the proofs such that it facilitates further extensions.
   % \item Extend the proof to polymorphic types.
   % \item Adapt the proof to a small imperative language.
-  \item Prove that well-known compile-time optimizations such as the partial evaluation, are correct with respect to automatic differentiation.
-  \item Prove the correctness of the continuation-based automatic differentiation algorithm.
+  \item Prove that well-known compile-time optimizations such as the partial evaluation, are correct with respect to the semantics of automatic differentiation.
+  \item Prove the correctness of a continuation-based automatic differentiation algorithm.
   \item Extend the proof with array types.
   % \item (TODO: UNLIKELY) Extend the original proof with iteration and possibly recursion.
   % \item (TODO: MAYBE) Extend the original proof with inductive types.
@@ -256,13 +256,12 @@ Non-termination, on the other hand, is formalized as a value \<bottom> that is l
 
 In our specific case, we try to find a satisfactory model we can use to show that our implementation of forward mode automatic differentiation is correct when applied to a simply-typed lambda calculus.
 In the original pen and paper proof of automatic differentiation this thesis is based on, the mathematical models used were diffeological spaces, which are a generalization of smooth manifolds.
-For the purpose of this thesis, however, this was deemed excessive and much too difficult and time-consuming to implement in a mathematically sound manner in \<Coq>.
-We avoided using many of the concepts dependent on traditional domain theory due to its limited support in \<Coq>.
-There are possible libraries which have resulted from experiments trying to encode domain theoretical models\cite{Benton2009}\cite{Dockins2014}, but these were incompatible with recent versions of \<Coq>.
-As a part of its type system, \<Coq> contains a set-theoretical model available under the sort \<Set>.
-Because recursion, iteration and other concepts dealing with non-termination and partiality are left out of the scope of this thesis, this set-theoretical model was satisfactory for encoding the denotational semantics.
+For the purpose of this thesis, however, we were able to avoid using diffeological spaces as recursion, iteration and concepts dealing with non-termination and partiality are left out of the scope of this thesis.
+\<Coq> has very limited support for domain theoretical models.
+There are possible libraries which have resulted from experiments trying to encode domain theoretical models\cite{Benton2009}\cite{Dockins2014}, but these are incompatible with recent versions of \<Coq>.
+As a part of its type system, \<Coq> contains a set-theoretical model available under the sort \<Set>, which is satisfactory as the denotational semantics for our language.
 
-Because we use the real numbers as the ground type in our language, we also needed an encoding of the real numbers in Coq. The library for real numbers in \<Coq> has improved in recent times from one based on a completely axiomatic definition to one involving Cauchy sequences\fancyfootnote{https://coq.inria.fr/library/Coq.Reals.ConstructiveCauchyReals.html}. For the purposes of this thesis, however, we needed differentiability as the denotational result of applying the macro operation. Instead of encoding this by hand, we opted for the more comprehensive library \<Coquelicot>\cite{Boldo2015CoquelicotAU}.
+Because we use the real numbers as the ground type in our language, we also needed an encoding of the real numbers in Coq. The library for real numbers in \<Coq> has improved in recent times from one based on a completely axiomatic definition to one involving Cauchy sequences\fancyfootnote{https://coq.inria.fr/library/Coq.Reals.ConstructiveCauchyReals.html}. For the purposes of this thesis, however, we needed differentiability as the denotational result of applying the macro operation. Instead of encoding this by hand, we opted for the more comprehensive library \<Coquelicot>\cite{Boldo2015CoquelicotAU}, which contained many general definitions for differentiating functions.
 
 \todo{Fill in}
 
@@ -387,7 +386,7 @@ In Snippet~\ref{lst:dt_ilist}, we use the unit type which contains just one inha
 \end{listing}
 
 Mathieu Sozeau introduces an extension to \<Coq> via a new keyword \<Program> which allows the use of case-analysis in more complex definitions\cite{Sozeau2006}\cite{Sozeau2007}.
-To be more specific, it allows definitions to be specified separately from its accompanying proofs, possibly filling them in automatically if possible.
+To be more specific, it allows definitions to be specified separately from their accompanying proofs, possibly filling them in automatically if possible.
 While this does improve on the previous situation, using the definitions in proofs can often be unwieldy due to the amount of boilerplate introduced.
 This makes debugging error messages even harder than it already is in a proof assistant. This approach was used by Benton in his formulation of strongly typed terms.
 
@@ -442,9 +441,9 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
 
 \subsection{Language definitions}
 
-We currently mimic the base types used in the paper~\cite{huot2020correctness} extended with sum types, shown in Snippet~\ref{lst:stlc_types}.
+We currently mimic the types used in the base language of the paper~\cite{huot2020correctness} extended with sum types, shown in Snippet~\ref{lst:stlc_types}.
 The paper itself initially makes use of the standard types found in a simply-typed lambda calculus extended with products and R as the only ground type.
-These are also the types used by Barthe, et. al.\cite{barthe2020versatility} in their proof. In a later section Stanton, Huot and \Vakar{} extended their language with sum and inductive types.
+These are also the types used by Barthe, et. al.\cite{barthe2020versatility} in their proof. In a later section Huot and Staton, \Vakar{} extended their language with sum and inductive types.
 Note that we use the unconventional symbol \texttt{<+>} for sum types instead of the more common \texttt{+}, because Coq already uses the latter for their own sum types.
 
 \begin{listing}
@@ -462,7 +461,7 @@ Note that we use the unconventional symbol \texttt{<+>} for sum types instead of
 We have chosen the intrinsic strongly-typed formulation used by Nick Benton et. al.\cite{Benton2011} as the general framework to work in.
 This includes the various substitution and lifting operations for working with typing contexts. Typing contexts themselves consists of lists of types, while variables are typed indices into this list. We almost perfectly mimic the example shown in Snippet~\ref{lst:strong_stlc}.
 
-We have simplified a few of the language constructs used in the main paper by Stanton, Huot, and \Vakar{}\cite{huot2020correctness}, shown in Snippet~\ref{lst:stlc_terms}. For working with product types they make use of n-products and pattern matching, while we have opted for projection tuples. They proceeded to extended their base language with arbitrarily sized variant types, which we have substituted for standard sums reminiscent of the \<Either> type in Haskell along with specialized case expressions. Both of these changes were intended to simplify the language as much as possible while still retaining the same core functionality and types.
+We have simplified a few of the language constructs used in the main paper by Huot, Staton, and \Vakar{}\cite{huot2020correctness}, shown in Snippet~\ref{lst:stlc_terms}. For working with product types they make use of n-products and pattern matching, while we have opted for projection tuples. They proceeded to extended their base language with arbitrarily sized variant types, which we have substituted for standard sums reminiscent of the \<Either> type in Haskell along with specialized case expressions. Both of these changes were intended to simplify the language as much as possible while still retaining the same core functionality and types.
 
 \begin{listing}
   \begin{minted}{coq}
@@ -506,7 +505,7 @@ Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
 
 \subsection{Preliminary proofs}
 
-We have completed a preliminary proof of \texttt{Theorem 1} of \cite{huot2020correctness}. This consists of a formulation of semantic correctness of a forward-mode automatic differentiation algorithm using a macro. The proof is done using a logical relation on the denotational semantics using \<Coq>'s types as the underlying domain. The definition of the logical relation along with the lemma stating its fundamental property is shown in Snippet~\ref{lst:direct_logical_relation} and~\ref{lst:direct_fundamental}, while Snippet~ \ref{lst:direct_correctness} states the actual correctness theorem.
+We have completed a preliminary proof of \texttt{Theorem 1} by Huot, Staton and \Vakar{}\cite{huot2020correctness} extended with sum types. This consists of a formulation of semantic correctness of a forward-mode automatic differentiation algorithm using a macro. The proof is done using a logical relation on the denotational semantics using \<Coq>'s types as the underlying domain. The definition of the logical relation along with the lemma stating its fundamental property is shown in Snippet~\ref{lst:direct_logical_relation} and~\ref{lst:direct_fundamental}, while Snippet~ \ref{lst:direct_correctness} states the actual correctness theorem. During development, we also discovered that while the abstract proof was correct, the concrete fundamental lemma used in the proof of \texttt{Theorem 1} in the paper was wrong.
 
 \begin{listing}
   \begin{minted}{coq}
@@ -598,7 +597,7 @@ Theorem semantic_correct_R :
 
 \subsection{Extensions}
 
-We will be looking to extend the current prototype proof with the continuation-based AD macro mentioned by Stanton, Huot, and \Vakar{}\cite{huot2020correctness}.
+We will be looking to extend the current prototype proof with the continuation-based AD macro mentioned by Huot, Staton, and \Vakar{}\cite{huot2020correctness}.
 We will also try to extend the proof with array types which should be better for performance than the n-tuples used in the original proof.
 We will be working off of the results achieved by Shaikhha, et. al.\cite{Shaikha2019}, where they also successfully implement several compile-time optimizations. % One possibility is to go towards a SSA (static single assignment) representation which has many benefits as a well-known possible internal representation for use in compilers\cite{Pop2006}.
 % One other benefit is that this representation can also be transformed into a minimal functional language\cite{chakravarty2004347}.

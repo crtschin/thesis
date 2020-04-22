@@ -58,16 +58,12 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | abs : forall τ σ,
     tm (σ::Γ) τ -> tm Γ (σ → τ)
 
-  (* STLC extra *)
-  (* Non-recursive let-bindings *)
-  | letn : forall τ σ,
-    tm Γ σ -> tm (σ::Γ) τ -> tm Γ τ
-
   (* Arrays *)
   (* | build_nil : forall τ,
     tm Γ (Array τ) *)
   | build :
-    forall τ n (i : Fin.t n),
+    forall τ n,
+    (* forall (i : Fin.t n), *)
     (* forall (t : tm Γ τ), *)
     (* Vector.t (tm Γ τ) n -> tm Γ (Array τ) *)
     (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ)
@@ -105,8 +101,8 @@ Derive Signature for Env.
 Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
 shave_env (env_cons t G) := G.
 
-Lemma build_congr : forall Γ τ n i (ta ta' : Fin.t n -> tm Γ τ),
-  ta = ta' -> build Γ τ n i ta = build Γ τ n i ta'.
+Lemma build_congr : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
+  ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
 Proof with quick. intros. rewrites. Qed.
 
 (* Examples *)
@@ -196,13 +192,9 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | app _ _ _ t1 t2 => app _ _ _ (rename r t1) (rename r t2)
   | abs _ _ _ f => abs _ _ _ (rename (rename_lifted r) f)
 
-  (* STLC extra *)
-  (* Non-recursive let-bindings *)
-  | letn _ _ _ t b => letn _ _ _ (rename r t) (rename (rename_lifted r) b)
-
   (* Arrays *)
   (* | build_nil _ _ => build_nil _ _ *)
-  | build _ _ _ i ta => build _ _ _ i (rename r ∘ ta)
+  | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
   | get _ ti ta => get _ ti (rename r ta)
 
   (* Reals *)
@@ -238,14 +230,9 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | app _ _ _ t1 t2 => app _ _ _ (substitute s t1) (substitute s t2)
   | abs _ _ _ f => abs _ _ _ (substitute (substitute_lifted s) f)
 
-  (* STLC extra *)
-  (* Non-recursive let-bindings *)
-  | letn _ _ _ t b =>
-      letn _ _ _ (substitute s t) (substitute (substitute_lifted s) b)
-
   (* Arrays *)
   (* | build_nil _ _ => build_nil _ _ *)
-  | build _ _ _ i ta => build _ _ _ i (substitute s ∘ ta)
+  | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)
   | get _ ti ta => get _ ti (substitute s ta)
 
   (* Reals *)

@@ -18,7 +18,7 @@ Require Import AD.Definitions.
 Require Import AD.Macro.
 (* Require AD.DepList. *)
 Require Import AD.Tactics.
-Require Import AD.Normalization.
+(* Require Import AD.Normalization. *)
 Require Import AD.vect.
 
 Local Open Scope program_scope.
@@ -71,17 +71,21 @@ Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
   end.
 Notation "⟦ v ⟧ᵥ" := (denote_v v).
 
-Equations denote_idx {s : Set} {n}
+Fixpoint denote_idx {s : Set} {n}
   (i : Fin.t n) : denote_array_type n s -> s :=
-denote_idx (@F1 n)    ar => fst ar;
-denote_idx (@FS n i') ar => denote_idx i' (snd ar).
+  match i with
+  | @F1 _    => fun ar => fst ar
+  | @FS _ i' => fun ar => denote_idx i' (snd ar)
+  end.
 
-Equations nat_to_fin n : Fin.t (S n) :=
-nat_to_fin 0 := F1;
-nat_to_fin (S n) := FS (nat_to_fin n).
+Fixpoint nat_to_fin n : Fin.t (S n) :=
+  match n with
+  | 0 => F1
+  | S n' => F1
+  end.
 
-Equations shave_fin {Γ τ n} (f : Fin.t (S n) -> tm Γ τ) : Fin.t n -> tm Γ τ :=
-shave_fin f i := f (FS i).
+Definition shave_fin {A n} (f : Fin.t (S n) -> A) : Fin.t n -> A :=
+  fun i => f (FS i).
 
 Reserved Notation "⟦ t ⟧ₜₘ".
 Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ by struct t := {
@@ -89,10 +93,9 @@ Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ by st
 denote_tm (Γ:=Γ) (τ:=τ) (var Γ τ v) ctx := denote_v v ctx;
 denote_tm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) ctx := (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx);
 denote_tm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x, ctx);
-(* STLC extra *)
-denote_tm (Γ:=Γ) (τ:=τ) (letn Γ τ σ t b) ctx := ⟦ b ⟧ₜₘ (⟦ t ⟧ₜₘ ctx, ctx);
 (* Arrays *)
-denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n i f) ctx := denote_array n f ctx;
+denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n f) ctx :=
+  denote_array n (denote_tm ∘ f) ctx;
 denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := denote_idx i (⟦ ta ⟧ₜₘ ctx);
 (* Reals *)
 denote_tm (Γ:=Γ) (τ:=τ) (rval Γ r) ctx := r;
@@ -113,7 +116,7 @@ where "⟦ t ⟧ₜₘ" := (denote_tm t)
 where denote_array {Γ τ} n (f : Fin.t n -> ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ)
   : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ by struct n :=
 denote_array 0 f ctx := tt;
-denote_array (S n) f ctx := (⟦ f (nat_to_fin n) ⟧ₜₘ ctx,
+denote_array (S n) f ctx := (f (nat_to_fin n) ctx,
   (denote_array n (shave_fin f)) ctx).
 
 Equations denote_env {Γ} (G : Env Γ): ⟦ Γ ⟧ₜₓ :=
@@ -171,16 +174,20 @@ Lemma denote_ren_commutes :
     ⟦ t ⟧ₜₘ (denote_ren r ctx) = ⟦ rename r t ⟧ₜₘ ctx.
 Proof with quick.
   intros. generalize dependent Γ'.
-  induction t; quick; rewrites...
-  { induction v... rewrite IHv... }
-  { specialize IHt with (r:=rename_lifted r).
+  induction t; quick; try solve [simp denote_tm in *; rewrites]...
+  { simp denote_tm in *; induction v; rewrites. }
+  { simp denote_tm in *. specialize IHt with (r:=rename_lifted r).
     simpl in IHt. simp rename_lifted in IHt.
     apply functional_extensionality...
     rewrite <- IHt...
     rewrite <- denote_ren_elim... }
-  { specialize IHt1 with Γ' r ctx.
-    specialize IHt2 with (σ::Γ') (rename_lifted r) (⟦ rename r t1 ⟧ₜₘ ctx, ctx).
-    erewrite denote_ren_elim... }
+  { simp denote_tm in *. rewrites.
+    unfold compose.
+    induction n... rewrites.
+    apply injective_projections... }
+  { simp denote_tm. rewrite IHt1.
+    destruct (⟦ rename r t1 ⟧ₜₘ ctx);
+      quick; rewrites. }
 Qed.
 
 Lemma denote_ren_shift : forall Γ Γ' τ (r:ren Γ Γ'),
@@ -238,17 +245,21 @@ Lemma denote_sub_commutes :
     ⟦ t ⟧ₜₘ (denote_sub s ctx) = ⟦ substitute s t ⟧ₜₘ ctx.
 Proof with quick.
   intros. generalize dependent Γ'.
-  induction t; intros; rewrites...
+  induction t; intros; simp denote_tm; rewrites...
   { simpl. induction v...
     intros. simpl. rewrite IHv... }
   { specialize IHt with (s:=substitute_lifted s)...
     apply functional_extensionality...
+    simp denote_tm.
     rewrite <- IHt...
     erewrite denote_sub_elim... }
-  { specialize IHt1 with Γ' s ctx.
-    specialize IHt2 with (σ::Γ') (substitute_lifted s)
-      (⟦ substitute s t1 ⟧ₜₘ ctx, ctx).
-    erewrite denote_sub_elim... }
+  { simp denote_tm.
+    unfold compose.
+    induction n... rewrites.
+    apply injective_projections... }
+  { simp denote_tm.
+    destruct (⟦ substitute s t1 ⟧ₜₘ ctx);
+      quick; rewrites. }
 Qed.
 
 Lemma denote_sub_id : forall Γ τ (t : tm Γ τ) (ctx : ⟦ Γ ⟧ₜₓ),
@@ -275,33 +286,6 @@ Proof with quick.
   intros...
 Qed.
 
-(* Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦Γ⟧ₜₓ),
-  denote_sub id_sub ctx = ctx.
-Proof with quick.
-  induction Γ.
-  { simpl denote_sub. destruct ctx... }
-  { simpl denote_sub. destruct ctx...
-    apply injective_projections...
-    rewrite denote_sub_tl_simpl.
-    (* eapply IHΓ. *)
-    assert (⟦ @id_sub (a::Γ) ⟧ₛ (d, d0) = (d, d0)).
-    { rewrites. admit. }
-    rewrite H... }
-Admitted.
-
-Lemma denote_sub_tl_snd : forall Γ τ ctx,
-  ⟦ tl_sub (Γ:=Γ) (τ:=τ) id_sub ⟧ₛ ctx = snd ctx.
-Proof with quick.
-  (* pose proof (tl_sub (Γ:=Γ) (τ:=τ) id_sub). *)
-  induction Γ...
-  { destruct ctx... destruct u... }
-  { destruct ctx...
-    destruct p... apply injective_projections...
-    rewrite denote_sub_tl_simpl.
-    rewrite denote_sub_tl_simpl.
-    rewrite denote_sub_id_ctx... }
-Admitted. *)
-
 Lemma denote_sub_tl_cons :
   forall Γ Γ' τ (t : tm Γ' τ) ctx (sb : sub Γ Γ'),
   denote_sub (tl_sub (cons_sub t sb)) ctx = denote_sub sb ctx.
@@ -312,21 +296,28 @@ Proof with quick.
   fold (@id_sub Γ)...
 Qed.
 
-Theorem soundness : forall τ (t t' : tm [] τ),
+(* Theorem soundness : forall τ (t t' : tm [] τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
 Proof with quick.
   intros.
   induction H...
   rewrite <- IHmulti.
   dependent induction H;
-    extensionality ctx; quick;
+    extensionality ctx; simp denote_tm in *; quick;
     try (erewrite IHstep; constructor)...
   { rewrite <- denote_sub_commutes...
     unfold hd_sub. simp cons_sub.
     destruct ctx... }
-  { erewrite <- (IHstep t2 t2' t2')...
-    constructor. }
-Qed.
+  { unfold compose.
+    induction i...
+    { induction n... }
+    { unfold shave_fin.
+      rewrite IHi... } }
+  { specialize IHstep with t2 t2' t2'...
+    rewrites... constructor. }
+  { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t1 t1' t1')... constructor. }
+  { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t2 t2' t2')... constructor. }
+Qed. *)
 
 (* Program Fixpoint Ddenote_sub {Γ Γ'}
   : sub Γ Γ' -> denote_ctx (Dctx Γ') -> denote_ctx (Dctx Γ) :=
