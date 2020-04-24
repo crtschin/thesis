@@ -73,6 +73,15 @@ Section extrinsic.
     | fls => fls
     end.
 
+  Lemma typing_ex1 : (has_type [bool] (var 0) bool).
+    assert (H: 0 < length [bool]).
+    { constructor. }
+    assert (H': elem 0 [bool] H = bool).
+    { simp elem. auto. }
+    rewrite <- H'.
+    apply T_var.
+  Qed.
+
   Inductive value : tm -> Prop :=
     | v_abs : forall t,
         value (abs t)
@@ -81,9 +90,6 @@ Section extrinsic.
 
   Local Reserved Notation "t1 '-->' t2" (at level 40).
   Inductive step : tm -> tm -> Prop :=
-    | ST_AppAbs : forall t v,
-          value v ->
-          app (abs t) v --> substitute 0 v t
     | ST_App1 : forall t1 t1' t2,
           t1 --> t1' ->
           app t1 t2 --> app t1' t2
@@ -91,6 +97,9 @@ Section extrinsic.
           value v1 ->
           t2 --> t2' ->
           app v1 t2 --> app v1 t2'
+    | ST_AppAbs : forall t v,
+          value v ->
+          app (abs t) v --> substitute 0 v t
   where "t1 '-->' t2" := (step t1 t2).
 End extrinsic.
 Reset extrinsic.
@@ -125,7 +134,8 @@ Section intrinsic.
   rename_lifted r τ (Top Γ τ) => Top Γ' τ;
   rename_lifted r τ (Pop Γ τ σ v) => Pop Γ' τ σ (r τ v).
 
-  Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
+  Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ')
+    (t : tm Γ τ) : (tm Γ' τ) :=
     match t with
     | var v => var (r v)
     | app t1 t2 => app (rename r t1) (rename r t2)
@@ -134,13 +144,20 @@ Section intrinsic.
     | fls => fls
     end.
 
+  (* Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
+    := substitute (fun τ x => var (σ::Γ) τ x). *)
   Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
-    := rename (fun ρ x => Pop Γ ρ σ x).
+    := rename (fun τ x => Pop Γ τ σ x).
 
   Equations substitute_lifted {Γ Γ' τ} (s : sub Γ Γ')
     : sub (τ::Γ) (τ::Γ') :=
   substitute_lifted s τ (Top Γ σ) := var (σ::Γ') σ (Top Γ' σ);
   substitute_lifted s τ (Pop Γ τ σ v) := shift (s τ v).
+
+
+  (* τ1 :: τ2 :: τ3 :: Γ
+  cons_sub t1 (cons_sub t2 (cons_sub t3 id_sub))
+  (| t1 ; t2 ; t3 |) : sub (τ1::τ2::τ3::Γ) Γ *)
 
   Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
     match t with

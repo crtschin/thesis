@@ -1,4 +1,4 @@
-\documentclass[12pt, final]{article}
+\documentclass[11pt, final]{article}
 \usepackage{mathpartir}
 \usepackage{stmaryrd}
 \usepackage{mathtools}
@@ -28,7 +28,7 @@
   backref=true
 ]{biblatex}
 % \usepackage[hidelinks]{hyperref}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
 \usepackage{fontspec}
 \setmainfont{TeX Gyre Pagella}
 \setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]
@@ -166,13 +166,13 @@
 \section{Introduction}
 
 AI and machine learning research has sparked a lot of new interest in recent times. It has been used in fields such as computer vision, natural language processing, and as opponents in various games such as chess and Go.
-Researchers set up functions referred to as layers between the input and output data and through an algorithm called back propagation, try to optimize the functions such that the network has learned how to solve the problem implied by the data. Back propagation which makes heavy use of automatic differentiation, but programming in an environment which allows for automatic differentiation can be limited.
+In machine learning and more specifically neural network research, researchers set up functions referred to as layers between the input and output data and through an algorithm called back propagation, try to optimize the network such that it learns how to solve the problem implied by the data.
+Back propagation makes heavy use of automatic differentiation, but programming in an environment which allows for automatic differentiation can be limited.
 
-Frameworks such as Tangent\fancyfootnote{https://github.com/google/tangent} or autograd\fancyfootnote{https://github.com/HIPS/autograd} make use of source code transformations and operator overloading, which can limit which optimizations one is able to apply to generated code. Support for higher-order derivatives is also limited.
+Frameworks such as Tangent\fancyfootnote{https://github.com/google/tangent} or autograd\fancyfootnote{https://github.com/HIPS/autograd} make use of source code transformations and operator overloading, which can restrict which high-level optimizations one is able to apply to generated code. Support for higher-order derivatives is also limited.
 
-Programming language research has a rich history with many well-known both high- and low-level optimization techniques such as partial evaluation or deforestation.
-If instead of a framework, we were to have a programming language that is able to facilitate automatic differentiation, we would be able to apply many of these techniques.
-We would get benefits from other results from programming language research such as: ease defining functions for use in a gradient descent optimization through higher-order functions and correctness through the use of a possible type system.
+Programming language research has a rich history with many well-known both high- and low-level optimization techniques such as partial evaluation and deforestation.
+If instead of a framework, we were to have a programming language that is able to facilitate automatic differentiation, we would be able to apply many of these techniques. Through the use of higher-order functions and type systems, we would also get additional benefits such as code-reusability and correctness.
 
 In this thesis, we will aim to formalize an extendable correctness proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
 Our formalization is based on a recent proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}.
@@ -182,13 +182,12 @@ They proved, using a denotational model of diffeological spaces, that their forw
 
 With this thesis we will aim for the following goals:
 \begin{itemize}
-  \item Formalize the proof of forward-mode automatic differentiation specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
+  \item Formalize the proofs of both the forward mode and continuation-based automatic differentiation algorithms specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
   % \item Formulate the proofs such that it facilitates further extensions.
   % \item Extend the proof to polymorphic types.
   % \item Adapt the proof to a small imperative language.
   \item Prove that well-known compile-time optimizations such as the partial evaluation, are correct with respect to the semantics of automatic differentiation.
-  \item Prove the correctness of a continuation-based automatic differentiation algorithm.
-  \item Extend the proof with array types.
+  \item Extend the proof with the array types and compile-time optimization rules by Shaikhha, et. al.\cite{Shaikha2019}.
   % \item (TODO: UNLIKELY) Extend the original proof with iteration and possibly recursion.
   % \item (TODO: MAYBE) Extend the original proof with inductive types.
   % \item (TODO: MAYBE) Extend the original proof with polymorphism.
@@ -197,7 +196,7 @@ With this thesis we will aim for the following goals:
   % \item (TODO: LIKELY) Prove the correctness of the continuation-based automatic differentiation algorithm.
 \end{itemize}
 
-As a notational convention, we will use specialized notation in the definitions themselves. Coq requires that pretty printed notation be defined separately from the definitions they reference.
+As a notational convention, we will use specialized notation in the definitions themselves. Coq normally requires that pretty printed notations be defined separately from the definitions they reference. The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.
 
 \section{Background}
 
@@ -205,25 +204,28 @@ As a notational convention, we will use specialized notation in the definitions 
 
 % http://jmlr.org/papers/volume18/17-468/17-468.pdf
 
-One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function.
-The idea being to use the gradient in the gradient descent algorithm\cite{Baydin2015AutomaticDI}.
-Automatic differentiation has a long and rich history, where its main purpose is to automatically calculate the derivative of a function, or more precisely, calculate this derivative of a function described by a program.
-So in addition to the standard semantics present in most functional programming languages, we also now deal with relevant concepts such as derivative values and the chain rule.
+One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function. The gradient itself is used in the gradient descent algorithm to optimize an objective functions by determining the direction of steepest descent\cite{Baydin2015AutomaticDI}.
+Automatic differentiation has a long and rich history, where its driving motivation is to be able to automatically calculate the derivative of a function in a manner that is both correct and fast.
+Through techniques such as source-code transformations or operator overloading, one is able to implement an automatic differentiation algorithm which can transform any program which implements some function to one that calculates its derivative.
+So in addition to the standard semantics present in most programming languages, concepts relevant to differentiation such as derivative values and the chain rule are needed.
 
 Automatic or algorithmic differentiation is beneficial over other methods of automatically calculating the derivatives of functions such as numerical differentiation or symbolic differentiation due to its balance between speed and computational complexity.
-There are two main modes of automatic differentiation.
-These are namely forward and reverse mode AD. For the purposes of this paper, we will only discuss forward mode AD.
+There are two main variants of automatic differentiation, namely forward mode and reverse mode automatic differentiation.
 
-In forward mode automatic differentiation every term in the function trace is annotated with the corresponding derivative of that term. These are also known as the respectively the primal and tangent traces. So every partial derivative of every sub-function is calculated parallel to its counterpart. We will take the function $f(x, y) = x^2 + (x - y)$ as an example. The dependencies between the terms and operations of the function is visible in the computational graph in Figure~\ref{fig:func_trace}. The corresponding traces are filled in table~\ref{table:func_trace} for the input values $x = 2, y = 1$. We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$. In this paper we will prove the correctness of a simple forward mode automatic differentiation algorithm with respect to the semantics of a simply-typed lambda calculus.
+In forward mode automatic differentiation every term in the function trace is annotated with the corresponding derivative of that term. These are also known as the respectively the primal and tangent traces. So every partial derivative of every sub-function is calculated parallel to its counterpart. We will take the function $f(x, y) = x^2 + (x - y)$ as an example. The dependencies between the terms and operations of the function is visible in the computational graph in Figure~\ref{fig:func_trace}. The corresponding traces are filled in Table~\ref{table:func_trace} for the input values $x = 2, y = 1$. We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$. In this paper we will prove the correctness of a simple forward mode automatic differentiation algorithm with respect to the semantics of a simply-typed lambda calculus.
 
-\begin{figure}[h]
+Reverse mode automatic differentiation takes a different approach. It tries to work backwards from the output by annotating each intermediate variable $v_i$ with an adjoint $v'_i=\frac{\delta y_i}{\delta v_i}$. To do this, two passes are necessary. Like the forward mode variant the primal trace is needed to determine the intermediate variables and function dependencies. These are recorded in the first pass. The second pass actually calculates the derivatives by working backwards from the output using the adjoints, also called the adjoint trace.
+
+The choice between automatic differentiation variant is heavily dependent on the function being differentiated. The number of applications of the forward mode algorithm is dependent on the number of input variables, as it has to be redone for each possible partial derivative of the function. On the other hand, reverse mode AD has to work backwards from each output variable. In machine learning research, reverse mode AD is generally preferred as the objective functions regularly contain a very small number of output variables. How one does reverse mode automatic differentiation on a functional language is still an active area of research. Huot, Staton and \Vakar{} have proposed a continuation-based algorithm which mimic much of the same ideas as reverse mode automatic differentiation\cite{huot2020correctness}.
+
+\begin{figure}
   \centering
   \includegraphics[scale=0.6]{assets/function_trace.png}
   \caption{Computational graph of $f(x, y) = x^2 + (x - y)$}
   \label{fig:func_trace}
 \end{figure}
 
-\begin{figure}[h]
+\begin{table}
   \begin{center}
     \begin{tabular}{ l l l l l | l l l l l }
       \hline
@@ -242,9 +244,7 @@ $f      $&$=$&$v_3$&$=$&$5$           &$f'$&$=$&$v'_3$&$=$&$5$ \\
   \end{center}
   \caption{Primal and tangent traces of $f(x, y) = x^2 + (x - y)$}
   \label{table:func_trace}
-\end{figure}
-
-\todo{Fill in}
+\end{table}
 
 \subsection{Denotational semantics}
 % A formal semantics of programming language: An introduction
@@ -413,8 +413,10 @@ Due to the intrinsic typeful representation this paper uses, much of this was in
 Logical relations is a technique often employed when proving programming language properties of statically typed languages\cite{skorstengaard2019introduction}. There are two main ways they are used, namely as unary and binary relations.
 Unary logical relations, also known as logical predicates, are predicates over single terms and are typically used to prove language characteristics such as type safety or strong normalization.
 Binary logical relations on the other hand are used to prove program equivalences, usually in the context of denotational semantics as we will do.
-Logical relations in essence are simply relations between terms defined by induction on the types. A logical relations proof consists of 2 steps.
-The first usually states that well-typed terms are in the relation, while the second states that the property of interest follows from the relation.
+There have been many variations on the versatile technique from syntactic step-indexed relations which have been used to solve recursive types\cite{Ahmed2006}, to open relations which enable working with terms of non-ground type\cite{barthe2020versatility}\cite{huot2020correctness}.
+Logical relations in essence are relations between terms defined by induction on their types.
+A logical relations proof consists of 2 main steps.
+The first states the terms for which the property is expected to hold are in the relation, while the second states that the property of interest follows from the relation.
 The second step is easier to prove as it usually follows from the definition of the relation. The first on the other hand, will often require proving a generalized variant, called the fundamental property of the logical relation.
 In most cases this requires that the relation is correct with respect to applying substitutions.
 
@@ -505,7 +507,11 @@ Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
 
 \subsection{Preliminary proofs}
 
-We have completed a preliminary proof of \texttt{Theorem 1} by Huot, Staton and \Vakar{}\cite{huot2020correctness} extended with sum types. This consists of a formulation of semantic correctness of a forward-mode automatic differentiation algorithm using a macro. The proof is done using a logical relation on the denotational semantics using \<Coq>'s types as the underlying domain. The definition of the logical relation along with the lemma stating its fundamental property is shown in Snippet~\ref{lst:direct_logical_relation} and~\ref{lst:direct_fundamental}, while Snippet~ \ref{lst:direct_correctness} states the actual correctness theorem. During development, we also discovered that while the abstract proof was correct, the concrete fundamental lemma used in the proof of \texttt{Theorem 1} in the paper was wrong.
+We have completed a preliminary proof of \texttt{Theorem 1} by Huot, Staton and \Vakar{}\cite{huot2020correctness} extended with sum types.
+This consists of a formulation of semantic correctness of a forward-mode automatic differentiation algorithm using a macro.
+The proof is done using a logical relation on the denotational semantics using \<Coq>'s types as the underlying domain.
+The definition of the logical relation along with the lemma stating its fundamental property is shown in Snippet~\ref{lst:direct_logical_relation} and~\ref{lst:direct_fundamental}, while Snippet~\ref{lst:direct_correctness} states the actual correctness theorem.
+During development, we also discovered that while the abstract proof was correct, the concrete fundamental lemma used in the proof of \texttt{Theorem 1} in the paper was incorrect.
 
 \begin{listing}
   \begin{minted}{coq}
@@ -606,22 +612,25 @@ We will be working off of the results achieved by Shaikhha, et. al.\cite{Shaikha
 
 \subsection{Deadlines}
 
-The hard deadlines for the first and second phases of the thesis are respectively May $1^{st}$ and September $18^{th}$. The ambition is to follow the following framework of deadlines. Note that until the proofs deadline, the proofs and paper will largely be written in parallel with each other.
+The hard deadlines for the first and second phases of the thesis are respectively May $1^{st}$ and September $18^{th}$. The ambition is to follow the framework of deadlines in Table~\ref{tbl:deadlines}. Note that until the proofs deadline, the proofs and paper will largely be written in parallel with each other.
 
 \todo{Fill in}
-
-\begin{center}
-  \begin{tabular}{ | m{5cm} | m{5cm} | }
-    \hline
-    Deadline          & Date  \\
-    \hline
-    Proposal deadline & 1/5/2020 \\
-    Finish proofs & 15/7/2020 \\
-    Finish first draft & 15/8/2020 \\
-    Thesis deadline & 18/9/2020 \\
-    \hline
-  \end{tabular}
-\end{center}
+\begin{table}
+  \begin{center}
+    \begin{tabular}{ | m{5cm} | m{5cm} | }
+      \hline
+      Deadline          & Date  \\
+      \hline
+      Proposal deadline & 1/5/2020 \\
+      Finish proofs & 15/7/2020 \\
+      Finish first draft & 15/8/2020 \\
+      Thesis deadline & 18/9/2020 \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{Framework of deadlines}
+  \label{tbl:deadlines}
+\end{table}
 
 \printbibliography
 \makeatother

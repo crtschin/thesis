@@ -63,40 +63,12 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       t2 --> t2' ->
         (app Γ τ σ v1 t2) --> (app Γ τ σ v1 t2')
 
-  (* STLC extra *)
-  (* Non-recursive let-bindings *)
-  (* | ST_Letn1 : forall Γ τ σ (t t' : tm Γ σ) b,
-    t --> t' ->
-    letn Γ τ σ t b --> letn Γ τ σ t' b
-  | ST_Letn2 : forall Γ τ σ (t : tm Γ σ) (b b' : tm (σ::Γ) τ),
-    value t ->
-    b --> b' ->
-    letn Γ τ σ t b --> letn Γ τ σ t b'
-  | ST_Letn : forall Γ τ σ (t : tm Γ σ) (b : tm (σ::Γ) τ),
-    value t ->
-    value b ->
-    letn Γ τ σ t b --> app Γ τ σ (abs Γ τ σ b) t *)
-
   (* Arrays *)
-  (* | ST_Build : forall Γ τ n (f f' : Fin.t n -> tm Γ (Array n τ)),
-    (forall (i : Fin.t n), f i --> f' i) ->
-    build Γ f --> build Γ f' *)
-  (* | ST_BuildCons1 : forall Γ τ n t ta ta',
-    ta --> ta' ->
-    build_cons Γ τ n t ta --> build_cons Γ τ n t ta'
-  | ST_BuildCons2 : forall Γ τ n t t' ta,
-    value ta ->
-    t --> t' ->
-    build_cons Γ τ n t ta --> build_cons Γ τ n t' ta *)
   | ST_Get : forall Γ τ n (t t' : tm Γ (Array n τ)) (ti : Fin.t n),
     t --> t' ->
     get Γ ti t --> get Γ ti t'
   | ST_GetBuild : forall Γ τ n i (f : Fin.t n -> tm Γ τ),
     get Γ i (build Γ τ n f) --> f i
-  (* | ST_GetFS : forall Γ τ n i (t : tm Γ τ) ta,
-    value ta ->
-    value t ->
-    get Γ (Fin.FS i) (build_cons Γ τ n t ta) --> get Γ i ta *)
 
   (* Add *)
   | ST_Add : forall Γ v1 v2,
