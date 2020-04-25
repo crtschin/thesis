@@ -62,12 +62,11 @@ where SA {τ} n
   (g : R -> ⟦ Array n (Dt τ) ⟧ₜ) : Prop :=
 SA (τ:=τ) 0 S' f g := True;
 SA (τ:=τ) (Datatypes.S n) S' f g :=
-  forall f' g' f1 g1,
-    S' f1 g1 ->
+  exists f' g' f1 g1,
+    S' f1 g1 /\
     SA n S' f' g' /\
-  forall r,
-    f r = (f1 r, f' r) /\
-      g r = (g1 r, g' r).
+    (f = fun r => (f1 r, f' r)) /\
+    (g = fun r => (g1 r, g' r)).
 
 Inductive instantiation : forall Γ,
     (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx Γ ⟧ₜₓ) -> Prop :=
@@ -136,39 +135,49 @@ Proof with quick.
       (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r))...
     eapply IHt. constructor; assumption. }
   { (* Build *)
-    quick. simp S... clear H.
+    quick. simp S...
     induction n.
     { simp S... }
     { pose proof (IHn (shave_fin t)).
       simp S in *...
-      splits.
+      (* splits.
       erewrite SA_eq; quick;
         extensionality x; simp Dtm denote_tm; unfold compose.
-      all: admit.
-      (* exists (fun r => denote_array n (shave_fin (denote_tm ∘ t)) (sb r)).
+      all: admit. *)
+      exists (fun r => denote_array n (shave_fin (denote_tm ∘ t)) (sb r)).
       exists (fun r => snd (⟦ Dtm (build Γ τ (Datatypes.S n) t) ⟧ₜₘ (Dsb r))).
       exists (fun r => (denote_tm ∘ t) (nat_to_fin n) (sb r)).
-      exists (fun r => fst (⟦ Dtm (build Γ τ (Datatypes.S n) t) ⟧ₜₘ (Dsb r)))...  *)
-      } }
+      exists (fun r => fst (⟦ Dtm (build Γ τ (Datatypes.S n) t) ⟧ₜₘ (Dsb r)))...
+      splits...
+      erewrite S_eq.
+    2:{ extensionality r. unfold compose. reflexivity. }
+    2:{ extensionality r. simp Dtm denote_tm... unfold compose. reflexivity. }
+      eapply H... } }
   { (* Get *)
     quick.
-    pose proof (IHt sb Dsb H) as H'; clear IHt.
-    simp S in *.
-    induction n...
-    { dependent destruction t. }
-    { erewrite S_eq. apply IHn...
-      eapply H'.
-      all: admit.
-      (* destruct H' as [f' [g' [f1 [g1 H']]]].
-      destruct H'.
-      erewrite S_eq. apply IHn...
-      { admit. }
-      { extensionality x... simp denote_tm.
-        admit. }
-      { extensionality x... simp denote_tm.
-        admit. }
-      admit.  *)
-      } }
+    pose proof (IHt sb Dsb H) as H'.
+    simp S in *. simp SA in *.
+    generalize dependent Γ.
+    generalize dependent τ...
+    induction t...
+    { destruct H' as [f' [g' [f1 [g1 H']]]].
+      destruct H' as [H1 [H2 [Heq1 Heq2]]].
+      erewrite S_eq.
+      eapply H1.
+      all: extensionality r.
+      all: simp Dtm denote_tm...
+      { eapply equal_f in Heq1. rewrites. }
+      { eapply equal_f in Heq2. rewrites. } }
+    { destruct H' as [f' [g' [f1 [g1 H']]]].
+      destruct H' as [H1 [H2 [Heq1 Heq2]]].
+      simp S in IHt.
+      erewrite S_eq.
+    2:{ extensionality x. simp denote_tm...
+        eapply equal_f in Heq1. rewrite Heq1... reflexivity. }
+    2:{ extensionality x. simp Dtm denote_tm...
+        eapply equal_f in Heq2. rewrite Heq2... reflexivity. }
+      erewrite S_eq. eapply IHt0... clear IHt0.
+      all: admit. } }
   { (* Const *)
     quick. simp S... unfold compose.
     splits...

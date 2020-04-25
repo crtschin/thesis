@@ -1,11 +1,11 @@
 %DIF 1c1-2
 %DIF LATEXDIFF DIFFERENCE FILE
 %DIF DEL first-draft.tex   Mon Apr 20 01:15:17 2020
-%DIF ADD proposal.tex      Fri Apr 24 14:22:30 2020
+%DIF ADD proposal.tex      Fri Apr 24 15:36:15 2020
 %DIF < \documentclass[12pt, final]{article}
 %DIF -------
-\documentclass[11pt, final]{article} %DIF > 
-\usepackage{mathpartir} %DIF > 
+\documentclass[11pt, final]{article} %DIF >
+\usepackage{mathpartir} %DIF >
 %DIF -------
 \usepackage{stmaryrd}
 \usepackage{mathtools}
@@ -25,7 +25,7 @@
 \usepackage[justification=centering]{caption}
 \usepackage{csquotes}
 %DIF 19a20
-\usepackage{etoolbox} %DIF > 
+\usepackage{etoolbox} %DIF >
 %DIF -------
 \usepackage{showkeys}
 \usepackage[
@@ -40,7 +40,7 @@
 %DIF 29c31
 %DIF < \usepackage{hyperref}
 %DIF -------
-\usepackage[hidelinks]{hyperref} %DIF > 
+\usepackage[hidelinks]{hyperref} %DIF >
 %DIF -------
 \usepackage{fontspec}
 \setmainfont{TeX Gyre Pagella}
@@ -50,29 +50,29 @@
 \renewcommand{\figurename}{Listing}
 \setminted[coq]{escapeinside=~~,mathescape}
 %DIF 37a39-61
-\newcommand{\br}[1]{\langle #1 \rangle} %DIF > 
-\def\Yields{\Downarrow} %DIF > 
-\newcommand{\makefootnotelist}[1]{% %DIF > 
-    \parbox{0.8\textwidth} {% %DIF > 
-        \footnotesize{% %DIF > 
-            \renewcommand*{\do}[1]{##1\\}% %DIF > 
-            \dolistcsloop{#1}}}}% %DIF > 
-\newcommand{\fancyfootnote}[1]{% %DIF > 
-    \footnotemark{}% %DIF > 
-    \def\listname{footlist\thepage}% %DIF > 
-    \def\n{$^{\the\numexpr\value{footnote}}$} %DIF > 
-    \ifcsdef{\listname}% %DIF > 
-        {\listcseadd{\listname}{\n\ #1}}% %DIF > 
-        {\csedef{\listname}{}% %DIF > 
-        \listcseadd{\listname}{\n\ #1}}% %DIF > 
-    \fancypagestyle{fancyfootnote}{% %DIF > 
-        \fancyfoot[L]{\makefootnotelist{\listname}}% %DIF > 
-        \fancyfoot[C]{}% %DIF > 
-        \fancyfoot[R]{\thepage}% %DIF > 
-    }\thispagestyle{fancyfootnote}}% %DIF > 
-\fancypagestyle{plain}{% %DIF > 
-  \fancyfoot[C]{\thepage} %DIF > 
-} %DIF > 
+\newcommand{\br}[1]{\langle #1 \rangle} %DIF >
+\def\Yields{\Downarrow} %DIF >
+\newcommand{\makefootnotelist}[1]{% %DIF >
+    \parbox{0.8\textwidth} {% %DIF >
+        \footnotesize{% %DIF >
+            \renewcommand*{\do}[1]{##1\\}% %DIF >
+            \dolistcsloop{#1}}}}% %DIF >
+\newcommand{\fancyfootnote}[1]{% %DIF >
+    \footnotemark{}% %DIF >
+    \def\listname{footlist\thepage}% %DIF >
+    \def\n{$^{\the\numexpr\value{footnote}}$} %DIF >
+    \ifcsdef{\listname}% %DIF >
+        {\listcseadd{\listname}{\n\ #1}}% %DIF >
+        {\csedef{\listname}{}% %DIF >
+        \listcseadd{\listname}{\n\ #1}}% %DIF >
+    \fancypagestyle{fancyfootnote}{% %DIF >
+        \fancyfoot[L]{\makefootnotelist{\listname}}% %DIF >
+        \fancyfoot[C]{}% %DIF >
+        \fancyfoot[R]{\thepage}% %DIF >
+    }\thispagestyle{fancyfootnote}}% %DIF >
+\fancypagestyle{plain}{% %DIF >
+  \fancyfoot[C]{\thepage} %DIF >
+} %DIF >
 %DIF -------
 
 \addbibresource{references.bib}
@@ -83,14 +83,14 @@
 %DIF < \cfoot{\thepage}
 %DIF < \rfoot{Curtis Chin Jen Sem}
 %DIF -------
-\rfoot{\thepage} %DIF > 
-\cfoot{ } %DIF > 
+\rfoot{\thepage} %DIF >
+\cfoot{ } %DIF >
 %DIF -------
 \renewcommand{\headrulewidth}{0.5pt}
 \renewcommand{\footrulewidth}{0.5pt}
 \renewcommand{\listingscaption}{Code snippet}
 %DIF 47a72
- %DIF > 
+ %DIF >
 %DIF -------
 \def\Vakar{V\'{a}k\'{a}r}
 \def\<#1>{\csname keyword@@#1\endcsname}
@@ -105,13 +105,13 @@
 \do{bottom}
 \do{Equations}
 %DIF 59a85
-\do{Coquelicot} %DIF > 
+\do{Coquelicot} %DIF >
 %DIF -------
 \do{Program}
 %DIF 60a87-89
-\do{Set} %DIF > 
-\do{Prop} %DIF > 
-\do{Type} %DIF > 
+\do{Set} %DIF >
+\do{Prop} %DIF >
+\do{Type} %DIF >
 %DIF -------
 \do{return}
 \do{simpl}
@@ -326,11 +326,11 @@ With this thesis we will aim for the following goals:
 %DIF <  On which both the correctness of optimizations and language
 %DIF <  extensions could be proven
 %DIF <  Proof of optimizations maintaining correctness (partial evaluation)
-\DIFdelbegin %DIFDELCMD < 
+\DIFdelbegin %DIFDELCMD <
 
 %DIFDELCMD < %%%
 \DIFdelend As a notational convention, we will use specialized notation in the definitions themselves. Coq \DIFaddbegin \DIFadd{normally }\DIFaddend requires that pretty printed \DIFdelbegin \DIFdel{notation }\DIFdelend \DIFaddbegin \DIFadd{notations }\DIFaddend be defined separately from the definitions they reference. \DIFaddbegin \DIFadd{The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.
-}\DIFaddend 
+}\DIFaddend
 
 \section{Background}
 
@@ -338,7 +338,7 @@ With this thesis we will aim for the following goals:
 
 % http://jmlr.org/papers/volume18/17-468/17-468.pdf
 
-One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function. The \DIFdelbegin \DIFdel{idea being to use the gradient }\DIFdelend \DIFaddbegin \DIFadd{gradient itself is used }\DIFaddend in the gradient descent algorithm \DIFaddbegin \DIFadd{to optimize an objective functions by determining the direction of steepest descent}\DIFaddend \cite{Baydin2015AutomaticDI}.
+One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function. The \DIFdelbegin \DIFdel{idea being to use the gradient }\DIFdelend \DIFaddbegin \DIFadd{gradient itself is used }\DIFaddend in the gradient descent algorithm \DIFaddbegin \DIFadd{to optimize an objective function by determining the direction of steepest descent}\DIFaddend \cite{Baydin2015AutomaticDI}.
 Automatic differentiation has a long and rich history, where its \DIFdelbegin \DIFdel{main purpose is to }\DIFdelend \DIFaddbegin \DIFadd{driving motivation is to be able to }\DIFaddend automatically calculate the derivative of a function \DIFdelbegin \DIFdel{, or more precisely, calculate this derivative of a function described by a program }\DIFdelend \DIFaddbegin \DIFadd{in a manner that is both correct and fast.
 Through techniques such as source-code transformations or operator overloading, one is able to implement an automatic differentiation algorithm which can transform any program which implements some function to one that calculates its derivative}\DIFaddend .
 So in addition to the standard semantics present in most \DIFdelbegin \DIFdel{functional }\DIFdelend programming languages, \DIFdelbegin \DIFdel{we also now deal with relevant concepts }\DIFdelend \DIFaddbegin \DIFadd{concepts relevant to differentiation }\DIFaddend such as derivative values and the chain rule \DIFaddbegin \DIFadd{are needed}\DIFaddend .
@@ -348,7 +348,7 @@ There are two main \DIFdelbegin \DIFdel{modes }\DIFdelend \DIFaddbegin \DIFadd{v
 These are namely forward }\DIFdelend \DIFaddbegin \DIFadd{, namely forward mode }\DIFaddend and reverse mode \DIFdelbegin \DIFdel{AD.
 For the purposes of this paper, we will only discuss forward mode AD.
 }\DIFdelend \DIFaddbegin \DIFadd{automatic differentiation.
-}\DIFaddend 
+}\DIFaddend
 
 In forward mode automatic differentiation \DIFaddbegin \DIFadd{every term in }\DIFaddend the function trace is \DIFdelbegin \DIFdel{accompanied with a dual numbers representation which calculate the derivative of the function}\DIFdelend \DIFaddbegin \DIFadd{annotated with the corresponding derivative of that term}\DIFaddend . These are also known as the respectively the primal and tangent traces. So every partial derivative of every \DIFdelbegin \DIFdel{sub function }\DIFdelend \DIFaddbegin \DIFadd{sub-function }\DIFaddend is calculated parallel to its counterpart. We will take the function $f(x, y) = x^2 + (x - y)$ as an example. The dependencies between the terms and operations of the function is visible in the computational graph in \DIFdelbegin \DIFdel{figure}\DIFdelend \DIFaddbegin \DIFadd{Figure}\DIFaddend ~\ref{fig:func_trace}. The corresponding traces are filled in \DIFdelbegin \DIFdel{table}\DIFdelend \DIFaddbegin \DIFadd{Table}\DIFaddend ~\ref{table:func_trace} for the input values $x = 2, y = 1$. We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$. In this paper we will prove the correctness of a simple forward mode automatic differentiation algorithm with respect to the semantics of a \DIFdelbegin \DIFdel{simply typed }\DIFdelend \DIFaddbegin \DIFadd{simply-typed }\DIFaddend lambda calculus.
 
@@ -393,10 +393,10 @@ $f      $&$=$&$v_3$&$=$&$5$           &$f'$&$=$&$v'_3$&$=$&$5$ \\
 \DIFdelbeginFL %DIFDELCMD < \end{figure}
 %DIFDELCMD < %%%
 \DIFdelend \DIFaddbegin \end{table}
-\DIFaddend 
+\DIFaddend
 
 \DIFdelbegin %DIFDELCMD < \todo{Fill in}
-%DIFDELCMD < 
+%DIFDELCMD <
 
 %DIFDELCMD < %%%
 \DIFdelend \subsection{Denotational semantics}
@@ -428,7 +428,7 @@ As \DIFdelbegin \DIFdel{such, we chose to make use of }\DIFdelend \DIFaddbegin \
 \subsection{Coq}
 
 \<Coq> is a proof assistant \DIFdelbegin \DIFdel{created by Thierry Coquand as an implementation of his }\DIFdelend \DIFaddbegin \DIFadd{based on the }\DIFaddend calculus of constructions type theory \DIFaddbegin \DIFadd{created by Thierry Coquand and G\'{e}rard Huet}\DIFaddend \cite{Coquand1988}.
-In the 30 years since it has been released, research has contributed to extending the proof assistant with additional features such as inductive and co-inductive data types\cite{Coquand1990}, dependent pattern matching\cite{Sozeau2010} and advanced modular constructions for organizing \DIFdelbegin \DIFdel{colossal }\DIFdelend \DIFaddbegin \DIFadd{large }\DIFaddend mathematical proofs\cite{Sozeau2008}\cite{Mahboubi2013}.
+In the \DIFaddbegin \DIFadd{past }\DIFaddend 30 years since it has been released, research has contributed to extending the proof assistant with additional features such as inductive and co-inductive data types\cite{Coquand1990}, dependent pattern matching\cite{Sozeau2010} and advanced modular constructions for organizing \DIFdelbegin \DIFdel{colossal }\DIFdelend \DIFaddbegin \DIFadd{large }\DIFaddend mathematical proofs\cite{Sozeau2008}\cite{Mahboubi2013}.
 
 The core of this type theory is based on constructive logic and so many of the laws known in classical logic are not \DIFdelbegin \DIFdel{present.
 Examples include }\DIFdelend \DIFaddbegin \DIFadd{provable.
@@ -499,7 +499,7 @@ As an \DIFdelbegin \DIFdel{alteration}\DIFdelend \DIFaddbegin \DIFadd{alternativ
 \cite{McBride04}}\hspace{0pt}%DIFAUXCMD
 \mbox{%DIFAUXCMD
 \cite{Adams06}}\hspace{0pt}%DIFAUXCMD
-, the }\DIFaddend specific formulation used in this thesis \DIFaddbegin \DIFadd{using both substitutions and rename operations }\DIFaddend was fleshed out \DIFaddbegin \DIFadd{in Coq }\DIFaddend by Nick Benton, et. al.\DIFdelbegin \DIFdel{in }\DIFdelend \cite{Benton2011}, and was also used as one of the examples in the second POPLmark challenge which deals with logical relations\cite{poplmark_reloaded}.
+, the }\DIFaddend specific formulation used in this thesis \DIFaddbegin \DIFadd{using separate substitutions and rename operations }\DIFaddend was fleshed out \DIFaddbegin \DIFadd{in Coq }\DIFaddend by Nick Benton, et. al.\DIFdelbegin \DIFdel{in }\DIFdelend \cite{Benton2011}, and was also used as one of the examples in the second POPLmark challenge which deals with logical relations\cite{poplmark_reloaded}.
 While this does \DIFdelbegin \DIFdel{subvert }\DIFdelend \DIFaddbegin \DIFadd{avoid }\DIFaddend the problems present in the nominal representation, it unfortunately does have some problems of its own.
 Variable substitutions have to be defined using two separate renaming and substitution operations.
 Renaming is formulated as extending the typing context of variables, while substitution actually swaps the variables for terms.
@@ -523,18 +523,21 @@ Due to using indices from the context as variables, some lifting boilerplate is 
 
 \subsubsection{\DIFdelbegin \DIFdel{Dependent }\DIFdelend \DIFaddbegin \DIFadd{Dependently-typed }\DIFaddend programming in Coq}
 
-In \<Coq>, one can normally write function definitions using either case-analysis as is done in other functional languages, or using \<Coq>'s tactics.
-If proof terms are present in the function definition, however, it is customary to write it using tactics because of the otherwise \DIFdelbegin \DIFdel{cumbersome }\DIFdelend \DIFaddbegin \DIFadd{complicated }\DIFaddend and verbose code \DIFdelbegin \DIFdel{needed to pattern-match on the arguments.
-But this can be troublesome in the cases where }\DIFdelend \DIFaddbegin \DIFadd{due to }\DIFaddend the \DIFaddbegin \DIFadd{previously poor support for dependent pattern matching in Coq.
-But if the functionality is not immediately apparent from the }\DIFaddend function signature\DIFdelbegin \DIFdel{is ambiguous, as }\DIFdelend \DIFaddbegin \DIFadd{, }\DIFaddend it can be hard to recognize what the function then \DIFdelbegin \DIFdel{actually }\DIFdelend computes.
+In \<Coq>, one can normally write function definitions using either case-analysis as is done in other functional languages, or using \<Coq>'s tactics \DIFdelbegin \DIFdel{.
+If }\DIFdelend \DIFaddbegin \DIFadd{language.
+Using the standard case-analysis functionality can cause the code to be complicated and verbose, even more so when }\DIFaddend proof terms are present in the function \DIFdelbegin \DIFdel{definition, however, it is customary to write it using tactics because of the otherwise cumbersome and verbose code needed to pattern-match on the arguments. But this can be troublesome in the cases where the function signature is ambiguous, as it can be hard to recognize what the function then actually computes}\DIFdelend \DIFaddbegin \DIFadd{signature.
+This has been caused by the previously poor support in Coq for dependent pattern matching.
+Using the return keyword, one is able to vary the result type of a match expression. But due to requirement Coq used to have that case expressions be syntactically total, this could be very annoying to work with}\DIFaddend .
 One other possibility would be to write the function \DIFdelbegin \DIFdel{using relations }\DIFdelend \DIFaddbegin \DIFadd{as a relation }\DIFaddend between its input and output.
 This also has its limitations as \DIFdelbegin \DIFdel{relations can be tricky to define}\DIFdelend \DIFaddbegin \DIFadd{you then lose computability as Coq treats these definitions opaquely}\DIFaddend . In this case \DIFdelbegin \DIFdel{, the definitions are also opaque such that the }\DIFdelend \DIFaddbegin \DIFadd{the }\DIFaddend standard \<simpl> tactic which invokes \<Coq>'s reduction mechanism is not able to reduce \DIFaddbegin \DIFadd{instances of }\DIFaddend the term.
 This often requires the user to write \DIFdelbegin \DIFdel{to write }\DIFdelend many more proofs to be able to work with the definitions.
 
-As an example, we will work through defining a length indexed list and a corresponding head function, which is well known to be partial.
-Using the \<Coq> keyword return, it is possible to let the return type of a match expression depend on the result of one of the type arguments.
-This makes it possible to specify what the return type of the empty list should be.
-In \DIFdelbegin \DIFdel{snippet}\DIFdelend \DIFaddbegin \DIFadd{Snippet}\DIFaddend ~\ref{lst:dt_ilist}, we use the unit type which contains just one inhabitant, \<tt>.
+As an example, we will work through defining a length indexed list and a corresponding head function \DIFdelbegin \DIFdel{, which is well known to be partial}\DIFdelend \DIFaddbegin \DIFadd{limited to lists of length at least one in Snippet~\ref{lst:dt_ilist}}\DIFaddend .
+Using the \<Coq> keyword return, it is possible to let the return type of a match \DIFdelbegin \DIFdel{expression }\DIFdelend \DIFaddbegin \DIFadd{expressions }\DIFaddend depend on the result of one of the type arguments.
+This makes it possible to \DIFdelbegin \DIFdel{specify what the return type of the empty list should be.
+In snippet~\ref{lst:dt_ilist}, we use the unit type which contains just oneinhabitant, \<tt>}\DIFdelend \DIFaddbegin \DIFadd{define an auxiliary function which, while total on the length of the list, has an incorrect return type. It namely returns the type unit if the input list had the length zero.
+We can then use this auxiliary function in the actual head function by specifying that the list has length at least one.
+It should be noted that more recent versions of Coq do not require that case expressions be syntactically total, so specifying that the input list has a length of at least zero is enough to eliminate the requirement for the zero-case}\DIFaddend .
 
 \begin{listing}
   \begin{minted}{coq}
@@ -542,7 +545,7 @@ In \DIFdelbegin \DIFdel{snippet}\DIFdelend \DIFaddbegin \DIFadd{Snippet}\DIFadde
     | nil : ~\forall A, ilist A 0~
     | cons : ~\forall A n, A \rightarrow ilist A n \rightarrow ilist A (S n)~
 
-  Definition hd {A} n (ls : ilist A n) :=
+  Definition hd\DIFaddbegin \DIFadd{' }\DIFaddend {A} n (ls : ilist A n) :=
     match ls in (ilist A n) return
       (match n with
       | O => unit
@@ -550,7 +553,10 @@ In \DIFdelbegin \DIFdel{snippet}\DIFdelend \DIFaddbegin \DIFadd{Snippet}\DIFadde
     | nil => tt
     | cons h _ => h
   end.
-  \end{minted}
+\DIFaddbegin
+
+  \DIFadd{Definition hd }{\DIFadd{A}} \DIFadd{n (ls : ilist A (S n)) : A := hd' n ls.
+  }\DIFaddend \end{minted}
   \caption{Definition of a length indexed list and hd using the return keyword, adapted from \DIFaddbegin \DIFadd{Certified Programming with Dependent Types}\DIFaddend \cite{ChlipalaCPDT}.}
   \label{lst:dt_ilist}
 \end{listing}
@@ -580,12 +586,13 @@ by }\DIFdelend introducing a method for user-friendlier dependently-typed \DIFde
 This introduces \<Agda>-like dependent pattern matching with with-clauses.
 It does this by using a notion called coverings, where a covering is a set of equations such that the pattern matchings of the type signature are exhaustive.
 There are two main ways to integrate this in a dependently typed environment, externally where it is integrated as high-level constructs in the pattern matching core as \<Agda> does it, or internally by using the existing type theory and finding witnesses of the covering to prove the definition correct, which is the approach used by Sozeau.
-Due to the intrinsic typeful representation this paper uses, much of this was invaluable when defining the substitution operators as the regular type checker in Coq often had difficulty \DIFdelbegin \DIFdel{when recognizing type equalities }\DIFdelend \DIFaddbegin \DIFadd{type checking dependently typed terms }\DIFaddend in certain cases.
+Due to the intrinsic typeful representation this paper uses, much of this was invaluable when defining the substitution operators as the regular type checker in Coq often had difficulty \DIFdelbegin \DIFdel{when recognizing type equalities }\DIFdelend \DIFaddbegin \DIFadd{unifying dependently typed terms }\DIFaddend in certain cases.
 
 \begin{listing}
   \begin{minted}{coq}
-  Equations hd {A n} (ls : ilist A n) (pf : n <> 0%nat) : A :=
-  hd nil pf with pf eq_refl := {\DIFdelbegin \DIFdel{| x :=! x }\DIFdelend };
+  Equations hd {A n} (ls : ilist A n) (pf : n <> 0%DIF < nat) : A :=
+  \DIFaddbegin \DIFadd{) : A :=
+  }\DIFaddend hd nil pf with pf eq_refl := {\DIFdelbegin \DIFdel{| x :=! x }\DIFdelend };
   hd (cons h n) _ := h.
   \end{minted}
   \caption{Definition of hd using \<Equations>}
@@ -715,10 +722,10 @@ We have completed a preliminary proof of \texttt{Theorem 1} \DIFdelbegin \DIFdel
 \cite{huot2020correctness} }\hspace{0pt}%DIFAUXCMD
 extended with sum types}\DIFaddend .
 This consists of a formulation of semantic correctness of a forward-mode automatic differentiation algorithm using a macro.
-The proof is done using a logical relation on the denotational semantics using \<Coq>'s types as the underlying domain.
+The proof is done using a logical relation on the denotational semantics using \DIFaddbegin \DIFadd{the set-theoretic types in }\DIFaddend \<Coq> \DIFdelbegin \DIFdel{'s types }\DIFdelend as the underlying domain.
 The definition of the logical relation along with the lemma stating its fundamental property is shown in \DIFdelbegin \DIFdel{snippet}\DIFdelend \DIFaddbegin \DIFadd{Snippet}\DIFaddend ~\ref{lst:direct_logical_relation} and~\ref{lst:direct_fundamental}, while \DIFdelbegin \DIFdel{snippet}\DIFdelend \DIFaddbegin \DIFadd{Snippet}\DIFaddend ~\ref{lst:direct_correctness} states the actual correctness theorem.
 \DIFaddbegin \DIFadd{During development, we also discovered that while the abstract proof was correct, the concrete fundamental lemma used in the proof of }\texttt{\DIFadd{Theorem 1}} \DIFadd{in the paper was incorrect.
-}\DIFaddend 
+}\DIFaddend
 
 \begin{listing}
   \begin{minted}{coq}
@@ -812,16 +819,17 @@ Theorem semantic_correct_R :
 
 We will be looking to extend the current prototype proof with the continuation-based AD macro mentioned \DIFdelbegin \DIFdel{in }\DIFdelend \DIFaddbegin \DIFadd{by Huot, Staton, and }\Vakar{}\DIFaddend \cite{huot2020correctness}.
 We will also try to extend the proof with \DIFdelbegin \DIFdel{a small imperative language we are able to translate into the simply typed lambda calculus.
-The goal is to work towards results usable in the context of program optimizations. One possibility is to go towards a SSA (static single assignment) representation which has many benefits as a well-known possible internal representation for use in compilers\mbox{%DIFAUXCMD
+The goal is to work towards results usable in the context of program optimizations.
+One possibility is to go towards a SSA (static single assignment) representation which has many benefits as a well-known possible internal representation for use in compilers\mbox{%DIFAUXCMD
 \cite{Pop2006}}\hspace{0pt}%DIFAUXCMD
-.One other benefit is that this representation can also be transformed into a minimal functional language\mbox{%DIFAUXCMD
+. One other benefit is that this representation can also be transformed into a minimal functional language\mbox{%DIFAUXCMD
 \cite{chakravarty2004347}}\hspace{0pt}%DIFAUXCMD
 . }\DIFdelend \DIFaddbegin \DIFadd{array types which should be better for performance than the n-tuples used in the original proof.
-We will be working off of the results achieved by Shaikhha, et. al.\mbox{%DIFAUXCMD
+We will be trying to extend the proof with the results achieved by Shaikhha, et. al.\mbox{%DIFAUXCMD
 \cite{Shaikha2019}}\hspace{0pt}%DIFAUXCMD
 , where they also successfully implement several compile-time optimizations. %DIF >  One possibility is to go towards a SSA (static single assignment) representation which has many benefits as a well-known possible internal representation for use in compilers\cite{Pop2006}.
 %DIF >  One other benefit is that this representation can also be transformed into a minimal functional language\cite{chakravarty2004347}.
-}\DIFaddend 
+}\DIFaddend
 
 \todo{Fill in}
 
@@ -830,7 +838,7 @@ We will be working off of the results achieved by Shaikhha, et. al.\mbox{%DIFAUX
 The hard deadlines for the first and second phases of the thesis are respectively May $1^{st}$ and September $18^{th}$. The ambition is to follow the \DIFdelbegin \DIFdel{following }\DIFdelend framework of deadlines \DIFaddbegin \DIFadd{in Table~\ref{tbl:deadlines}}\DIFaddend . Note that until the proofs deadline, the proofs and paper will largely be written in parallel with each other.
 
 \todo{Fill in}
-\DIFdelbegin %DIFDELCMD < 
+\DIFdelbegin %DIFDELCMD <
 
 %DIFDELCMD < %%%
 \DIFdelend \DIFaddbegin \begin{table}
@@ -849,7 +857,7 @@ The hard deadlines for the first and second phases of the thesis are respectivel
   \DIFaddbeginFL \caption{\DIFaddFL{Framework of deadlines}}
   \label{tbl:deadlines}
 \end{table}
-\DIFaddend 
+\DIFaddend
 
 \printbibliography
 \makeatother
