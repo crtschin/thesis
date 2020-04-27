@@ -16,11 +16,7 @@ Proof.
   intros n.
   discriminate.
 Qed.
-
-Variable (x : nat).
-Check (O <> S x).
-Check (O <> O).
-Reset x.
+Check (forall n, O <> S n).
 
 Lemma O_refl_f : O <> O.
 Proof.
@@ -31,11 +27,13 @@ Abort.
 Require Import List.
 Local Open Scope list_scope.
 
-Fail Definition hd {A : Set} (l : list A) : A :=
+(*
+Definition hd {A : Set} (l : list A) : A :=
   match l with
   | h :: t => h
   | nil => whoknows
   end.
+*)
 
 Inductive li_list {A : Set} : nat -> Set :=
   | li_nil : li_list O
@@ -61,27 +59,9 @@ Definition hd {A : Set} {n} (l : li_list (S n)) : A :=
   | li_cons _ h t => h
   end.
 
-Definition pred' (n : nat) :=
-  match n return
-      (match n with
-      | O => unit
-      | S _ => nat end) with
-  | O => tt
-  | S n => n
-  end.
-Check pred'.
-
-Definition pred'' (n : nat) : n <> O -> nat.
-Proof.
-  intros H.
-  destruct n.
-  - contradiction H. reflexivity.
-  - apply n.
-Defined.
-Check pred''.
-
+Reset hd.
 Require Import Equations.Equations.
 
-Equations pred (n : nat) (pf : n <> O): nat :=
-pred O pf with pf eq_refl := {};
-pred (S n) pf := n.
+Equations hd {A : Set} {n} (l : @li_list A n) (pf : n <> O) : A :=
+hd li_nil pf with pf eq_refl := {};
+hd (li_cons a l) pf := a.
