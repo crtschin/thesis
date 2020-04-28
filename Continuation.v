@@ -235,6 +235,5 @@ Proof with quick.
       erewrite ren'_ren... } }
   { extensionality ctx. simp denote_tm.
     apply injective_projections...
-    { apply f_equal.
-      rewrite rename_ren'_ren.   } }
-Qed.
+    all: admit.
+Admitted.

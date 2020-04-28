@@ -19,7 +19,7 @@ Require Import AD.Definitions.
 Require Import AD.Macro.
 (* Require AD.DepList. *)
 Require Import AD.Tactics.
-(* Require Import AD.Normalization. *)
+Require Import AD.Normalization.
 Require Import AD.vect.
 
 Local Open Scope program_scope.
@@ -292,7 +292,7 @@ Proof with quick.
   fold (@id_sub Γ)...
 Qed.
 
-(* Theorem soundness : forall τ (t t' : tm [] τ),
+Theorem soundness : forall τ (t t' : tm [] τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
 Proof with quick.
   intros.
@@ -313,7 +313,7 @@ Proof with quick.
     rewrites... constructor. }
   { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t1 t1' t1')... constructor. }
   { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t2 t2' t2')... constructor. }
-Qed. *)
+Qed.
 
 (* Program Fixpoint Ddenote_sub {Γ Γ'}
   : sub Γ Γ' -> denote_ctx (Dctx Γ') -> denote_ctx (Dctx Γ) :=

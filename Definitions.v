@@ -281,13 +281,6 @@ Lemma lift_sub_id : forall Γ τ,
   substitute_lifted (@id_sub Γ) = @id_sub (τ::Γ).
 Proof. intros. ExtVar. Qed.
 
-Lemma app_sub_id_map: forall Γ τ n (vc : Vector.t (tm Γ τ) n),
-  Vmap (substitute id_sub) vc = vc.
-Proof with quick.
-  induction vc; simpl...
-  rewrite IHvc.
-Admitted.
-
 Lemma app_sub_id : forall Γ τ (t : tm Γ τ),
   substitute id_sub t = t.
 Proof with quick.

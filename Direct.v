@@ -16,6 +16,7 @@ Require Import Coquelicot.Hierarchy.
 Require Import Equations.Equations.
 Require Vectors.Fin.
 Import EqNotations.
+Require Import CoLoR.Util.Vector.VecUtil.
 
 Require Import AD.Definitions.
 Require Import AD.Macro.
@@ -36,7 +37,12 @@ S Real f g :=
   (forall (x : R), ex_derive f x) /\
   (fun r => g r) =
     (fun r => (f r, Derive f r));
-S (Array n τ) f g := SA n (S τ) f g;
+S (Array n τ) f g :=
+  forall i,
+  exists f1 g1,
+    S τ f1 g1 /\
+    (fun r => denote_idx i (f r)) = f1 /\
+    (fun r => denote_idx i (g r)) = g1;
 S (σ × ρ) f g :=
   exists f1 f2 g1 g2,
   exists (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
@@ -55,18 +61,7 @@ S (σ <+> ρ) f g :=
   (exists g1 g2,
     S ρ g1 g2 /\
       f = Datatypes.inr ∘ g1 /\
-      g = Datatypes.inr ∘ g2) }
-where SA {τ} n
-  (S' : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ (Dt τ) ⟧ₜ) -> Prop)
-  (f : R -> ⟦ Array n τ ⟧ₜ)
-  (g : R -> ⟦ Array n (Dt τ) ⟧ₜ) : Prop :=
-SA (τ:=τ) 0 S' f g := True;
-SA (τ:=τ) (Datatypes.S n) S' f g :=
-  exists f' g' f1 g1,
-    S' f1 g1 /\
-    SA n S' f' g' /\
-    (f = fun r => (f1 r, f' r)) /\
-    (g = fun r => (g1 r, g' r)).
+      g = Datatypes.inr ∘ g2) }.
 
 Inductive instantiation : forall Γ,
     (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx Γ ⟧ₜₓ) -> Prop :=
@@ -89,10 +84,6 @@ Proof. intros; rewrites. Qed.
 Lemma S_eq : forall τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
 Proof. intros; rewrites. Qed.
-
-Lemma SA_eq : forall n τ S f1 f2 g1 g2,
-  g1 = f1 -> g2 = f2 -> @SA n τ S f1 f2 = @SA n τ S g1 g2.
-Proof. intros. rewrites. Qed.
 
 (*
   Plain words:
@@ -137,48 +128,37 @@ Proof with quick.
   { (* Build *)
     quick. simp S...
     induction n.
-    { simp S... }
-    { pose proof (IHn (shave_fin t)).
-      simp S in *...
-      (* splits.
-      erewrite SA_eq; quick;
-        extensionality x; simp Dtm denote_tm; unfold compose.
-      all: admit. *)
-      exists (fun r => denote_array n (shave_fin (denote_tm ∘ t)) (sb r)).
-      exists (fun r => snd (⟦ Dtm (build Γ τ (Datatypes.S n) t) ⟧ₜₘ (Dsb r))).
-      exists (fun r => (denote_tm ∘ t) (nat_to_fin n) (sb r)).
-      exists (fun r => fst (⟦ Dtm (build Γ τ (Datatypes.S n) t) ⟧ₜₘ (Dsb r)))...
+    { (* Induction on n, Base case = 0
+          Contradiction due to indices running from 1..n *)
+      inversion i. }
+    { (* Induction on n, IHn case
+          Give instances *)
+      pose proof (IHn (shave_fin t)).
+      simp Dtm denote_tm in *...
+      dependent destruction i...
       splits...
-      erewrite S_eq.
-    2:{ extensionality r. unfold compose. reflexivity. }
-    2:{ extensionality r. simp Dtm denote_tm... unfold compose. reflexivity. }
-      eapply H... } }
+      exists (fun r => (denote_tm ∘ t) (nat_to_fin n) (sb r)).
+      exists (fun r => (denote_tm ∘ (Dtm ∘ t)) (nat_to_fin n) (Dsb r))...
+      } }
   { (* Get *)
     quick.
-    pose proof (IHt sb Dsb H) as H'.
+    pose proof (IHt sb Dsb H) as H'; clear IHt.
     simp S in *. simp SA in *.
     generalize dependent Γ.
-    generalize dependent τ...
-    induction t...
-    { destruct H' as [f' [g' [f1 [g1 H']]]].
-      destruct H' as [H1 [H2 [Heq1 Heq2]]].
+    generalize dependent τ.
+    induction n...
+    { (* Induction on n, Base case = 0
+          Contradiction due to indices running from 1..n *)
+      inversion t. }
+    { (* Induction on n, IHn case
+          Rewrite using logical relation *)
+      simp Dtm.
+      specialize H' with t.
+      destruct H' as [f1 [g1 [Hs1 [Heq1 Heq2]]]].
       erewrite S_eq.
-      eapply H1.
-      all: extensionality r.
-      all: simp Dtm denote_tm...
-      { eapply equal_f in Heq1. rewrites. }
-      { eapply equal_f in Heq2. rewrites. } }
-    { destruct H' as [f' [g' [f1 [g1 H']]]].
-      destruct H' as [H1 [H2 [Heq1 Heq2]]].
-      simp S in IHt.
-      erewrite S_eq.
-    2:{ extensionality x. simp denote_tm...
-        eapply equal_f in Heq1. rewrite Heq1... reflexivity. }
-    2:{ extensionality x. simp Dtm denote_tm...
-        eapply equal_f in Heq2. rewrite Heq2... reflexivity. }
-      erewrite S_eq. eapply IHt0... clear IHt0.
-      simp S.
-      all: admit. } }
+    2:{ extensionality x. simp denote_tm. reflexivity. }
+    2:{ extensionality x. simp denote_tm. reflexivity. }
+      subst... } }
   { (* Const *)
     quick. simp S... unfold compose.
     splits...
@@ -269,7 +249,7 @@ Proof with quick.
     intros... simp S... right...
     exists (⟦ t ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
-Admitted.
+Qed.
 
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real),
