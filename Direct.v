@@ -105,7 +105,6 @@ Proof with quick.
   (* pose proof (H τ) as H'. clear H. *)
   induction t; simp denote_tm in *; unfold compose in *.
   { (* Var *)
-    (* Using Inductive Instantiation *)
     intros; dependent induction v; dependent induction H;
       quick; simp denote_tm cons_sub Dtm...
     erewrite S_eq. eapply IHv...
@@ -119,84 +118,92 @@ Proof with quick.
     erewrite S_eq. eapply IHt1'...
     all: extensionality x; simp denote_tm Dtm... }
   { (* Abs *)
-    intros. simp S. intros.
-    unfold compose in *.
-    simpl. simp Dtm...
+    intros. simp S Dtm...
     specialize IHt with
       (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r))...
     eapply IHt. constructor; assumption. }
   { (* Build *)
-    quick. simp S...
+    intros. simp S...
     induction n.
     { (* Induction on n, Base case = 0
-          Contradiction due to indices running from 1..n *)
+        Contradiction due to indices running from 1..n *)
       inversion i. }
     { (* Induction on n, IHn case
-          Give instances *)
-      pose proof (IHn (shave_fin t)).
+        Give instances *)
+      pose proof (IHn (shave_fin t)) as H'; clear IHn.
       simp Dtm denote_tm in *...
+      (* Destruct index,
+        Cons case handled by IHn *)
       dependent destruction i...
-      splits...
-      exists (fun r => (denote_tm ∘ t) (nat_to_fin n) (sb r)).
-      exists (fun r => (denote_tm ∘ (Dtm ∘ t)) (nat_to_fin n) (Dsb r))...
-      } }
+      clear H'.
+      exists (fun r =>
+        (denote_tm ∘ t) (nat_to_fin n) (sb r));
+      exists (fun r =>
+        (denote_tm ∘ (Dtm ∘ t)) (nat_to_fin n) (Dsb r))... } }
   { (* Get *)
     quick.
     pose proof (IHt sb Dsb H) as H'; clear IHt.
     simp S in *. simp SA in *.
-    generalize dependent Γ.
-    generalize dependent τ.
     induction n...
     { (* Induction on n, Base case = 0
-          Contradiction due to indices running from 1..n *)
+        Contradiction due to indices running from 1..n *)
       inversion t. }
     { (* Induction on n, IHn case
-          Rewrite using logical relation *)
+        Rewrite using logical relation *)
       simp Dtm.
       specialize H' with t.
       destruct H' as [f1 [g1 [Hs1 [Heq1 Heq2]]]].
-      erewrite S_eq.
-    2:{ extensionality x. simp denote_tm. reflexivity. }
-    2:{ extensionality x. simp denote_tm. reflexivity. }
-      subst... } }
+      subst. erewrite S_eq... } }
   { (* Const *)
-    quick. simp S... unfold compose.
+    intros. simp S.
     splits...
-    { assert (H': (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
-      { extensionality r'. simp denote_tm. unfold const... }
-      rewrite H'. apply ex_derive_const. }
+    { (* Rewrite using 'denotation of (rval r) = const r' *)
+      assert (H': (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
+      { extensionality r'; simp denote_tm; unfold const... }
+      rewrite H'.
+      (* const is derivable *)
+      apply ex_derive_const. }
     { extensionality x...
       simp Dtm denote_tm...
+      (* Rewrite using 'denotation of (rval r) = const r' *)
       assert (H': (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
-      { extensionality r'. simp denote_tm. unfold const... }
+      { extensionality r'; simp denote_tm; unfold const... }
       rewrite H'. apply injective_projections...
       unfold const.
       rewrite Derive_const... } }
   { (* Add *)
     simpl in *. intros.
-    pose proof (IHt1 sb Dsb) as H1.
-    pose proof (IHt2 sb Dsb) as H2.
+    (* Specialize IH to give evidence that
+      subterms are derivable/give derivative *)
+    pose proof (IHt1 sb Dsb H) as H1.
+    pose proof (IHt2 sb Dsb H) as H2.
     simp S in H1; simp S in H2.
-    autorewrite with S...
-    pose proof (H1 H) as [Heq1 Heq1']; clear H1.
-    pose proof (H2 H) as [Heq2 Heq2']; clear H2.
-    unfold compose in *.
+    destruct H1 as [Heq1 Heq1'].
+    destruct H2 as [Heq2 Heq2'].
+    (* Prove addition of subterms is derivable
+      and give derivative value *)
+    autorewrite with S.
     splits...
-    { apply (ex_derive_plus _ _ _ (Heq1 x) (Heq2 x)). }
+    { (* Addition is derivable given subterms are derivable *)
+      apply (ex_derive_plus _ _ _ (Heq1 x) (Heq2 x)). }
     { simp Dtm. simpl.
       extensionality x.
       eapply equal_f in Heq1'.
       eapply equal_f in Heq2'.
       simp denote_tm.
-      rewrite Heq1'. rewrite Heq2'...
+      apply injective_projections;
+        rewrite Heq1'; rewrite Heq2'...
+      (* Rewrite using definition of denote_tm *)
       assert
         (H': (fun x0 : R => ⟦ add Γ t1 t2 ⟧ₜₘ (sb x0)) =
           fun x0 : R => ⟦ t1 ⟧ₜₘ (sb x0) + ⟦ t2 ⟧ₜₘ (sb x0)).
-      { extensionality r. simp denote_tm... }
+      { extensionality r; simp denote_tm... }
       rewrite H'.
+      (* Derivative is addition of derivative of subterms *)
       rewrite Derive_plus... } }
   { (* Tuples *)
     intros... simp S.
+    (* Give instances using IHs *)
     pose proof (IHt1 sb Dsb H) as H1'; clear IHt1.
     pose proof (IHt2 sb Dsb H) as H2'; clear IHt2.
     exists (⟦ t1 ⟧ₜₘ ∘ sb );
@@ -207,7 +214,7 @@ Proof with quick.
     unfold compose.
     exists H1'; exists H2'... }
   { (* Projection 1 *)
-    intros. unfold compose in *... simp Dtm... simpl.
+    intros. simp Dtm.
     specialize IHt with sb Dsb.
     simp S in IHt; pose proof (IHt H) as H'; clear IHt.
     destruct H' as [f1 [f2 [g1 [g2 [Hs1 [Hs2 [Heq1 Heq2]]]]]]].
@@ -215,7 +222,7 @@ Proof with quick.
     { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
     { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
   { (* Projection 2 *)
-    intros. unfold compose in *... simp Dtm... simpl.
+    intros. simp Dtm.
     specialize IHt with sb Dsb.
     simp S in IHt; pose proof (IHt H) as H'; clear IHt.
     destruct H' as [f1 [f2 [g1 [g2 [Hs1 [Hs2 [Heq1 Heq2]]]]]]].
@@ -228,25 +235,28 @@ Proof with quick.
     pose proof (IHt2 sb Dsb H) as IH2; clear IHt2.
     pose proof (IHt3 sb Dsb H) as IH3; clear IHt3.
     simp S in *. simpl. simp Dtm. simpl.
+    (* Either term denotates to inl or inr *)
     destruct IH1 as [[g1 [g2 H']]|[g1 [g2 H']]].
-    { destruct H' as [Hs [Heq1 Heq2]].
+    { (* Scrutinee is inl *)
+      destruct H' as [Hs [Heq1 Heq2]].
       erewrite S_eq. eapply IH2...
       { extensionality x. eapply equal_f in Heq1.
         simp denote_tm. rewrite Heq1... }
       { extensionality x. eapply equal_f in Heq2.
         simp denote_tm. rewrite Heq2... } }
-    { destruct H' as [Hs [Heq1 Heq2]].
+    { (* Scrutinee is inr *)
+      destruct H' as [Hs [Heq1 Heq2]].
       erewrite S_eq. eapply IH3...
       { extensionality x. eapply equal_f in Heq1.
         simp denote_tm. rewrite Heq1... }
       { extensionality x. eapply equal_f in Heq2.
         simp denote_tm. rewrite Heq2... } } }
   { (* Inl *)
-    intros... simp S... left...
+    intros. simp S. left...
     exists (⟦ t ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
   { (* Inl *)
-    intros... simp S... right...
+    intros. simp S. right...
     exists (⟦ t ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
 Qed.
@@ -294,21 +304,24 @@ Proof with quick.
   eapply S_correct_R.
   eapply fundamental.
   clear t.
+  (* Prove every term in the context is in the relation
+    by induction on number of real terms in context *)
   induction n...
-  { erewrite inst_eq;
+  { (* N = 0
+      Prove f : R -> ⟦ repeat Real 0 ⟧ₜₓ is equal to 'const tt' *)
+    erewrite inst_eq;
       try (extensionality r).
   2:{ remember (f r) as e. dependent destruction e.
       reflexivity. }
   2:{ simp D. remember (f r) as e. dependent destruction e.
       reflexivity. }
     fold (@Basics.const unit R tt); constructor. }
-  { erewrite inst_eq;
+  { (* N = n + 1  *)
+    erewrite inst_eq;
       try (extensionality r).
-  2:{ instantiate (1:=
-        fun r => (fst (f r), snd (f r))).
-        apply injective_projections; quick; remember (f r);
-          dependent elimination e... }
-  2:{ simp D. unfold compose. reflexivity. }
+  2:{ instantiate (1 := fun r => (fst (f r), snd (f r))).
+      apply injective_projections; easy. }
+  2:{ simp D. reflexivity. }
     dependent destruction H.
     constructor...
     simp S. splits... }
