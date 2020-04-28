@@ -24,9 +24,9 @@ Inductive ty : Type :=
   | Sum  : ty -> ty -> ty
 .
 
-Notation "A × B" := (Prod A B) (left associativity, at level 90).
-Notation "A <+> B" := (Sum A B) (left associativity, at level 90).
-Notation "A → B" := (Arrow A B) (right associativity, at level 20).
+Notation "A × B" := (Prod A B) (left associativity, at level 89).
+Notation "A <+> B" := (Sum A B) (left associativity, at level 89).
+Notation "A → B" := (Arrow A B) (right associativity, at level 90).
 
 (*
   STLC with well-typed well-scoped debruijn
@@ -396,6 +396,17 @@ Proof with eauto.
 Qed.
 
 (* Helpers *)
+Definition array_add {Γ n} (t1 t2 : tm Γ (Array n Real)): tm Γ (Array n Real) :=
+  (build _ _ _ (fun i =>
+    (add _
+      (get _ i t1))
+      (get _ i t2))).
+
+Definition array_tuple {Γ τ σ n} (t : tm Γ σ) (ta : tm Γ (Array n τ))
+  : tm Γ (Array n (τ × σ)) :=
+  (build _ _ _ (fun i =>
+    (tuple _ (get _ i ta) (t)))).
+
 Lemma rename_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (r : ren Γ Γ'),
   rename r (abs Γ τ σ t) = abs Γ' τ σ (rename (rename_lifted r) t).
 Proof. reflexivity. Qed.

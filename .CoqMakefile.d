@@ -4,6 +4,9 @@ Adequacy.vos Adequacy.vok Adequacy.required_vos: Adequacy.v
 Base.vo Base.glob Base.v.beautified Base.required_vo: Base.v 
 Base.vio: Base.v 
 Base.vos Base.vok Base.required_vos: Base.v 
+Continuation.vo Continuation.glob Continuation.v.beautified Continuation.required_vo: Continuation.v vect.vo Definitions.vo Tactics.vo Denotation.vo
+Continuation.vio: Continuation.v vect.vio Definitions.vio Tactics.vio Denotation.vio
+Continuation.vos Continuation.vok Continuation.required_vos: Continuation.v vect.vos Definitions.vos Tactics.vos Denotation.vos
 coquelicotComplements.vo coquelicotComplements.glob coquelicotComplements.v.beautified coquelicotComplements.required_vo: coquelicotComplements.v 
 coquelicotComplements.vio: coquelicotComplements.v 
 coquelicotComplements.vos coquelicotComplements.vok coquelicotComplements.required_vos: coquelicotComplements.v 

@@ -14,6 +14,7 @@ Require Import Coquelicot.Hierarchy.
 Require Import Equations.Equations.
 Import EqNotations.
 
+Require Import CoLoR.Util.Vector.VecUtil.
 Require Import AD.Definitions.
 Require Import AD.Macro.
 (* Require AD.DepList. *)
@@ -39,17 +40,11 @@ Local Open Scope program_scope.
     the proof of differentiability and witness in one.
 *)
 
-Fixpoint denote_array_type n (s : Set) : Set :=
-  match n with
-  | O => unit
-  | S n => s * denote_array_type n s
-  end.
-
 Reserved Notation "⟦ τ ⟧ₜ".
 Fixpoint denote_t τ : Set :=
   match τ with
   | Real => R
-  | Array n τ => denote_array_type n ⟦ τ ⟧ₜ
+  | Array n τ => vector ⟦ τ ⟧ₜ n
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
   | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ
@@ -72,10 +67,10 @@ Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
 Notation "⟦ v ⟧ᵥ" := (denote_v v).
 
 Fixpoint denote_idx {s : Set} {n}
-  (i : Fin.t n) : denote_array_type n s -> s :=
+  (i : Fin.t n) : vector s n -> s :=
   match i with
-  | @F1 _    => fun ar => fst ar
-  | @FS _ i' => fun ar => denote_idx i' (snd ar)
+  | @F1 _    => fun ar => Vhead ar
+  | @FS _ i' => fun ar => denote_idx i' (Vtail ar)
   end.
 
 Fixpoint nat_to_fin n : Fin.t (S n) :=
@@ -115,9 +110,9 @@ where "⟦ t ⟧ₜₘ" := (denote_tm t)
 (* Helper for arrays *)
 where denote_array {Γ τ} n (f : Fin.t n -> ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ)
   : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ by struct n :=
-denote_array 0 f ctx := tt;
-denote_array (S n) f ctx := (f (nat_to_fin n) ctx,
-  (denote_array n (shave_fin f)) ctx).
+denote_array 0 f ctx := Vnil;
+denote_array (S n) f ctx := Vcons (f (nat_to_fin n) ctx)
+  ((denote_array n (shave_fin f)) ctx).
 
 Equations denote_env {Γ} (G : Env Γ): ⟦ Γ ⟧ₜₓ :=
 denote_env env_nil => tt;
@@ -184,7 +179,8 @@ Proof with quick.
   { simp denote_tm in *. rewrites.
     unfold compose.
     induction n... rewrites.
-    apply injective_projections... }
+    apply Vcons_eq.
+    splits... }
   { simp denote_tm. rewrite IHt1.
     destruct (⟦ rename r t1 ⟧ₜₘ ctx);
       quick; rewrites. }
@@ -256,7 +252,7 @@ Proof with quick.
   { simp denote_tm.
     unfold compose.
     induction n... rewrites.
-    apply injective_projections... }
+    apply Vcons_eq... }
   { simp denote_tm.
     destruct (⟦ substitute s t1 ⟧ₜₘ ctx);
       quick; rewrites. }

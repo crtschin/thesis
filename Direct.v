@@ -177,6 +177,7 @@ Proof with quick.
     2:{ extensionality x. simp Dtm denote_tm...
         eapply equal_f in Heq2. rewrite Heq2... reflexivity. }
       erewrite S_eq. eapply IHt0... clear IHt0.
+      simp S.
       all: admit. } }
   { (* Const *)
     quick. simp S... unfold compose.
