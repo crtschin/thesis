@@ -18,12 +18,15 @@ Local Open Scope program_scope.
 
 Inductive ty : Type :=
   | Real : ty
+  | Nat : ty
   | Array : nat -> ty -> ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
   | Sum  : ty -> ty -> ty
 .
 
+Notation "'ℝ'" := (Real).
+Notation "'ℕ'" := (Nat).
 Notation "A × B" := (Prod A B) (left associativity, at level 89).
 Notation "A <+> B" := (Sum A B) (left associativity, at level 89).
 Notation "A → B" := (Arrow A B) (right associativity, at level 90).
@@ -59,21 +62,19 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
     tm (σ::Γ) τ -> tm Γ (σ → τ)
 
   (* Arrays *)
-  (* | build_nil : forall τ,
-    tm Γ (Array τ) *)
-  | build :
-    forall τ n,
-    (* forall (i : Fin.t n), *)
-    (* forall (t : tm Γ τ), *)
-    (* Vector.t (tm Γ τ) n -> tm Γ (Array τ) *)
+  | build : forall τ n,
     (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ)
-    (* tm Γ (Array n τ) -> tm Γ (Array (S n) τ) *)
   | get : forall {τ n},
     Fin.t n -> tm Γ (Array n τ) -> tm Γ τ
+  | ifold : forall τ,
+    (nat -> tm Γ (τ → τ)) -> nat -> tm Γ τ -> tm Γ τ
 
   (* Reals *)
   | rval : forall (r : R), tm Γ Real
   | add : tm Γ Real -> tm Γ Real -> tm Γ Real
+
+  (* Nat *)
+  | nval : forall (n : nat), tm Γ Nat
 
   (* Products (currently using projection instead of pattern matching) *)
   | tuple : forall {τ σ},
@@ -103,6 +104,10 @@ shave_env (env_cons t G) := G.
 
 Lemma build_congr : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
   ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
+Proof with quick. intros. rewrites. Qed.
+
+Lemma ifold_congr : forall Γ τ tf tf' i (ta : tm Γ τ),
+  tf = tf' -> ifold Γ τ tf i ta = ifold Γ τ tf' i ta.
 Proof with quick. intros. rewrites. Qed.
 
 (* Examples *)
@@ -193,9 +198,12 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | abs _ _ _ f => abs _ _ _ (rename (rename_lifted r) f)
 
   (* Arrays *)
-  (* | build_nil _ _ => build_nil _ _ *)
   | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
   | get _ ti ta => get _ ti (rename r ta)
+  | ifold _ _ tf ti ta => ifold _ _ (rename r ∘ tf) ti (rename r ta)
+
+  (* Nat *)
+  | nval _ n => nval _ n
 
   (* Reals *)
   | rval _ r => rval _ r
@@ -234,6 +242,11 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   (* | build_nil _ _ => build_nil _ _ *)
   | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)
   | get _ ti ta => get _ ti (substitute s ta)
+  | ifold _ _ tf ti ta =>
+    ifold _ _ (substitute s ∘ tf) ti (substitute s ta)
+
+  (* Nat *)
+  | nval _ n => nval _ n
 
   (* Reals *)
   | rval _ r => rval _ r
@@ -286,9 +299,10 @@ Lemma app_sub_id : forall Γ τ (t : tm Γ τ),
 Proof with quick.
   induction t; rewrites;
   try (rewrite lift_sub_id; rewrites).
-  unfold compose.
-  erewrite build_congr...
-  extensionality x...
+  { erewrite build_congr...
+    extensionality x... }
+  { erewrite ifold_congr...
+    extensionality x... }
 Qed.
 
 Lemma lift_ren_id : forall Γ τ,
@@ -299,9 +313,10 @@ Lemma app_ren_id : forall Γ τ (t : tm Γ τ),
   rename id_ren t = t.
 Proof with quick.
   induction t; Rewrites lift_ren_id.
-  unfold compose.
-  erewrite build_congr...
-  extensionality x...
+  { erewrite build_congr...
+    extensionality x... }
+  { erewrite ifold_congr...
+    extensionality x... }
 Qed.
 
 (* Composing substitutions and renames *)
@@ -325,10 +340,10 @@ Lemma app_ren_ren : forall Γ Γ' Γ'' τ
 Proof with quick.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_ren_ren.
-  unfold compose.
-  rewrite build_congr with
-    (ta':=(fun x : Fin.t n => rename r (rename r' (t x))))...
-  extensionality x...
+  { erewrite build_congr...
+    extensionality x... }
+  { erewrite ifold_congr...
+    extensionality x... }
 Qed.
 
 Lemma lift_sub_ren : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (r : ren Γ Γ'),
@@ -343,9 +358,10 @@ Lemma app_sub_ren : forall Γ Γ' Γ'' τ
 Proof with quick.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_ren.
-  erewrite build_congr...
-  unfold compose.
-  extensionality x...
+  { erewrite build_congr...
+    extensionality x... }
+  { erewrite ifold_congr...
+    extensionality x... }
 Qed.
 
 Lemma lift_ren_sub : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (s : sub Γ Γ'),
@@ -364,8 +380,10 @@ Lemma app_ren_sub : forall Γ Γ' Γ'' τ
 Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_ren_sub.
-  erewrite build_congr...
-  extensionality x...
+  { erewrite build_congr...
+    extensionality x... }
+  { erewrite ifold_congr...
+    extensionality x... }
 Qed.
 
 Lemma lift_sub_sub : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (s' : sub Γ Γ'),
@@ -384,8 +402,10 @@ Lemma app_sub_sub : forall Γ Γ' Γ'' τ
 Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_sub.
-  erewrite build_congr...
-  extensionality x...
+  { erewrite build_congr...
+    extensionality x... }
+  { erewrite ifold_congr...
+    extensionality x... }
 Qed.
 
 (* Helpers *)
@@ -427,8 +447,10 @@ Proof with eauto.
   try (unfold compose_sub_ren in *; quick;
     rewrite lift_sub_id;
     rewrite app_sub_id)...
-  erewrite build_congr...
-  extensionality x...
+  { erewrite build_congr...
+    extensionality x... }
+  { erewrite ifold_congr...
+    extensionality x... }
 Qed.
 
 (* Lemma subst_cons_lift_cons :

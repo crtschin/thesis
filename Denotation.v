@@ -44,6 +44,7 @@ Reserved Notation "⟦ τ ⟧ₜ".
 Fixpoint denote_t τ : Set :=
   match τ with
   | Real => R
+  | Nat => nat
   | Array n τ => vector ⟦ τ ⟧ₜ n
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
@@ -66,11 +67,11 @@ Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
   end.
 Notation "⟦ v ⟧ᵥ" := (denote_v v).
 
-Fixpoint denote_idx {s : Set} {n}
+Fixpoint vector_nth {s : Set} {n}
   (i : Fin.t n) : vector s n -> s :=
   match i with
   | @F1 _    => fun ar => Vhead ar
-  | @FS _ i' => fun ar => denote_idx i' (Vtail ar)
+  | @FS _ i' => fun ar => vector_nth i' (Vtail ar)
   end.
 
 Fixpoint nat_to_fin n : Fin.t (S n) :=
@@ -91,7 +92,9 @@ denote_tm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x,
 (* Arrays *)
 denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n f) ctx :=
   denote_array n (denote_tm ∘ f) ctx;
-denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := denote_idx i (⟦ ta ⟧ₜₘ ctx);
+denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := vector_nth i (⟦ ta ⟧ₜₘ ctx);
+(* Nat *)
+denote_tm (Γ:=Γ) (τ:=τ) (nval Γ n) ctx := n;
 (* Reals *)
 denote_tm (Γ:=Γ) (τ:=τ) (rval Γ r) ctx := r;
 denote_tm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx;

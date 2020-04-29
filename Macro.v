@@ -27,6 +27,7 @@ Local Open Scope R_scope.
 Fixpoint Dt τ : ty :=
   match τ with
   | Real => Real × Real
+  | Nat => Nat
   | Array n t => Array n (Dt t)
   | t1 × t2 => Dt t1 × Dt t2
   | t1 → t2 => Dt t1 → Dt t2
@@ -51,6 +52,9 @@ Dtm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm f);
 Dtm (Γ:=Γ) (τ:=τ) (build Γ τ n ta) =>
   build _ _ _ (Dtm ∘ ta);
 Dtm (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm ta);
+Dtm (Γ:=Γ) (τ:=τ) (ifold Γ τ tf ti ta) => ifold _ _ (Dtm tf) (Dtm ti) (Dtm ta);
+(* Nat *)
+Dtm (Γ:=Γ) (τ:=τ) (nval Γ n) := (nval _ n);
 (* Reals *)
 Dtm (Γ:=Γ) (τ:=τ) (rval Γ r) := tuple _ (rval _ r) (rval _ 0);
 Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm t1 := {

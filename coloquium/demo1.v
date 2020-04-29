@@ -17,12 +17,15 @@ Proof.
   discriminate.
 Qed.
 Check (forall n, O <> S n).
+Check nat_discr.
 
 Lemma O_refl_f : O <> O.
 Proof.
   unfold not.
   intros H.
 Abort.
+Check (O <> O).
+(* Check O_refl_f. *)
 
 Require Import List.
 Local Open Scope list_scope.
@@ -38,6 +41,12 @@ Definition hd {A : Set} (l : list A) : A :=
 Inductive li_list {A : Set} : nat -> Set :=
   | li_nil : li_list O
   | li_cons : forall n, A -> li_list n -> li_list (S n).
+
+(*
+if b
+  then e1
+  else e2
+*)
 
 Definition hd' {A : Set} {n} (l : li_list n) :=
   match l in (li_list n) return
@@ -65,3 +74,4 @@ Require Import Equations.Equations.
 Equations hd {A : Set} {n} (l : @li_list A n) (pf : n <> O) : A :=
 hd li_nil pf with pf eq_refl := {};
 hd (li_cons a l) pf := a.
+Check hd.

@@ -37,12 +37,13 @@ S Real f g :=
   (forall (x : R), ex_derive f x) /\
   (fun r => g r) =
     (fun r => (f r, Derive f r));
+S Nat f g := True;
 S (Array n τ) f g :=
   forall i,
   exists f1 g1,
     S τ f1 g1 /\
-    (fun r => denote_idx i (f r)) = f1 /\
-    (fun r => denote_idx i (g r)) = g1;
+    (fun r => vector_nth i (f r)) = f1 /\
+    (fun r => vector_nth i (g r)) = g1;
 S (σ × ρ) f g :=
   exists f1 f2 g1 g2,
   exists (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
@@ -150,25 +151,24 @@ Proof with quick.
       inversion t. }
     { (* Induction on n, IHn case
         Rewrite using logical relation *)
+      clear IHn.
       simp Dtm.
       specialize H' with t.
       destruct H' as [f1 [g1 [Hs1 [Heq1 Heq2]]]].
       subst. erewrite S_eq... } }
   { (* Const *)
     intros. simp S.
+    (* Setup rewrite rule using 'denotation of (rval r) = const r' *)
+    assert (H': forall r, (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
+    { intros; extensionality r'; simp denote_tm; unfold const... }
     splits...
-    { (* Rewrite using 'denotation of (rval r) = const r' *)
-      assert (H': (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
-      { extensionality r'; simp denote_tm; unfold const... }
-      rewrite H'.
+    { rewrite H'.
       (* const is derivable *)
       apply ex_derive_const. }
     { extensionality x...
       simp Dtm denote_tm...
-      (* Rewrite using 'denotation of (rval r) = const r' *)
-      assert (H': (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
-      { extensionality r'; simp denote_tm; unfold const... }
       rewrite H'. apply injective_projections...
+      (* Derivative of const is 0 *)
       unfold const.
       rewrite Derive_const... } }
   { (* Add *)
@@ -201,6 +201,8 @@ Proof with quick.
       rewrite H'.
       (* Derivative is addition of derivative of subterms *)
       rewrite Derive_plus... } }
+  { (* Nval *)
+    intros... simp S... }
   { (* Tuples *)
     intros... simp S.
     (* Give instances using IHs *)
@@ -300,7 +302,6 @@ Theorem semantic_correct_R :
         Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f x)) r)).
 Proof with quick.
   intros...
-  unfold compose.
   eapply S_correct_R.
   eapply fundamental.
   clear t.

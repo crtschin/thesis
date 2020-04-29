@@ -28,6 +28,7 @@ Local Open Scope type_scope.
 Fixpoint Dt_c (n : nat) (σ : ty) : ty :=
   match σ with
   | Real => Real × (Real → Array n Real)
+  | Nat => Nat
   | Array m τ => Array m (Dt_c n τ)
   | τ1 × τ2 => (Dt_c n τ1 × Dt_c n τ2)
   | τ1 → τ2 => (Dt_c n τ1 → Dt_c n τ2)
@@ -53,6 +54,8 @@ Dtm_c n (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm_c n f);
 Dtm_c n (Γ:=Γ) (τ:=τ) (build Γ τ m ta) =>
   build _ _ _ (Dtm_c n ∘ ta);
 Dtm_c n (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm_c n ta);
+(* Nat *)
+Dtm_c n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval (map (Dt_c n) Γ) m;
 (* Reals *)
 Dtm_c n (Γ:=Γ) (τ:=τ) (rval Γ r) :=
   tuple _ (rval _ r) (abs _ _ _ (build _ _ _ (const (rval _ 0))));
@@ -80,6 +83,7 @@ Dtm_c n (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm_c n e).
 Fixpoint Dt n τ : ty :=
   match τ with
   | Real => Real × Array n Real
+  | Nat => Nat
   | Array m t => Array m (Dt n t)
   | t1 × t2 => Dt n t1 × Dt n t2
   | t1 → t2 => Dt n t1 → Dt n t2
@@ -104,6 +108,8 @@ Dtm n (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm n f);
 Dtm n (Γ:=Γ) (τ:=τ) (build Γ τ m ta) =>
   build _ _ _ (Dtm n ∘ ta);
 Dtm n (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm n ta);
+(* Nat *)
+Dtm n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval _ m;
 (* Reals *)
 Dtm n (Γ:=Γ) (τ:=τ) (rval Γ r) :=
   tuple _ (rval _ r) (build _ _ _ (const (rval _ 0)));
@@ -170,7 +176,7 @@ Definition lam_r {n m}
   tuple _ (first _ (rename (ren_c n m) t))
     (abs _ _ Real ((shift (σ:= Real) (second _ (rename (ren_c n m) t))))).
 
-Equations lam {n m} τ
+(* Equations lam {n m} τ
   {pf1: forall τ1 τ2, τ <> (τ1 → τ2)}
   {pf2: forall τ1 τ2, τ <> (τ1 <+> τ2)}
   {pf3: forall m τ', τ <> (Array m τ')}
@@ -186,7 +192,7 @@ lam (τ1 → τ2) z
 lam (Array m τ) z
   with pf3 m τ eq_refl := { };
 lam (τ1 <+> τ2) z
-  with pf2 τ1 τ2 eq_refl := { }.
+  with pf2 τ1 τ2 eq_refl := { }. *)
   (* := case (Dctx n (repeat Real m)) z
     (abs _ (Dt_c n τ1 <+> Dt_c n τ2) (Dt_c n τ1)
       (inl _ _ _ (lam n τ1 (var _ _ (Top _ _)))))

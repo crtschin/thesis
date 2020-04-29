@@ -21,6 +21,8 @@ From AD Require Import Denotation.
 
 Reserved Notation "t1 ⇓ t2" (at level 40).
 Inductive eval : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
+  | EV_Id : forall Γ τ (t t' : tm Γ τ),
+      t ⇓ t'
   (* Base STLC *)
   | EV_AppAbs : forall Γ τ σ t1 t1' t2 t2',
       t1 ⇓ (abs Γ τ σ t1') ->
@@ -29,8 +31,8 @@ Inductive eval : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
 
   (* Add *)
   | EV_Add : forall Γ t1 t1' t2 t2',
-      t1 ⇓ (const Γ t1') ->
-      t2 ⇓ (const Γ t2') ->
+      t1 ⇓ (rval Γ t1') ->
+      t2 ⇓ (rval Γ t2') ->
       add Γ t1 t2 ⇓ rval Γ (Rdefinitions.Rplus t1' t2')
 
   (* Pairs *)

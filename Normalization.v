@@ -28,12 +28,10 @@ Local Open Scope program_scope.
 Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
   | v_real : forall {Γ r},
     value (rval Γ r)
+  | v_nat : forall {Γ n},
+    value (nval Γ n)
   | v_build : forall {Γ τ n f},
     value (build Γ τ n f)
-  (* | v_build_cons : forall {Γ τ n t ta},
-    value ta ->
-    value t ->
-    value (build_cons Γ τ n t ta) *)
   | v_tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
     value t1 ->
     value t2 ->
@@ -69,6 +67,13 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     get Γ ti t --> get Γ ti t'
   | ST_GetBuild : forall Γ τ n i (f : Fin.t n -> tm Γ τ),
     get Γ i (build Γ τ n f) --> f i
+  | ST_FoldI : forall Γ τ tf i i' (t : tm Γ τ),
+    i --> i' ->
+    ifold Γ τ tf i t --> ifold Γ τ tf i' t
+  | ST_FoldN0 : forall Γ τ tf (t : tm Γ τ),
+    ifold Γ τ tf (nval _ 0) t --> t
+  | ST_FoldNS : forall Γ τ tf (t : tm Γ τ),
+    ifold Γ τ tf (nval _ (S n)) t --> t
 
   (* Add *)
   | ST_Add : forall Γ v1 v2,
@@ -136,7 +141,6 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | ST_Inr : forall Γ τ σ t1 t1',
         t1 --> t1' ->
         (@inr Γ τ σ t1) --> (@inr Γ τ σ t1')
-
 where "t  -->  v" := (step t v).
 
 (* From software foundations vol.2 *)
@@ -213,6 +217,7 @@ Qed.
 
 Equations Rel {Γ} τ (t : tm Γ τ): Prop :=
 Rel Real t := halts t;
+Rel Nat t := halts t;
 Rel (Array n τ) t := halts t /\ (exists (f : Fin.t n -> tm Γ τ),
   t -->* build Γ τ n f /\ forall i, Rel τ (f i));
 Rel (τ1 × τ2) t :=
@@ -272,6 +277,7 @@ Proof with quick.
   generalize dependent Γ.
   dependent induction τ; simp Rel in *...
   { apply (step_preserves_halting t t' H0)... }
+  { apply (step_preserves_halting t t' H0)... }
   { simp Rel. splits...
     { apply (step_preserves_halting t t' H0).
       apply R_halts in H... }
@@ -325,6 +331,8 @@ Proof with quick.
   intros Γ τ.
   generalize dependent Γ.
   dependent induction τ...
+  { simp Rel in *.
+    rewrite step_preserves_halting... }
   { simp Rel in *.
     rewrite step_preserves_halting... }
   { simp Rel. splits...
@@ -559,7 +567,7 @@ Proof with quick.
     eapply multistep_Get...
     econstructor. eapply ST_GetBuild.
     constructor. }
-  { (* Const *)
+  { (* Rval *)
     intros sb H.
     simp Rel. apply value_halts... }
   { (* Add *)
@@ -590,6 +598,9 @@ Proof with quick.
     exists (rval Γ0 (Rdefinitions.RbaseSymbolsImpl.Rplus r r0)).
     splits...
     econstructor. }
+  { (* Nval *)
+    intros sb H.
+    simp Rel. apply value_halts... }
   { (* Tuple *)
     intros sb H.
     intros.
