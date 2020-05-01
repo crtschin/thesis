@@ -40,6 +40,7 @@ Notation "A → B" := (Arrow A B) (right associativity, at level 90).
     - Efficient Differentiable Programming in a
         Functional Array-Processing Language by Amir Shaikhha, et al.
  *)
+
 Definition Ctx {x} : Type := list x.
 
 Inductive Var {T : Type} : list T -> T -> Type :=
@@ -66,8 +67,6 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
     (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ)
   | get : forall {τ n},
     Fin.t n -> tm Γ (Array n τ) -> tm Γ τ
-  | ifold : forall τ,
-    (nat -> tm Γ (τ → τ)) -> nat -> tm Γ τ -> tm Γ τ
 
   (* Reals *)
   | rval : forall (r : R), tm Γ Real
@@ -93,22 +92,13 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | inr : forall τ σ, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
-Inductive Env : Ctx -> Type :=
-  | env_nil : Env []
-  | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
-.
-Derive Signature for Env.
-
-Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
-shave_env (env_cons t G) := G.
-
 Lemma build_congr : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
   ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
 Proof with quick. intros. rewrites. Qed.
 
-Lemma ifold_congr : forall Γ τ tf tf' i (ta : tm Γ τ),
+(* Lemma ifold_congr : forall Γ τ tf tf' i (ta : tm Γ τ),
   tf = tf' -> ifold Γ τ tf i ta = ifold Γ τ tf' i ta.
-Proof with quick. intros. rewrites. Qed.
+Proof with quick. intros. rewrites. Qed. *)
 
 (* Examples *)
 Definition ex_id :=
@@ -154,11 +144,6 @@ Definition neuron :=
     with an expression with the same type typed in a different context.
     Effectively 'using up' one of the variables in the context.
 *)
-Definition gren (f : ty -> ty) Γ Γ'  :=
-  forall τ, Var (map f Γ) (f τ) -> Var (map f Γ') (f τ).
-Definition gsub (f : ty -> ty) Γ Γ' :=
-  forall τ, Var (map f Γ) (f τ) -> tm (map f Γ') (f τ).
-
 Definition ren (Γ Γ' : list ty) :=
   forall τ, Var Γ τ -> Var Γ' τ.
 Definition sub (Γ Γ' : list ty) :=
@@ -168,7 +153,7 @@ Definition sub (Γ Γ' : list ty) :=
 Definition id_sub {Γ} : sub Γ Γ := var Γ.
 Equations cons_sub {Γ Γ' τ} (e: tm Γ' τ) (s: sub Γ Γ')
   : sub (τ::Γ) Γ' :=
-cons_sub e s τ (Top Γ σ) := e;
+cons_sub e s τ (Top Γ τ) := e;
 cons_sub e s τ (Pop Γ τ σ v) := s τ v.
 
 Notation "| a ; .. ; b |" :=
@@ -200,7 +185,6 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   (* Arrays *)
   | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
   | get _ ti ta => get _ ti (rename r ta)
-  | ifold _ _ tf ti ta => ifold _ _ (rename r ∘ tf) ti (rename r ta)
 
   (* Nat *)
   | nval _ n => nval _ n
@@ -242,8 +226,6 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   (* | build_nil _ _ => build_nil _ _ *)
   | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)
   | get _ ti ta => get _ ti (substitute s ta)
-  | ifold _ _ tf ti ta =>
-    ifold _ _ (substitute s ∘ tf) ti (substitute s ta)
 
   (* Nat *)
   | nval _ n => nval _ n
@@ -301,8 +283,8 @@ Proof with quick.
   try (rewrite lift_sub_id; rewrites).
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_ren_id : forall Γ τ,
@@ -315,8 +297,8 @@ Proof with quick.
   induction t; Rewrites lift_ren_id.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 (* Composing substitutions and renames *)
@@ -342,8 +324,8 @@ Proof with quick.
   induction t; Rewrites lift_ren_ren.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_sub_ren : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (r : ren Γ Γ'),
@@ -360,8 +342,8 @@ Proof with quick.
   induction t; Rewrites lift_sub_ren.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_ren_sub : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (s : sub Γ Γ'),
@@ -382,8 +364,8 @@ Proof with eauto.
   induction t; Rewrites lift_ren_sub.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_sub_sub : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (s' : sub Γ Γ'),
@@ -404,8 +386,8 @@ Proof with eauto.
   induction t; Rewrites lift_sub_sub.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 (* Helpers *)
@@ -449,8 +431,8 @@ Proof with eauto.
     rewrite app_sub_id)...
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 (* Lemma subst_cons_lift_cons :

@@ -25,39 +25,73 @@ Local Open Scope program_scope.
   Also used as a reference is:
     Proofs And Types by Jean-Yves Girard.
 *)
-Inductive value : forall {Γ τ}, tm Γ τ -> Prop :=
+
+(* Base definitions *)
+Definition relation (X : Type) := X -> X -> Prop.
+Inductive multi {X : Type} (Rel : relation X) : relation X :=
+  | multi_refl : forall {x : X}, multi Rel x x
+  | multi_step : forall {x y z : X},
+      Rel x y ->
+      multi Rel y z ->
+      multi Rel x z.
+Theorem multi_R : forall (X : Type) (Rel : relation X) (x y : X),
+  Rel x y -> (multi Rel) x y.
+Proof with quick. intros. repeat econstructor... Qed.
+Theorem multi_trans : forall {X : Type} {Rel : relation X} {x y z : X},
+  multi Rel x y -> multi Rel y z -> multi Rel x z.
+Proof with quick. intros. induction H... apply multi_step with y... Qed.
+Definition deterministic {X : Type} (Rel : relation X) :=
+  forall x y1 y2 : X, Rel x y1 -> Rel x y2 -> y1 = y2.
+
+(* Setup definitions needed for semantics *)
+Section sso_semantics_class.
+  Context {tm : list ty -> ty -> Type}.
+  Class sso_semantics :=
+    {
+      value : forall {Γ τ}, tm Γ τ -> Prop;
+      step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop
+    }.
+  Definition multistep {Γ τ} {sem : sso_semantics} := multi (@step sem Γ τ).
+  Notation "t1 '-->*' t2" := (multistep t1 t2) (at level 40).
+  Definition normal_form {X : Type} (Rel : relation X) (t : X) : Prop :=
+    ~ exists t', Rel t t'.
+  Definition halts {Γ τ} {sem : sso_semantics} (t:tm Γ τ) :
+    Prop := exists t', t -->* t' /\ value t'.
+End sso_semantics_class.
+
+Inductive value' : forall {Γ τ}, tm Γ τ -> Prop :=
   | v_real : forall {Γ r},
-    value (rval Γ r)
+    value' (rval Γ r)
   | v_nat : forall {Γ n},
-    value (nval Γ n)
+    value' (nval Γ n)
   | v_build : forall {Γ τ n f},
-    value (build Γ τ n f)
+    value' (build Γ τ n f)
   | v_tuple : forall Γ τ σ (t1 : tm Γ τ) (t2 : tm Γ σ),
-    value t1 ->
-    value t2 ->
-    value (tuple Γ t1 t2)
+    value' t1 ->
+    value' t2 ->
+    value' (tuple Γ t1 t2)
   | v_abs : forall Γ τ σ b,
-    value (abs Γ τ σ b)
+    value' (abs Γ τ σ b)
   | v_inl : forall Γ τ σ t,
-    value t ->
-    value (inl Γ τ σ t)
+    value' t ->
+    value' (inl Γ τ σ t)
   | v_inr : forall Γ τ σ t,
-    value t ->
-    value (inr Γ τ σ t)
+    value' t ->
+    value' (inr Γ τ σ t)
 .
-Hint Constructors value : ad.
+Hint Constructors value' : ad.
 
 Reserved Notation "t1 --> t2" (at level 40).
-Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
+Inductive step' : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   (* Base STLC *)
   | ST_AppAbs : forall Γ τ σ t1' v2,
-    value v2 ->
+    value' v2 ->
       (app Γ τ σ (abs Γ τ σ t1') v2) --> (substitute (| v2 |) t1')
   | ST_App1 : forall Γ τ σ t1 t1' t2,
       t1 --> t1' ->
         (app Γ τ σ t1 t2) --> (app Γ τ σ t1' t2)
   | ST_App2 : forall Γ τ σ (v1 : tm Γ (σ → τ)) t2 t2',
-      value v1 ->
+      value' v1 ->
       t2 --> t2' ->
         (app Γ τ σ v1 t2) --> (app Γ τ σ v1 t2')
 
@@ -67,13 +101,6 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     get Γ ti t --> get Γ ti t'
   | ST_GetBuild : forall Γ τ n i (f : Fin.t n -> tm Γ τ),
     get Γ i (build Γ τ n f) --> f i
-  | ST_FoldI : forall Γ τ tf i i' (t : tm Γ τ),
-    i --> i' ->
-    ifold Γ τ tf i t --> ifold Γ τ tf i' t
-  | ST_FoldN0 : forall Γ τ tf (t : tm Γ τ),
-    ifold Γ τ tf (nval _ 0) t --> t
-  | ST_FoldNS : forall Γ τ tf (t : tm Γ τ),
-    ifold Γ τ tf (nval _ (S n)) t --> t
 
   (* Add *)
   | ST_Add : forall Γ v1 v2,
@@ -82,7 +109,7 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       t1 --> t1' ->
       (add Γ t1 t2) --> (add Γ t1' t2)
   | ST_Add2 : forall Γ v1 t2 t2',
-    value v1 ->
+    value' v1 ->
       t2 --> t2' ->
       (add Γ v1 t2) --> (add Γ v1 t2')
 
@@ -91,22 +118,22 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       t1 --> t1' ->
       (@tuple Γ τ σ t1 t2) --> (@tuple Γ τ σ t1' t2)
   | ST_Tuple2 : forall Γ τ σ t2 t2' v1,
-      value v1 ->
+      value' v1 ->
       t2 --> t2' ->
       (@tuple Γ τ σ v1 t2) --> (@tuple Γ τ σ v1 t2')
   | ST_Fst : forall Γ τ σ t1 t1',
         t1 --> t1' ->
         (@first Γ τ σ t1) --> (@first Γ τ σ t1')
   | ST_FstTuple : forall Γ τ σ v1 v2,
-        value v1 ->
-        value v2 ->
+        value' v1 ->
+        value' v2 ->
       (@first Γ τ σ (@tuple Γ τ σ v1 v2)) --> v1
   | ST_Snd : forall Γ τ σ t1 t1',
         t1 --> t1' ->
         (@second Γ τ σ t1) --> (@second Γ τ σ t1')
   | ST_SndTuple : forall Γ τ σ v1 v2,
-        value v1 ->
-        value v2 ->
+        value' v1 ->
+        value' v2 ->
       (@second Γ τ σ (@tuple Γ τ σ v1 v2)) --> v2
 
   (* Sums *)
@@ -115,24 +142,24 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e' t1 t2)
   | ST_Case1 : forall Γ τ σ ρ (t2 : tm Γ (σ → ρ))
         (t1 t1' : tm Γ (τ → ρ)) (e e' : tm Γ (τ <+> σ)),
-      value e ->
+      value' e ->
       (t1 --> t1') ->
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e t1' t2)
   | ST_Case2 : forall Γ τ σ ρ (t2 t2' : tm Γ (σ → ρ))
         (t1 : tm Γ (τ → ρ)) (e e' : tm Γ (τ <+> σ)),
-      value e ->
-      value t1 ->
+      value' e ->
+      value' t1 ->
       (t2 --> t2') ->
       (@case Γ τ σ ρ e t1 t2) --> (@case Γ τ σ ρ e t1 t2')
   | ST_CaseInl : forall Γ τ σ ρ t2 t1' (e : tm Γ τ),
-      value e ->
-      value t1' ->
-      value t2 ->
+      value' e ->
+      value' t1' ->
+      value' t2 ->
       (@case Γ τ σ ρ (inl Γ _ _ e) t1' t2) --> (app Γ ρ τ t1' e)
   | ST_CaseInr : forall Γ τ σ ρ t1 t2' (e : tm Γ σ),
-      value e ->
-      value t1 ->
-      value t2' ->
+      value' e ->
+      value' t1 ->
+      value' t2' ->
       (@case Γ τ σ ρ (inr Γ _ _ e) t1 t2') --> (app Γ ρ σ t2' e)
 
   | ST_Inl : forall Γ τ σ t1 t1',
@@ -141,10 +168,15 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | ST_Inr : forall Γ τ σ t1 t1',
         t1 --> t1' ->
         (@inr Γ τ σ t1) --> (@inr Γ τ σ t1')
-where "t  -->  v" := (step t v).
+where "t  -->  v" := (step' t v).
+
+Instance tm_sso_semantics : @sso_semantics tm :=
+  { value := @value';
+    step := @step'
+  }.
 
 (* From software foundations vol.2 *)
-Definition relation (X : Type) := X -> X -> Prop.
+(* Definition relation (X : Type) := X -> X -> Prop.
 Inductive multi {X : Type} (Rel : relation X) : relation X :=
   | multi_refl : forall {x : X}, multi Rel x x
   | multi_step : forall {x y z : X},
@@ -164,13 +196,14 @@ Proof with quick. intros. induction H... apply multi_step with y... Qed.
 Notation step_normal_form := (normal_form step).
 Definition deterministic {X : Type} (Rel : relation X) :=
   forall x y1 y2 : X, Rel x y1 -> Rel x y2 -> y1 = y2.
-Definition halts {Γ τ} (t:tm Γ τ) : Prop := exists t', t -->* t' /\  value t'.
+Definition halts {Γ τ} (t:tm Γ τ) : Prop := exists t', t -->* t' /\  value t'. *)
 
-Lemma value__normal : forall Γ τ (t : tm Γ τ), value t -> step_normal_form t.
+Lemma value__normal : forall Γ τ (t : tm Γ τ),
+  value t -> normal_form step t.
 Proof with quick.
   intros Γ τ.
   induction τ;
-    intros t Hv [t' Hstep];
+    intros t Hv [t' Hstep]; quick;
     dependent destruction Hstep; dependent destruction Hv; subst...
   - apply (IHτ1 t1) in Hv1; apply Hv1...
   - apply (IHτ2 t2) in Hv2; apply Hv2...
@@ -196,14 +229,15 @@ Ltac auto_value_contradiction :=
   end.
 
 Lemma step_deterministic : forall Γ τ,
-  deterministic (@step Γ τ).
+  deterministic (@step tm _ Γ τ).
 Proof with quick.
   unfold deterministic.
-  intros Γ τ t t' t'' H1 H2.
+  intros Γ τ t t' t'' H1 H2...
   generalize dependent t''.
   dependent induction H1;
-    intros t'' H2; dependent destruction H2;
-      try erewrite IHstep; quick; auto_value_contradiction.
+    intros t'' H2; dependent destruction H2; quick.
+  6: { erewrite IHstep'.  auto_value_contradiction .}
+      try erewrite IHstep'; quick; auto_value_contradiction...
 Qed.
 
 (** A trivial fact: *)
@@ -559,9 +593,9 @@ Proof with quick.
       splits... constructor. } }
   { (* Get *)
     intros sb H.
-    pose proof (IHt sb H) as H'; clear IHt.
-    simp Rel in H'.
-    destruct H' as [Hh [f [Hst Hr]]].
+    pose proof (IHt sb H) as IHt.
+    simp Rel in IHt.
+    destruct IHt as [Hh [f [Hst Hr]]].
     eapply multistep_preserves_R'...
     eapply multi_trans.
     eapply multistep_Get...
