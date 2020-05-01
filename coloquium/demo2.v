@@ -106,14 +106,14 @@ Reset extrinsic.
 
 Section intrinsic.
   Reserved Notation "τ '∈' Γ" (at level 75).
-  Inductive Var : Ctx -> ty -> Set :=
+  Inductive Var : Ctx -> ty -> Type :=
     | Top : forall Γ τ, τ ∈ (τ::Γ)
     | Pop : forall Γ τ σ, τ ∈ Γ -> τ ∈ (σ::Γ)
   where "x ∈ Γ" := (Var Γ x).
 
   Derive Signature for Var.
 
-  Inductive tm : Ctx -> ty -> Set :=
+  Inductive tm : Ctx -> ty -> Type :=
     | var : forall Γ τ,
       τ ∈ Γ -> tm Γ τ
     | app : forall Γ τ σ,
