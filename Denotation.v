@@ -83,6 +83,12 @@ Fixpoint nat_to_fin n : Fin.t (S n) :=
 Definition shave_fin {A n} (f : Fin.t (S n) -> A) : Fin.t n -> A :=
   fun i => f (FS i).
 
+Fixpoint loop_down {A} (n : nat) (f : nat -> A -> A) (a : A) :=
+  match n with
+  | 0 => a
+  | S n => loop_down n f (f n a)
+  end.
+
 Reserved Notation "⟦ t ⟧ₜₘ".
 Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ by struct t := {
 (* STLC *)
@@ -93,6 +99,8 @@ denote_tm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x,
 denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n f) ctx :=
   denote_array n (denote_tm ∘ f) ctx;
 denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := vector_nth i (⟦ ta ⟧ₜₘ ctx);
+denote_tm (Γ:=Γ) (τ:=τ) (ifold Γ τ tf ti ta) ctx :=
+  loop_down (⟦ ti ⟧ₜₘ ctx) (⟦ tf ⟧ₜₘ ctx) (⟦ ta ⟧ₜₘ ctx);
 (* Nat *)
 denote_tm (Γ:=Γ) (τ:=τ) (nval Γ n) ctx := n;
 (* Reals *)

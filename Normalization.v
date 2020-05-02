@@ -67,13 +67,28 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     get Γ ti t --> get Γ ti t'
   | ST_GetBuild : forall Γ τ n i (f : Fin.t n -> tm Γ τ),
     get Γ i (build Γ τ n f) --> f i
-  | ST_FoldI : forall Γ τ tf i i' (t : tm Γ τ),
+  | ST_Fold1 : forall Γ τ tf i (t t' : tm Γ τ),
+    t --> t' ->
+    ifold Γ τ tf i t --> ifold Γ τ tf i t'
+  | ST_Fold2 : forall Γ τ tf i i' (t : tm Γ τ),
+    value t ->
     i --> i' ->
     ifold Γ τ tf i t --> ifold Γ τ tf i' t
+  | ST_Fold3 : forall Γ τ tf tf' i  (t : tm Γ τ),
+    value t ->
+    value i ->
+    tf --> tf' ->
+    ifold Γ τ tf i t --> ifold Γ τ tf' i t
   | ST_FoldN0 : forall Γ τ tf (t : tm Γ τ),
+    value t ->
+    value tf ->
     ifold Γ τ tf (nval _ 0) t --> t
-  | ST_FoldNS : forall Γ τ tf (t : tm Γ τ),
-    ifold Γ τ tf (nval _ (S n)) t --> t
+  | ST_FoldNS : forall Γ τ n tf (t : tm Γ τ),
+    value t ->
+    value tf ->
+    ifold Γ τ tf (nval _ (S n)) t -->
+      ifold Γ τ tf (nval _ n)
+        (app _ _ _ (app _ _ _ tf (nval _ n)) t)
 
   (* Add *)
   | ST_Add : forall Γ v1 v2,
@@ -508,6 +523,26 @@ Proof with quick.
   intros. induction H; econstructor... econstructor. assumption.
 Qed.
 
+
+Lemma multistep_Fold1 : forall Γ τ tf i (t t' : tm Γ τ),
+  t -->* t' -> ifold Γ τ tf i t -->* ifold Γ τ tf i t'.
+Proof with quick.
+  intros. induction H; econstructor... econstructor. assumption.
+Qed.
+
+Lemma multistep_Fold2 : forall Γ τ tf i i' (t : tm Γ τ),
+  value t -> i -->* i' -> ifold Γ τ tf i t -->* ifold Γ τ tf i' t.
+Proof with quick.
+  intros. induction H0; econstructor... econstructor; assumption.
+Qed.
+
+Lemma multistep_Fold3 : forall Γ τ tf tf' i  (t : tm Γ τ),
+  value t -> value i -> tf -->* tf' ->
+    ifold Γ τ tf i t -->* ifold Γ τ tf' i t.
+Proof with quick.
+  intros. induction H1; econstructor... econstructor; assumption.
+Qed.
+
 Lemma subst_R :
   forall {Γ Γ' τ} (t : tm Γ τ) (s : sub Γ Γ'),
     instantiation s ->
@@ -567,6 +602,42 @@ Proof with quick.
     eapply multistep_Get...
     econstructor. eapply ST_GetBuild.
     constructor. }
+  { intros sb H.
+    pose proof (IHt1 sb H) as IHt1.
+    pose proof (R_halts IHt1) as [t1' [Hst1 Hv1]].
+    pose proof (IHt2 sb H) as IHt2.
+    pose proof (R_halts IHt2) as [t2' [Hst2 Hv2]].
+    pose proof (IHt3 sb H) as IHt3.
+    pose proof (R_halts IHt3) as [t3' [Hst3 Hv3]].
+    eapply multistep_preserves_R'.
+  2:{ eapply multi_trans.
+      eapply multistep_Fold1...
+      eapply multi_trans.
+      eapply multistep_Fold2...
+      eapply multi_trans.
+      eapply multistep_Fold3... econstructor. }
+    dependent destruction Hv2.
+    (* clear IHt2 Hst2. *)
+    generalize dependent t1'.
+    generalize dependent t3'.
+    induction n...
+    { eapply multistep_preserves_R'.
+    2:{ eapply multi_step. eapply ST_FoldN0... econstructor. }
+      eapply multistep_preserves_R... }
+    { simp Rel in IHt1.
+      destruct IHt1 as [Hh1 H1].
+      pose proof (multistep_preserves_R _ _ IHt2 Hst2) as H2.
+      pose proof (H1 (nval _ (S n)) H2) as H1.
+      simp Rel in H1.
+      destruct H1 as [Hh1' H1].
+      (* pose proof (multistep_preserves_R _ _ IHt3 Hst3) as H3. *)
+      pose proof (H1 (ifold _ _ t1' (nval _ n)
+        (app _ _ _ (app _ _ _ t1' (nval _ n)) t3'))) as H1.
+      eapply multistep_preserves_R'.
+    2:{ eapply multi_step. eapply ST_FoldNS... econstructor. }
+      eapply multistep_preserves_R'.
+      eapply IHn...
+      all: admit. } }
   { (* Rval *)
     intros sb H.
     simp Rel. apply value_halts... }
@@ -711,7 +782,7 @@ Proof with quick.
       splits...
       apply multistep_Inr...
       eapply multistep_preserves_R... } }
-Qed.
+Admitted.
 
 Theorem normalization :
   forall τ (t : tm [] τ), halts t.

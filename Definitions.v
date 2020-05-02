@@ -67,7 +67,7 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | get : forall {τ n},
     Fin.t n -> tm Γ (Array n τ) -> tm Γ τ
   | ifold : forall τ,
-    (nat -> tm Γ (τ → τ)) -> nat -> tm Γ τ -> tm Γ τ
+    (tm Γ (ℕ → τ → τ)) -> tm Γ ℕ -> tm Γ τ -> tm Γ τ
 
   (* Reals *)
   | rval : forall (r : R), tm Γ Real
@@ -200,7 +200,7 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   (* Arrays *)
   | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
   | get _ ti ta => get _ ti (rename r ta)
-  | ifold _ _ tf ti ta => ifold _ _ (rename r ∘ tf) ti (rename r ta)
+  | ifold _ _ tf ti ta => ifold _ _ (rename r tf) (rename r ti) (rename r ta)
 
   (* Nat *)
   | nval _ n => nval _ n
@@ -243,7 +243,7 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)
   | get _ ti ta => get _ ti (substitute s ta)
   | ifold _ _ tf ti ta =>
-    ifold _ _ (substitute s ∘ tf) ti (substitute s ta)
+    ifold _ _ (substitute s tf) (substitute s ti) (substitute s ta)
 
   (* Nat *)
   | nval _ n => nval _ n
@@ -301,8 +301,8 @@ Proof with quick.
   try (rewrite lift_sub_id; rewrites).
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_ren_id : forall Γ τ,
@@ -315,8 +315,8 @@ Proof with quick.
   induction t; Rewrites lift_ren_id.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 (* Composing substitutions and renames *)
@@ -342,8 +342,8 @@ Proof with quick.
   induction t; Rewrites lift_ren_ren.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_sub_ren : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (r : ren Γ Γ'),
@@ -360,8 +360,8 @@ Proof with quick.
   induction t; Rewrites lift_sub_ren.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_ren_sub : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (s : sub Γ Γ'),
@@ -382,8 +382,8 @@ Proof with eauto.
   induction t; Rewrites lift_ren_sub.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_sub_sub : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (s' : sub Γ Γ'),
@@ -404,8 +404,8 @@ Proof with eauto.
   induction t; Rewrites lift_sub_sub.
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 (* Helpers *)
@@ -449,8 +449,8 @@ Proof with eauto.
     rewrite app_sub_id)...
   { erewrite build_congr...
     extensionality x... }
-  { erewrite ifold_congr...
-    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 (* Lemma subst_cons_lift_cons :

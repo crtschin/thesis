@@ -1,4 +1,4 @@
-Require Import Lists.List.
+(* Require Import Lists.List.
 Import ListNotations.
 Require Import Logic.FunctionalExtensionality.
 Require Import Strings.String.
@@ -242,4 +242,4 @@ Proof with quick.
   { extensionality ctx. simp denote_tm.
     apply injective_projections...
     all: admit.
-Admitted.
+Admitted. *)

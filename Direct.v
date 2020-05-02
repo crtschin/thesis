@@ -156,6 +156,20 @@ Proof with quick.
       specialize H' with t.
       destruct H' as [f1 [g1 [Hs1 [Heq1 Heq2]]]].
       subst. erewrite S_eq... } }
+  { (* Bounded iteration *)
+    intros.
+    pose proof (IHt1 sb Dsb H) as IHt1.
+    pose proof (IHt2 sb Dsb H) as IHt2.
+    pose proof (IHt3 sb Dsb H) as IHt3.
+    erewrite S_eq.
+  2:{ extensionality x. simp Dtm denote_tm. reflexivity. }
+  2:{ extensionality x. simp Dtm denote_tm. reflexivity. }
+    simp S in IHt1.
+    pose proof (IHt1 _ _ IHt2) as IHt1.
+    simp S in IHt1.
+    erewrite S_eq.
+    eapply IHt1.
+    all: admit. }
   { (* Const *)
     intros. simp S.
     (* Setup rewrite rule using 'denotation of (rval r) = const r' *)
