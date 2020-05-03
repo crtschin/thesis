@@ -63,6 +63,17 @@ S (σ <+> ρ) f g :=
     S ρ g1 g2 /\
       f = Datatypes.inr ∘ g1 /\
       g = Datatypes.inr ∘ g2) }.
+(* where SA {τ} n
+  (S' : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ (Dt τ) ⟧ₜ) -> Prop)
+  (f : R -> ⟦ Array n τ ⟧ₜ)
+  (g : R -> ⟦ Array n (Dt τ) ⟧ₜ) : Prop :=
+SA (τ:=τ) 0 S' f g := True;
+SA (τ:=τ) (Datatypes.S n) S' f g :=
+  exists f' g' f1 g1,
+    S' f1 g1 /\
+    SA n S' f' g' /\
+    (f = fun r => (f1 r, f' r)) /\
+    (g = fun r => (g1 r, g' r)). *)
 
 Inductive instantiation : forall Γ,
     (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx Γ ⟧ₜₓ) -> Prop :=

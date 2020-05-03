@@ -19,8 +19,6 @@ Check nat_discr.
 
 Lemma O_refl_f : O <> O.
 Proof.
-  unfold not.
-  intros H.
 Abort.
 Check (O <> O).
 (* Check O_refl_f. *)

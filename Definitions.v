@@ -452,32 +452,3 @@ Proof with eauto.
   (* { erewrite ifold_congr...
     extensionality x... } *)
 Qed.
-
-(* Lemma subst_cons_lift_cons :
-  forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (s : tm Γ' σ) (sb : sub Γ Γ'),
-  substitute (| s |) (substitute (substitute_lifted sb) t) =
-    substitute (cons_sub s sb) t.
-Proof.
-Admitted. *)
-
-(*
-  Typing
-  Redundant to define this considering it is builtin to the
-   structure of the language?
-*)
-Definition has_type {Γ τ} (t : tm Γ τ) : ty := τ.
-Notation "Γ ⊢ t ∷ τ" := (@has_type Γ τ t) (at level 70).
-Corollary has_type_refl Γ τ (t : tm Γ τ) :
-  has_type t = τ.
-Proof. reflexivity. Qed.
-
-(* Fixpoint substitute_env {Γ Γ'} (s : sub Γ Γ') (E : Env Γ) : Env Γ' :=
-  match E with
-  | env_nil =>
-  | env_cons c E' => env_cons (substitute_closed s c) (substitute_env s E')
-  end
-with substitute_closed {Γ Γ' τ} (s : sub Γ Γ') (c : Closed τ) : Closed τ :=
-  match c with
-  | closure t E => closure (substitute s t) (substitute_env s E)
-  | clapp cf c => clapp (substitute_closed s cf) (substitute_closed s c)
-  end. *)

@@ -602,7 +602,8 @@ Proof with quick.
     eapply multistep_Get...
     econstructor. eapply ST_GetBuild.
     constructor. }
-  { intros sb H.
+  { (* Bounded Iteration *)
+    intros sb H.
     pose proof (IHt1 sb H) as IHt1.
     pose proof (R_halts IHt1) as [t1' [Hst1 Hv1]].
     pose proof (IHt2 sb H) as IHt2.
@@ -618,8 +619,8 @@ Proof with quick.
       eapply multistep_Fold3... econstructor. }
     dependent destruction Hv2.
     (* clear IHt2 Hst2. *)
-    generalize dependent t1'.
-    generalize dependent t3'.
+    (* generalize dependent t1'.
+    generalize dependent t3'. *)
     induction n...
     { eapply multistep_preserves_R'.
     2:{ eapply multi_step. eapply ST_FoldN0... econstructor. }
