@@ -44,35 +44,38 @@ Fixpoint Dv {Γ τ} (v: τ ∈ Γ) : (Dt τ) ∈ (map Dt Γ) :=
 
 Equations Dtm {Γ τ} : tm Γ τ -> tm (map Dt Γ) (Dt τ) :=
 (* STLC *)
-Dtm (Γ:=Γ) (τ:=τ) (var Γ τ v) := var _ _ (Dv v);
-Dtm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) := app _ _ _ (Dtm t1) (Dtm t2);
-Dtm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm f);
+  | var Γ τ v := var _ _ (Dv v);
+  | app Γ τ σ t1 t2 := app _ _ _ (Dtm t1) (Dtm t2);
+  | abs Γ τ σ f := abs _ _ _ (Dtm f);
 (* Arrays *)
 (* Dtm (Γ:=Γ) (τ:=τ) (build_nil Γ τ) => build_nil _ _; *)
-Dtm (Γ:=Γ) (τ:=τ) (build Γ τ n ta) =>
-  build _ _ _ (Dtm ∘ ta);
-Dtm (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm ta);
-Dtm (Γ:=Γ) (τ:=τ) (ifold Γ τ tf ti ta) => ifold _ _ (Dtm tf) (Dtm ti) (Dtm ta);
+  | build Γ τ n ta => build _ _ _ (Dtm ∘ ta);
+  | get Γ ti ta => get _ ti (Dtm ta);
+(*  | ifold Γ τ tf ti ta) => ifold _ _ (Dtm tf) (Dtm ti) (Dtm ta); *)
 (* Nat *)
-Dtm (Γ:=Γ) (τ:=τ) (nval Γ n) := (nval _ n);
+  | nval Γ n := nval _ n;
+  | nsucc _ t := nsucc _ (Dtm t);
+  (* | nval0 _ => nval0 _;
+  | nvalS _ t => nvalS _ (Dtm t); *)
+  | nrec _ _ f i d => nrec _ _ (Dtm f) (Dtm i) (Dtm d);
 (* Reals *)
-Dtm (Γ:=Γ) (τ:=τ) (rval Γ r) := tuple _ (rval _ r) (rval _ 0);
-Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm t1 := {
-  Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 with Dtm t2 := {
-    Dtm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 d2 :=
+  | rval Γ r := tuple _ (rval _ r) (rval _ 0);
+  | (add Γ t1 t2) with Dtm t1 := {
+    | d1 with Dtm t2 := {
+      | d2 :=
       tuple _
         (add _ (first _ d1) (first _ d2))
         (add _ (second _ d1) (second _ d2))
   }
 };
 (* Products *)
-Dtm (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) := tuple _ (Dtm t1) (Dtm t2);
-Dtm (Γ:=Γ) (τ:=τ) (first Γ p) := first _ (Dtm p);
-Dtm (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm p);
+  | tuple Γ t1 t2 := tuple _ (Dtm t1) (Dtm t2);
+  | first Γ p := first _ (Dtm p);
+  | second Γ p := second _ (Dtm p);
 (* Sums *)
-Dtm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm e) (Dtm c1) (Dtm c2);
-Dtm (Γ:=Γ) (τ:=τ) (inl Γ _ _ e) := inl _ _ _ (Dtm e);
-Dtm (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm e).
+  | case Γ e c1 c2 := case _ (Dtm e) (Dtm c1) (Dtm c2);
+  | inl Γ _ _ e := inl _ _ _ (Dtm e);
+  | inr Γ _ _ e := inr _ _ _ (Dtm e).
 
 (* Equations Denv {Γ}: forall {τ}, Env τ Γ -> Env (Dt τ) (Dctx Γ) :=
 Denv (τ:=τ) env_nil => env_nil (Dt τ);

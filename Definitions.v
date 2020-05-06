@@ -66,15 +66,16 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
     (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ)
   | get : forall {τ n},
     Fin.t n -> tm Γ (Array n τ) -> tm Γ τ
-  | ifold : forall τ,
-    (tm Γ (ℕ → τ → τ)) -> tm Γ ℕ -> tm Γ τ -> tm Γ τ
 
   (* Reals *)
-  | rval : forall (r : R), tm Γ Real
-  | add : tm Γ Real -> tm Γ Real -> tm Γ Real
+  | rval : forall (r : R), tm Γ ℝ
+  | add : tm Γ ℝ -> tm Γ ℝ -> tm Γ ℝ
 
   (* Nat *)
-  | nval : forall (n : nat), tm Γ Nat
+  | nsucc : tm Γ ℕ -> tm Γ ℕ
+  | nval : forall (n : nat), tm Γ ℕ
+  | nrec : forall τ,
+    tm Γ (ℕ → τ → τ) -> tm Γ ℕ -> tm Γ τ -> tm Γ τ
 
   (* Products (currently using projection instead of pattern matching) *)
   | tuple : forall {τ σ},
@@ -93,6 +94,9 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | inr : forall τ σ, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
+Definition letin {Γ τ σ} (e : tm Γ σ) (x : tm (σ::Γ) τ) : tm Γ τ :=
+  app Γ τ σ (abs Γ τ σ x) e.
+
 Inductive Env : Ctx -> Type :=
   | env_nil : Env []
   | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
@@ -106,9 +110,9 @@ Lemma build_congr : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
   ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
 Proof with quick. intros. rewrites. Qed.
 
-Lemma ifold_congr : forall Γ τ tf tf' i (ta : tm Γ τ),
+(* Lemma ifold_congr : forall Γ τ tf tf' i (ta : tm Γ τ),
   tf = tf' -> ifold Γ τ tf i ta = ifold Γ τ tf' i ta.
-Proof with quick. intros. rewrites. Qed.
+Proof with quick. intros. rewrites. Qed. *)
 
 (* Examples *)
 Definition ex_id :=
@@ -200,10 +204,14 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   (* Arrays *)
   | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
   | get _ ti ta => get _ ti (rename r ta)
-  | ifold _ _ tf ti ta => ifold _ _ (rename r tf) (rename r ti) (rename r ta)
+  (* | ifold _ _ tf ti ta => ifold _ _ (rename r tf) (rename r ti) (rename r ta) *)
 
   (* Nat *)
   | nval _ n => nval _ n
+  | nsucc _ t => nsucc _ (rename r t)
+  (* | nval0 _ => nval0 _ *)
+  (* | nvalS _ n => nvalS _ n *)
+  | nrec _ _ f i d => nrec _ _ (rename r f) (rename r i) (rename r d)
 
   (* Reals *)
   | rval _ r => rval _ r
@@ -242,11 +250,16 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   (* | build_nil _ _ => build_nil _ _ *)
   | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)
   | get _ ti ta => get _ ti (substitute s ta)
-  | ifold _ _ tf ti ta =>
-    ifold _ _ (substitute s tf) (substitute s ti) (substitute s ta)
+  (* | ifold _ _ tf ti ta =>
+    ifold _ _ (substitute s tf) (substitute s ti) (substitute s ta) *)
 
   (* Nat *)
   | nval _ n => nval _ n
+  | nsucc _ t => nsucc _ (substitute s t)
+  (* | nval0 _ => nval0 _ *)
+  (* | nvalS _ t => nvalS _ (substitute s t) *)
+  | nrec _ _ f i d => nrec _ _ (substitute s f) (substitute s i) (substitute s d)
+
 
   (* Reals *)
   | rval _ r => rval _ r

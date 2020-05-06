@@ -50,7 +50,7 @@ Definition hd {A : Set} {n} (l : li_list (S n)) : A := hd' l.
 Check hd.
 
 Reset hd.
-Definition hd {A : Set} {n} (l : li_list (S n)) : A :=
+Program hd {A : Set} {n} (l : li_list (S n)) : A :=
   match l with
   | li_cons _ h t => h
   end.

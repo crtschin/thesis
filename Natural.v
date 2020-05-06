@@ -15,21 +15,42 @@ Local Open Scope program_scope.
 From Equations Require Import Equations.
 From AD Require Import Tactics.
 From AD Require Import Definitions.
-From AD Require Import Normalization.
+(* From AD Require Import Normalization. *)
 From AD Require Import Macro.
 From AD Require Import Denotation.
 
 Reserved Notation "t1 ⇓ t2" (at level 40).
 Inductive eval : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
-  | EV_Id : forall Γ τ (t t' : tm Γ τ),
-      t ⇓ t'
   (* Base STLC *)
   | EV_AppAbs : forall Γ τ σ t1 t1' t2 t2',
       t1 ⇓ (abs Γ τ σ t1') ->
       t2 ⇓ t2' ->
       (app Γ τ σ t1 t2) ⇓ (substitute (| t2' |) t1')
 
-  (* Add *)
+  (* Nats *)
+  | EV_Succ : forall Γ t1 n,
+      t1 ⇓ (nval Γ n) ->
+      nsucc Γ t1 ⇓ nval Γ (S n)
+  | EV_NRec0 : forall Γ τ t1 t1' t2 t3 t3',
+      t1 ⇓ t1' ->
+      t2 ⇓ (nval Γ 0) ->
+      t3 ⇓ t3' ->
+      nrec Γ τ t1 t2 t3 ⇓ t3'
+  | EV_NRecS : forall Γ τ n t1 t1' t2 t3 t3',
+      t1 ⇓ t1' ->
+      t2 ⇓ (nval Γ (S n)) ->
+      t3 ⇓ t3' ->
+      nrec Γ τ t1 t2 t3 ⇓
+        nrec Γ τ
+          (abs _ _ _ (abs _ _ _ (
+            app _ _ _
+              (app _ _ _ (shift (shift t1))
+                (nsucc _ (var _ _ (Pop _ _ _ (Top _ _)))))
+              (var _ _ (Top _ _)))))
+          (nval _ n)
+          (app _ _ _ (app _ _ _ t1 (nval _ 0)) t3')
+
+  (* Reals *)
   | EV_Add : forall Γ t1 t1' t2 t2',
       t1 ⇓ (rval Γ t1') ->
       t2 ⇓ (rval Γ t2') ->
@@ -58,7 +79,6 @@ Inductive eval : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       (t1 ⇓ t1') ->
       (t2 ⇓ t2') ->
       (@case Γ τ σ ρ e t1 t2) ⇓ (app Γ ρ σ t2' e')
-
   | EV_Inl : forall Γ τ σ t1 t1',
         t1 ⇓ t1' ->
         (@inl Γ τ σ t1) ⇓ (@inl Γ τ σ t1')
@@ -71,14 +91,20 @@ Lemma natural_soundness : forall Γ τ (t1 : tm Γ τ) (t2 : tm Γ τ),
   t1 ⇓ t2 -> ⟦ t1 ⟧ₜₘ = ⟦ t2 ⟧ₜₘ.
 Proof with quick.
   intros.
-  induction H; simpl; extensionality ctx; rewrites.
-  { rewrite <- denote_sub_commutes...
+  induction H; simpl; extensionality ctx;
+    try solve [simp denote_tm; rewrites; simp denote_tm].
+  { simp denote_tm.
+    rewrite <- denote_sub_commutes...
     unfold id_sub.
     unfold hd_sub. simp cons_sub.
     rewrite denote_sub_tl_cons...
     fold (@id_sub Γ).
-    (* rewrite denote_sub_id_ctx...  *)
-    admit. }
+    simp denote_sub.
+    rewrite denote_sub_id_ctx... }
+  { admit. }
+  { simp denote_tm.
+    remember (⟦ e ⟧ₜₘ ctx).
+    dependent destruction d... }
 Admitted.
 
 (* Lemma D_natural : forall Γ τ (t1 : tm Γ τ) (t2 : tm Γ τ),
