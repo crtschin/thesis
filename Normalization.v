@@ -130,11 +130,12 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     value t ->
     value tf ->
     nrec Γ τ tf (nval _ (S n)) t -->
+      app _ _ _ tf (nrec Γ τ tf (nval _ n) t)
       (* nrec Γ τ
         tf
         (nval _ n)
         (app _ _ _ (app _ _ _ tf (nval _ n)) t) *)
-      (app _ _ _ (app _ _ _ tf (nval _ n)) (nrec Γ τ tf (nval _ n) t))
+      (* (app _ _ _ (app _ _ _ tf (nval _ n)) (nrec Γ τ tf (nval _ n) t)) *)
 
   (* Add *)
   | ST_Add : forall Γ v1 v2,
@@ -616,7 +617,7 @@ Qed. *)
 Lemma multistep_NrecS : forall Γ τ n tf (t : tm Γ τ),
     value t -> value tf ->
     nrec Γ τ tf (nval _ (S n)) t -->*
-        (app _ _ _ (app _ _ _ tf (nval _ n)) (nrec Γ τ tf (nval _ n) t)).
+        (app _ _ _ tf (nrec Γ τ tf (nval _ n) t)).
 Proof with quick.
   intros. econstructor; econstructor; assumption.
 Qed.
@@ -757,9 +758,6 @@ Proof with quick.
       simp Rel. apply value_halts...
       simp Rel in IHt1'.
       destruct IHt1' as [Hh1 H1].
-      pose proof (H1 _ H2') as H1.
-      simp Rel in H1.
-      destruct H1 as [Hh1' H1].
       eapply multistep_preserves_R'.
     2:{ eapply multi_trans.
         eapply multistep_NrecS... econstructor. }

@@ -4,9 +4,9 @@ Adequacy.vos Adequacy.vok Adequacy.required_vos: Adequacy.v
 Base.vo Base.glob Base.v.beautified Base.required_vo: Base.v 
 Base.vio: Base.v 
 Base.vos Base.vok Base.required_vos: Base.v 
-Continuation.vo Continuation.glob Continuation.v.beautified Continuation.required_vo: Continuation.v 
-Continuation.vio: Continuation.v 
-Continuation.vos Continuation.vok Continuation.required_vos: Continuation.v 
+Continuation.vo Continuation.glob Continuation.v.beautified Continuation.required_vo: Continuation.v vect.vo Definitions.vo Tactics.vo Denotation.vo
+Continuation.vio: Continuation.v vect.vio Definitions.vio Tactics.vio Denotation.vio
+Continuation.vos Continuation.vok Continuation.required_vos: Continuation.v vect.vos Definitions.vos Tactics.vos Denotation.vos
 coquelicotComplements.vo coquelicotComplements.glob coquelicotComplements.v.beautified coquelicotComplements.required_vo: coquelicotComplements.v 
 coquelicotComplements.vio: coquelicotComplements.v 
 coquelicotComplements.vos coquelicotComplements.vok coquelicotComplements.required_vos: coquelicotComplements.v 
@@ -25,9 +25,9 @@ DepList.vos DepList.vok DepList.required_vos: DepList.v CpdtTactics.vos
 Diffeology.vo Diffeology.glob Diffeology.v.beautified Diffeology.required_vo: Diffeology.v 
 Diffeology.vio: Diffeology.v 
 Diffeology.vos Diffeology.vok Diffeology.required_vos: Diffeology.v 
-Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Denotation.vo
-Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Denotation.vio
-Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Denotation.vos
+Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Denotation.vo Normalization.vo
+Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Denotation.vio Normalization.vio
+Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Denotation.vos Normalization.vos
 Domain.vo Domain.glob Domain.v.beautified Domain.required_vo: Domain.v 
 Domain.vio: Domain.v 
 Domain.vos Domain.vok Domain.required_vos: Domain.v 

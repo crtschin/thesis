@@ -61,9 +61,39 @@ Proof with quick.
   intros.
   dependent induction H...
   { apply soundness... }
+
   { extensionality ctx.
     simp denote_tm. fold denote_t.
     extensionality x.
     rewrites.
     admit. }
+
+  { extensionality ctx.
+    simp denote_tm.
+    erewrite IHrwrt1...
+    erewrite IHrwrt2... }
+
+  { extensionality ctx.
+    simp denote_tm.
+    rewrite IHrwrt1 with t1 t1'...
+    rewrite IHrwrt2 with t2 t2'... }
+
+  { extensionality ctx.
+    simp denote_tm.
+    apply Rplus_0_l. }
+
+  { extensionality ctx.
+    simp denote_tm.
+    rewrite Rplus_comm.
+    apply Rplus_0_l. }
+
+  { extensionality ctx.
+    simp denote_tm.
+    apply Rplus_opp_r. }
+
+  { extensionality ctx.
+    simp denote_tm.
+    rewrite Rplus_comm.
+    apply Rplus_opp_r. }
+
 Admitted.

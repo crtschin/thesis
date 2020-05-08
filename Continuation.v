@@ -1,4 +1,4 @@
-(* Require Import Lists.List.
+Require Import Lists.List.
 Import ListNotations.
 Require Import Logic.FunctionalExtensionality.
 Require Import Strings.String.
@@ -55,7 +55,10 @@ Dtm_c n (Γ:=Γ) (τ:=τ) (build Γ τ m ta) =>
   build _ _ _ (Dtm_c n ∘ ta);
 Dtm_c n (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm_c n ta);
 (* Nat *)
-Dtm_c n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval (map (Dt_c n) Γ) m;
+Dtm_c n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval _ m;
+Dtm_c n (Γ:=Γ) (τ:=τ) (nsucc Γ m) := nsucc _ (Dtm_c n m);
+Dtm_c n (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti t) :=
+  nrec _ _ (Dtm_c n tf) (Dtm_c n ti) (Dtm_c n t);
 (* Reals *)
 Dtm_c n (Γ:=Γ) (τ:=τ) (rval Γ r) :=
   tuple _ (rval _ r) (abs _ _ _ (build _ _ _ (const (rval _ 0))));
@@ -110,6 +113,9 @@ Dtm n (Γ:=Γ) (τ:=τ) (build Γ τ m ta) =>
 Dtm n (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm n ta);
 (* Nat *)
 Dtm n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval _ m;
+Dtm n (Γ:=Γ) (τ:=τ) (nsucc Γ m) := nsucc _ (Dtm n m);
+Dtm n (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti t) :=
+  nrec _ _ (Dtm n tf) (Dtm n ti) (Dtm n t);
 (* Reals *)
 Dtm n (Γ:=Γ) (τ:=τ) (rval Γ r) :=
   tuple _ (rval _ r) (build _ _ _ (const (rval _ 0)));
@@ -199,23 +205,6 @@ lam (τ1 <+> τ2) z
     (abs _ (Dt_c n τ1 <+> Dt_c n τ2) (Dt_c n τ2)
       (inr _ _ _ (lam n τ2 (var _ _ (Top _ _))))). *)
 
-(* Next Obligation.
-  Admitted.
-Next Obligation.
-  Admitted.
-Next Obligation.
-  Admitted.
-Next Obligation.
-  Admitted.
-Next Obligation.
-  Admitted.
-Next Obligation.
-  Admitted.
-Next Obligation.
-  Admitted.
-Next Obligation.
-  Admitted. *)
-
 Definition ev_r {n m}
   : tm (map (Dt_c n) (repeat Real m)) (Dt_c n Real) ->
     tm (map (Dt n) (repeat Real m)) (Dt n Real) :=
@@ -242,4 +231,4 @@ Proof with quick.
   { extensionality ctx. simp denote_tm.
     apply injective_projections...
     all: admit.
-Admitted. *)
+Admitted.

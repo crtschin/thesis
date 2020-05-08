@@ -75,7 +75,7 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | nsucc : tm Γ ℕ -> tm Γ ℕ
   | nval : forall (n : nat), tm Γ ℕ
   | nrec : forall τ,
-    tm Γ (ℕ → τ → τ) -> tm Γ ℕ -> tm Γ τ -> tm Γ τ
+    tm Γ (τ → τ) -> tm Γ ℕ -> tm Γ τ -> tm Γ τ
 
   (* Products (currently using projection instead of pattern matching) *)
   | tuple : forall {τ σ},

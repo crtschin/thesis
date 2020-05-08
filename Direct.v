@@ -22,6 +22,7 @@ Require Import AD.Definitions.
 Require Import AD.Macro.
 Require Import AD.Tactics.
 Require Import AD.Denotation.
+Require Import AD.Normalization.
 
 Local Open Scope program_scope.
 Local Open Scope R_scope.
@@ -96,6 +97,16 @@ Proof. intros; rewrites. Qed.
 Lemma S_eq : forall τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
 Proof. intros; rewrites. Qed.
+
+(*
+Lemma S_iterate_ind : forall τ f1 f2,
+  S τ (fun x => f1 0%nat x) (fun x => f2 0%nat x) ->
+  (forall n, S τ
+    (fun x => f1 (Datatypes.S n) x)
+    (fun x => f2 (Datatypes.S n) x)) ->
+  (forall n, S τ (fun x => f1 n x) (fun x => f2 n x)).
+Proof with quick.
+Admitted. *)
 
 (*
   Plain words:
@@ -221,13 +232,22 @@ Proof with quick.
     erewrite S_eq.
   2:{ extensionality x. simp Dtm denote_tm. reflexivity. }
   2:{ extensionality x. simp Dtm denote_tm. reflexivity. }
-    simp S in IHt1.
-    pose proof (IHt1 _ _ IHt2) as IHt1'.
-    simp S in IHt1'.
-    pose proof (IHt1' _ _ IHt3) as IHt1''.
+    (* simp S in IHt1. *)
+    (* destruct (⟦ t2 ⟧ₜₘ (sb x))... *)
+    (* specialize IHt1 with
+      (fun r => ⟦nrec _ _ t1 t2 t3⟧ₜₘ (sb r))
+      (fun r => ⟦Dtm (nrec _ _ t1 t2 t3)⟧ₜₘ (Dsb r)). *)
+    (* apply S_iterate_ind. *)
+
+    (* For some reason need to be able to do induction on
+      the number of iterations *)
     erewrite S_eq.
-    eapply IHt1.
-  2:{  }
+    (* eapply IHt1. *)
+  2:{ extensionality x.
+      reflexivity. }
+      (* destruct (⟦ t2 ⟧ₜₘ (sb x))... *)
+
+      simp denote_tm. }
 
     all: admit. }
   { (* Tuples *)

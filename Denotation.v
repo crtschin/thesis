@@ -82,10 +82,10 @@ Fixpoint nat_to_fin n : Fin.t (S n) :=
 Definition shave_fin {A n} (f : Fin.t (S n) -> A) : Fin.t n -> A :=
   fun i => f (FS i).
 
-Fixpoint loop_down {A} (n : nat) (f : nat -> A -> A) (a : A) :=
+Fixpoint loop_down {A} (n : nat) (f : A -> A) (a : A) :=
   match n with
   | 0 => a
-  | S n => f (S n) (loop_down n f a)
+  | S n => f (loop_down n f a)
   end.
 
 Reserved Notation "⟦ t ⟧ₜₘ".
