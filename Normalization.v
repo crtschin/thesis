@@ -885,7 +885,7 @@ Proof.
   constructor.
 Qed.
 
-Theorem soundness : forall τ (t t' : tm [] τ),
+Theorem soundness : forall Γ τ (t t' : tm Γ τ),
   (t -->* t') -> ⟦t⟧ₜₘ = ⟦t'⟧ₜₘ.
 Proof with quick.
   intros.
@@ -896,13 +896,17 @@ Proof with quick.
     try solve [erewrite IHstep; constructor; quick]...
   { rewrite <- denote_sub_commutes...
     unfold hd_sub. simp cons_sub.
-    destruct ctx... }
+    rewrite denote_sub_tl_cons.
+    rewrite denote_sub_id_ctx...
+    (* unfold tl_sub...
+    destruct ctx...  *)
+    }
   { unfold compose.
     induction i...
     { induction n... }
     { unfold shave_fin. rewrite IHi... } }
-  { specialize IHstep with t2 t2' t2'...
-    rewrites... constructor. }
-  { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t1 t1' t1')... constructor. }
-  { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t2 t2' t2')... constructor. }
+  (* { specialize IHstep with t2 t2' t2'...
+    rewrites... constructor. } *)
+  { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t1')... constructor. }
+  { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t2')... constructor. }
 Qed.

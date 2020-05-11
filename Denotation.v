@@ -143,8 +143,8 @@ Notation "⟦ s ⟧ₛ" := (denote_sub s).
 Fixpoint denote_ren {Γ Γ'}: ren Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   match Γ with
   | [] => fun r ctx => tt
-  | h :: t => fun r ctx =>
-      (denote_tm (hd_ren r) ctx, denote_ren (tl_ren r) ctx)
+  | τ :: t => fun r ctx =>
+      (denote_tm (var Γ' τ (hd_ren r)) ctx, denote_ren (tl_ren r) ctx)
   end.
 Notation "⟦ r ⟧ᵣ" := (denote_ren r).
 
@@ -297,14 +297,20 @@ Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦ Γ ⟧ₜₓ),
   ⟦ id_sub ⟧ₛ ctx = ctx.
 Proof with quick.
   intros Γ...
-  destruct Γ...
+  unfold id_sub.
+  induction Γ...
   { dependent destruction ctx... }
-  { dependent destruction ctx...
+  { (* TODO: Issue doing induction on elements in product list *)
+    dependent destruction ctx...
     intros.
     unfold id_sub. unfold hd_sub. simp denote_tm...
-    fold (id_sub (Γ:=t::Γ)).
+    fold (id_sub (Γ:=a::Γ)).
     rewrite denote_sub_tl_simpl.
     eapply injective_projections...
+    unfold id_sub.
+    rewrite denote_sub_tl_simpl.
+    unfold tl_sub.
+    unfold denote_sub.
     admit. }
 Admitted.
 
@@ -314,6 +320,5 @@ Lemma denote_sub_tl_cons :
 Proof with quick.
   intros.
   unfold id_sub.
-  rewrite tl_cons_sub.
-  fold (@id_sub Γ)...
+  now rewrite tl_cons_sub.
 Qed.

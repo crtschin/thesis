@@ -185,7 +185,8 @@ Definition tl_sub {Γ Γ' τ} (s : sub (τ::Γ) Γ') : sub Γ Γ'
   := fun σ x => s σ (Pop Γ σ τ x).
 
 Definition id_ren {Γ} : ren Γ Γ := fun _ x => x.
-Definition hd_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : tm Γ' τ := var Γ' τ (r τ (Top Γ τ)).
+Definition hd_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : Var Γ' τ
+  := (r τ (Top Γ τ)).
 Definition tl_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : ren Γ Γ'
   := fun σ x => r σ (Pop Γ σ τ x).
 

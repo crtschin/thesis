@@ -67,7 +67,7 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
         let y := e0 in e1 ~> let x := e1 in
       in e2                  e2
 
-      Presents a nuance
+      Presents a slight issue
       LHS: e2 does not have access to e0/y
       RHS: e2 does have access to e0/y but if it does
         correspond to LHS, then it does not 'use' it.
@@ -103,10 +103,10 @@ Proof with quick.
     try solve [extensionality ctx; simp denote_tm; rewrites; trivial]...
   { apply soundness... }
   all: extensionality ctx; simp denote_tm; rewrites.
-  { unfold letin.
+  (* { unfold letin.
     simp denote_tm.
     rewrite 2 denote_shift. simp denote_tm.
-    admit. }
+    admit. } *)
   { apply Rplus_0_l. }
   { rewrite Rplus_comm.
     apply Rplus_0_l. }
