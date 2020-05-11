@@ -68,7 +68,7 @@ Dtm_c n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm_c n t1 := {
       tuple _
         (add _ (first _ d1) (first _ d2))
         (abs _ _ _
-          (array_add
+          (vector_add
             ((app _ _ _ (shift (second _ d1)) (var _ _ (Top _ _))))
             ((app _ _ _ (shift (second _ d2)) (var _ _ (Top _ _))))))
   }
@@ -124,7 +124,7 @@ Dtm n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm n t1 := {
     Dtm n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 d2 :=
       tuple _
         (add _ (first _ d1) (first _ d2))
-        (array_add (second _ d1) (second _ d2))
+        (vector_add (second _ d1) (second _ d2))
   }
 };
 (* Products *)

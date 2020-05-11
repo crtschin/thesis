@@ -96,6 +96,25 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
 
 Definition letin {Γ τ σ} (e : tm Γ σ) (x : tm (σ::Γ) τ) : tm Γ τ :=
   app Γ τ σ (abs Γ τ σ x) e.
+Definition vector_hot ( Γ : list ty ) ( n : nat ) ( i : Fin.t n ) :=
+  build Γ ℝ n (fun j => if Fin.eqb i j then rval Γ 1 else rval Γ 0).
+Definition vector_map { Γ τ σ n } ( a : tm Γ (Array n τ) )
+  ( f : tm Γ τ -> tm Γ σ ) : tm Γ (Array n σ) :=
+  build Γ σ n (fun i => f (get Γ i a)).
+Definition vector_map2 { Γ τ σ ρ n }
+  ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
+  ( f : tm Γ τ -> tm Γ σ -> tm Γ ρ ) : tm Γ (Array n ρ) :=
+  build Γ ρ n (fun i => f (get Γ i a1) (get Γ i a2)).
+Definition vector_zip { Γ τ σ n }
+  ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
+  : tm Γ (Array n ( τ × σ )) :=
+  vector_map2 a1 a2 (tuple Γ).
+Definition vector_fill { Γ τ } ( n : nat ) ( e : tm Γ τ )
+  : tm Γ (Array n τ) :=
+  build Γ τ n (fun _ => e).
+Definition vector_add {Γ n}
+  ( a1 a2 : tm Γ (Array n Real) ) : tm Γ (Array n Real) :=
+  vector_map2 a1 a2 (add Γ).
 
 Inductive Env : Ctx -> Type :=
   | env_nil : Env []
@@ -423,18 +442,6 @@ Proof with eauto.
   (* { erewrite ifold_congr...
     extensionality x... } *)
 Qed.
-
-(* Helpers *)
-Definition array_add {Γ n} (t1 t2 : tm Γ (Array n Real)): tm Γ (Array n Real) :=
-  (build _ _ _ (fun i =>
-    (add _
-      (get _ i t1))
-      (get _ i t2))).
-
-Definition array_tuple {Γ τ σ n} (t : tm Γ σ) (ta : tm Γ (Array n τ))
-  : tm Γ (Array n (τ × σ)) :=
-  (build _ _ _ (fun i =>
-    (tuple _ (get _ i ta) (t)))).
 
 Lemma rename_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (r : ren Γ Γ'),
   rename r (abs Γ τ σ t) = abs Γ' τ σ (rename (rename_lifted r) t).
