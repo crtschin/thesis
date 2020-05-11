@@ -98,15 +98,22 @@ Lemma S_eq : forall τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
 Proof. intros; rewrites. Qed.
 
-(*
-Lemma S_iterate_ind : forall τ f1 f2,
-  S τ (fun x => f1 0%nat x) (fun x => f2 0%nat x) ->
+Lemma S_iterate_ind : forall τ f df t dt,
+  S τ (fun x => loop_down 0%nat f t)
+    (fun x => loop_down 0%nat df dt) ->
   (forall n, S τ
-    (fun x => f1 (Datatypes.S n) x)
-    (fun x => f2 (Datatypes.S n) x)) ->
-  (forall n, S τ (fun x => f1 n x) (fun x => f2 n x)).
+    (fun x => loop_down (Datatypes.S n) f t)
+    (fun x => loop_down (Datatypes.S n) df dt)) ->
+  (forall nf nf', S τ
+    (fun x => loop_down (nf x) f t)
+    (fun x => loop_down (nf' x) df dt)).
 Proof with quick.
-Admitted. *)
+Admitted.
+
+Lemma denote_nat_refl : forall Γ (t : tm Γ ℕ) sb Dsb,
+  ⟦ t ⟧ₜₘ sb = ⟦ Dtm t ⟧ₜₘ Dsb.
+Proof with quick.
+Admitted.
 
 (*
   Plain words:
@@ -232,23 +239,23 @@ Proof with quick.
     erewrite S_eq.
   2:{ extensionality x. simp Dtm denote_tm. reflexivity. }
   2:{ extensionality x. simp Dtm denote_tm. reflexivity. }
+    (* At this point stuck because of need to do induction on the
+      denotation of both t2 and Dtm t2 which should lead to the
+      same value. *)
+
+
     (* simp S in IHt1. *)
     (* destruct (⟦ t2 ⟧ₜₘ (sb x))... *)
     (* specialize IHt1 with
       (fun r => ⟦nrec _ _ t1 t2 t3⟧ₜₘ (sb r))
       (fun r => ⟦Dtm (nrec _ _ t1 t2 t3)⟧ₜₘ (Dsb r)). *)
     (* apply S_iterate_ind. *)
-
-    (* For some reason need to be able to do induction on
-      the number of iterations *)
-    erewrite S_eq.
+    (* erewrite S_eq. *)
     (* eapply IHt1. *)
-  2:{ extensionality x.
-      reflexivity. }
+  (* 2:{ extensionality x.
+      reflexivity. } *)
       (* destruct (⟦ t2 ⟧ₜₘ (sb x))... *)
-
-      simp denote_tm. }
-
+      (* simp denote_tm. } *)
     all: admit. }
   { (* Tuples *)
     intros... simp S.
@@ -308,7 +315,7 @@ Proof with quick.
     intros. simp S. right...
     exists (⟦ t ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
-Qed.
+Admitted.
 
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real),

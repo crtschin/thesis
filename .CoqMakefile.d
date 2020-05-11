@@ -28,15 +28,12 @@ Diffeology.vos Diffeology.vok Diffeology.required_vos: Diffeology.v
 Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Denotation.vo Normalization.vo
 Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Denotation.vio Normalization.vio
 Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Denotation.vos Normalization.vos
-Domain.vo Domain.glob Domain.v.beautified Domain.required_vo: Domain.v 
-Domain.vio: Domain.v 
-Domain.vos Domain.vok Domain.required_vos: Domain.v 
-F.vo F.glob F.v.beautified F.required_vo: F.v Tactics.vo Definitions.vo Normalization.vo
-F.vio: F.v Tactics.vio Definitions.vio Normalization.vio
-F.vos F.vok F.required_vos: F.v Tactics.vos Definitions.vos Normalization.vos
-Imp.vo Imp.glob Imp.v.beautified Imp.required_vo: Imp.v Definitions.vo Normalization.vo Tactics.vo
-Imp.vio: Imp.v Definitions.vio Normalization.vio Tactics.vio
-Imp.vos Imp.vok Imp.required_vos: Imp.v Definitions.vos Normalization.vos Tactics.vos
+Ext.vo Ext.glob Ext.v.beautified Ext.required_vo: Ext.v Tactics.vo Definitions.vo Normalization.vo
+Ext.vio: Ext.v Tactics.vio Definitions.vio Normalization.vio
+Ext.vos Ext.vok Ext.required_vos: Ext.v Tactics.vos Definitions.vos Normalization.vos
+Imp.vo Imp.glob Imp.v.beautified Imp.required_vo: Imp.v 
+Imp.vio: Imp.v 
+Imp.vos Imp.vok Imp.required_vos: Imp.v 
 Macro.vo Macro.glob Macro.v.beautified Macro.required_vo: Macro.v Definitions.vo Tactics.vo
 Macro.vio: Macro.v Definitions.vio Tactics.vio
 Macro.vos Macro.vok Macro.required_vos: Macro.v Definitions.vos Tactics.vos

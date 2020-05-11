@@ -278,6 +278,8 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | inl _ _ _ e => inl _ _ _ (substitute s e)
   | inr _ _ _ e => inr _ _ _ (substitute s e)
   end.
+
+
 (*
 Equations substitute_env {Γ Γ'} (G: Env Γ) (sb : sub Γ Γ'): Env Γ' :=
 substitute_env env_nil s := env_nil;

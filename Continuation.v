@@ -141,8 +141,13 @@ Dtm n (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm n e).
 Definition ren_c n m :
   ren (map (Dt n) (repeat Real m)) (map (Dt_c n) (repeat Real m)).
 Proof with quick.
-  unfold ren.
+  unfold ren. intros τ v.
 Admitted.
+
+Fail Equations? ren_c n m :
+  ren (map (Dt n) (repeat Real m)) (map (Dt_c n) (repeat Real m)) :=
+ren_c n m τ (Top Γ τ) := _;
+ren_c n m τ (Pop Γ τ σ v) := _.
 
 Definition ren_c' n m :
   ren (map (Dt_c n) (repeat Real m)) (map (Dt n) (repeat Real m)).
@@ -162,6 +167,7 @@ Proof with quick.
   intros.
 Admitted.
 
+(*
 Lemma rename_ren'_ren :
   forall τ n m (t : tm (map (Dt n) (repeat Real m)) (Dt n τ)),
     rename (ren_c' n m) (rename (ren_c n m) t) = t.
@@ -174,36 +180,44 @@ Lemma rename_ren_ren' :
     rename (ren_c n m) (rename (ren_c' n m) t) = t.
 Proof with quick.
   intros.
-Admitted.
+Admitted. *)
 
 Definition lam_r {n m}
   (t : tm (map (Dt n) (repeat Real m)) (Dt n Real))
   : tm (map (Dt_c n) (repeat Real m)) (Dt_c n Real) :=
   tuple _ (first _ (rename (ren_c n m) t))
-    (abs _ _ Real ((shift (σ:= Real) (second _ (rename (ren_c n m) t))))).
+    (abs _ _ Real ((shift (σ:=Real) (second _ (rename (ren_c n m) t))))).
 
-(* Equations lam {n m} τ
-  {pf1: forall τ1 τ2, τ <> (τ1 → τ2)}
-  {pf2: forall τ1 τ2, τ <> (τ1 <+> τ2)}
-  {pf3: forall m τ', τ <> (Array m τ')}
-  {pf4: forall τ1 τ2, τ <> (τ1 × τ2)}
+Fail Equations? lam {n m} τ
   (t : tm (map (Dt n) (repeat Real m)) (Dt n τ))
   : tm (map (Dt_c n) (repeat Real m)) (Dt_c n τ) :=
-lam Real z := lam_r z;
+lam ℝ z := lam_r z;
+lam ℕ z := rename (ren_c n m) z;
 lam (τ1 × τ2) z
-  with pf4 τ1 τ2 eq_refl := { };
-  (* := tuple _ (lam τ1 (first _ z)) (lam τ2 (second _ z)); *)
-lam (τ1 → τ2) z
-  with pf1 τ1 τ2 eq_refl := { };
-lam (Array m τ) z
-  with pf3 m τ eq_refl := { };
+  := tuple _ (lam τ1 (first _ z)) (lam τ2 (second _ z));
+lam (τ1 → τ2) z := _;
+lam (Array m τ) z := _;
 lam (τ1 <+> τ2) z
-  with pf2 τ1 τ2 eq_refl := { }. *)
-  (* := case (Dctx n (repeat Real m)) z
-    (abs _ (Dt_c n τ1 <+> Dt_c n τ2) (Dt_c n τ1)
-      (inl _ _ _ (lam n τ1 (var _ _ (Top _ _)))))
-    (abs _ (Dt_c n τ1 <+> Dt_c n τ2) (Dt_c n τ2)
-      (inr _ _ _ (lam n τ2 (var _ _ (Top _ _))))). *)
+  :=
+  (* Transform sums by splitting the sum into its cases *)
+  case (Dctx n (repeat Real m)) z
+    (* Build up back a new sum with the continuation macro's
+      type for the left case using inl with a recursive call
+      to lam *)
+    (abs (map (Dt n) (repeat ℝ m))
+      (Dt_c n τ1 <+> Dt_c n τ2) (Dt_c n τ1)
+      (inl (Dt n τ1 :: map (Dt n) (repeat ℝ m)) (Dt_c n τ1) (Dt_c n τ2)
+        (lam τ1
+        (* TODO: Problem, each branch in the case takes a function,
+          hence the abs term above. I need to do a recursive call of lam
+          on the argument which I can't due to lam only accepting ℝ
+          as context *)
+          (var (Dt n τ1 :: map (Dt n) (repeat ℝ m)) _ (Top _ _)))))
+    (* Same for right case. *)
+    (abs (map (Dt n) (repeat ℝ m))
+      (Dt_c n τ1 <+> Dt_c n τ2) (Dt_c n τ2)
+      (inr (τ2 :: map (Dt n) (repeat ℝ m)) _ _
+        (lam τ2 (var _ _ (Top _ _))))).
 
 Definition ev_r {n m}
   : tm (map (Dt_c n) (repeat Real m)) (Dt_c n Real) ->

@@ -41,14 +41,7 @@ Inductive eval : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       t2 ⇓ (nval Γ (S n)) ->
       t3 ⇓ t3' ->
       nrec Γ τ t1 t2 t3 ⇓
-        nrec Γ τ
-          (abs _ _ _ (abs _ _ _ (
-            app _ _ _
-              (app _ _ _ (shift (shift t1))
-                (nsucc _ (var _ _ (Pop _ _ _ (Top _ _)))))
-              (var _ _ (Top _ _)))))
-          (nval _ n)
-          (app _ _ _ (app _ _ _ t1 (nval _ 0)) t3')
+        app _ _ _ t1' (nrec Γ τ t1' (nval _ n) t3')
 
   (* Reals *)
   | EV_Add : forall Γ t1 t1' t2 t2',
@@ -100,12 +93,15 @@ Proof with quick.
     rewrite denote_sub_tl_cons...
     fold (@id_sub Γ).
     simp denote_sub.
-    rewrite denote_sub_id_ctx... }
-  { admit. }
+    rewrite denote_sub_id_ctx...
+    rewrites. }
   { simp denote_tm.
-    remember (⟦ e ⟧ₜₘ ctx).
-    dependent destruction d... }
-Admitted.
+    rewrite IHeval1. simp denote_tm.
+    rewrites. }
+  { simp denote_tm.
+    rewrite IHeval1. simp denote_tm.
+    rewrites. }
+Qed.
 
 (* Lemma D_natural : forall Γ τ (t1 : tm Γ τ) (t2 : tm Γ τ),
   t1 ⇓ t2 -> Dtm t1 ⇓ Dtm t2.
