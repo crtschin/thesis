@@ -38,7 +38,9 @@ S Real f g :=
   (forall (x : R), ex_derive f x) /\
   (fun r => g r) =
     (fun r => (f r, Derive f r));
-S Nat f g := True;
+S Nat f g :=
+  f = g /\
+    ((f = fun _ => O) \/ (exists n, f = fun _ => Datatypes.S n));
 S (Array n τ) f g :=
   forall i,
   exists f1 g1,
@@ -90,6 +92,18 @@ Inductive instantiation : forall Γ,
         instantiation (τ::Γ)
           (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r)).
 
+Lemma derivative_id :
+  Derive (⟦ real_id ⟧ₜₘ tt) = fun _ => 1.
+Proof with quick.
+  extensionality r.
+  simp denote_tm.
+  eassert (⟦ real_id ⟧ₜₘ tt = id).
+  { unfold real_id. simp denote_tm.
+    extensionality x. simp denote_tm... }
+  rewrites. clear H.
+  apply Derive_id.
+Qed.
+
 Lemma inst_eq : forall Γ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> instantiation Γ f1 f2 = instantiation Γ g1 g2.
 Proof. intros; rewrites. Qed.
@@ -97,23 +111,6 @@ Proof. intros; rewrites. Qed.
 Lemma S_eq : forall τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
 Proof. intros; rewrites. Qed.
-
-Lemma S_iterate_ind : forall τ f df t dt,
-  S τ (fun x => loop_down 0%nat f t)
-    (fun x => loop_down 0%nat df dt) ->
-  (forall n, S τ
-    (fun x => loop_down (Datatypes.S n) f t)
-    (fun x => loop_down (Datatypes.S n) df dt)) ->
-  (forall nf nf', S τ
-    (fun x => loop_down (nf x) f t)
-    (fun x => loop_down (nf' x) df dt)).
-Proof with quick.
-Admitted.
-
-Lemma denote_nat_refl : forall Γ (t : tm Γ ℕ) sb Dsb,
-  ⟦ t ⟧ₜₘ sb = ⟦ Dtm t ⟧ₜₘ Dsb.
-Proof with quick.
-Admitted.
 
 (*
   Plain words:
@@ -142,7 +139,7 @@ Proof with quick.
     intros.
     specialize IHt1 with sb Dsb; specialize IHt2 with sb Dsb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
-    pose proof (IHt2 H) as IHt2'; clear IHt2...
+    pose proof (IHt2 H) as IHt2'; clear IHt2.
     simp S in IHt1'.
     erewrite S_eq. eapply IHt1'...
     all: extensionality x; simp denote_tm Dtm... }
@@ -229,34 +226,65 @@ Proof with quick.
       rewrite H'.
       (* Derivative is addition of derivative of subterms *)
       rewrite Derive_plus... } }
+  { (* Nsucc *)
+    intros H. simp S.
+    pose proof (IHt sb Dsb H) as IHt.
+    simp S in IHt. destruct IHt as [IHeq IHex].
+    split.
+    { extensionality x. simp Dtm denote_tm.
+      pose proof (equal_f IHeq)... }
+    { right...
+      destruct IHex as [IH0|IHS].
+      { exists (0%nat).
+        extensionality x. simp denote_tm.
+        rewrite (equal_f IH0)... }
+      { destruct IHS as [x IHS]. exists (Datatypes.S x).
+        extensionality r. simp denote_tm.
+        rewrite (equal_f IHS)... } } }
   { (* Nval *)
-    intros... simp S... }
+    intros H. simp S. splits. induction n.
+    { left.
+      extensionality x. simp denote_tm... }
+    { right. exists n.
+      extensionality x. simp denote_tm... } }
   { (* Bounded iteration *)
     intros.
     pose proof (IHt1 sb Dsb H) as IHt1.
     pose proof (IHt2 sb Dsb H) as IHt2.
     pose proof (IHt3 sb Dsb H) as IHt3.
+    simp S in IHt2.
+    destruct IHt2 as [IHt2eq IHt2case].
+    pose proof (equal_f IHt2eq) as IHt2'...
     erewrite S_eq.
-  2:{ extensionality x. simp Dtm denote_tm. reflexivity. }
-  2:{ extensionality x. simp Dtm denote_tm. reflexivity. }
-    (* At this point stuck because of need to do induction on the
-      denotation of both t2 and Dtm t2 which should lead to the
-      same value. *)
-
-
-    (* simp S in IHt1. *)
-    (* destruct (⟦ t2 ⟧ₜₘ (sb x))... *)
-    (* specialize IHt1 with
-      (fun r => ⟦nrec _ _ t1 t2 t3⟧ₜₘ (sb r))
-      (fun r => ⟦Dtm (nrec _ _ t1 t2 t3)⟧ₜₘ (Dsb r)). *)
-    (* apply S_iterate_ind. *)
-    (* erewrite S_eq. *)
-    (* eapply IHt1. *)
-  (* 2:{ extensionality x.
-      reflexivity. } *)
-      (* destruct (⟦ t2 ⟧ₜₘ (sb x))... *)
-      (* simp denote_tm. } *)
-    all: admit. }
+  2:{ extensionality x. simp Dtm denote_tm.
+      reflexivity. }
+  2:{ extensionality x. simp Dtm denote_tm.
+      rewrite <- IHt2'. reflexivity. }
+    (* Case analysis on the denotation of the ℕ term *)
+    destruct IHt2case as [IHt20|IHt2S].
+    { (* 0 case:
+        Proven by the induction hypothesis
+          resulting from the base term *)
+      pose proof (equal_f IHt20) as IHt20'...
+      erewrite S_eq.
+    2:{ extensionality x. rewrite IHt20'...
+        reflexivity. }
+    2:{ extensionality x. rewrite IHt20'...
+        reflexivity. }
+      assumption. }
+    { (* (n+1) case:
+        Proven by the induction hypothesis
+          resulting from the function term *)
+      destruct IHt2S as [n IHt2S].
+      pose proof (equal_f IHt2S) as IHt2S'...
+      erewrite S_eq.
+    2:{ extensionality x. rewrite IHt2S'...
+        reflexivity. }
+    2:{ extensionality x. rewrite IHt2S'...
+        reflexivity. }
+      simp S in IHt1.
+      eapply IHt1. clear IHt2S' IHt2S.
+      induction n... } }
   { (* Tuples *)
     intros... simp S.
     (* Give instances using IHs *)
@@ -315,7 +343,7 @@ Proof with quick.
     intros. simp S. right...
     exists (⟦ t ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
-Admitted.
+Qed.
 
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real),

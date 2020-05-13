@@ -60,7 +60,7 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   (* Lets *)
   | RW_LetDesugar : forall Γ τ σ (t1: tm (σ::Γ) τ) (t2: tm Γ σ),
     app _ _ _ (abs _ _ _ t1) t2 ~> letin t2 t1
-  (* | RW_LetAssoc : forall Γ τ σ ρ
+  | RW_LetAssoc : forall Γ τ σ ρ
     (e0: tm Γ τ) (e1: tm (τ::Γ) σ) (e2: tm (σ::Γ) ρ),
     (* Original variant:
       let x :=               let y := e0 in
@@ -73,7 +73,7 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
         correspond to LHS, then it does not 'use' it.
     *)
       letin (letin e0 e1) e2 ~>
-        letin e0 (letin e1 (@shift (σ::Γ) ρ τ e2)) *)
+        letin e0 (letin e1 (@shift (σ::Γ) ρ τ e2))
   (* Ring addition *)
   | RW_add : forall Γ (t1 t1' t2 t2' : tm Γ ℝ),
     t1 ~> t1' ->

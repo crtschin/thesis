@@ -127,14 +127,14 @@ shave_env (env_cons t G) := G.
 
 Lemma build_congr : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
   ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
-Proof with quick. intros. rewrites. Qed.
+Proof. intros; rewrites. Qed.
 
 (* Lemma ifold_congr : forall Γ τ tf tf' i (ta : tm Γ τ),
   tf = tf' -> ifold Γ τ tf i ta = ifold Γ τ tf' i ta.
 Proof with quick. intros. rewrites. Qed. *)
 
 (* Examples *)
-Definition ex_id :=
+Definition real_id :=
   abs [] Real Real
     (var [Real] Real (Top _ _)).
 
