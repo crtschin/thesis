@@ -14,12 +14,12 @@ Require Import Coquelicot.Hierarchy.
 Require Import Equations.Equations.
 Import EqNotations.
 
+Require Import AD.DepList.
+Require Import AD.vect.
 Require Import CoLoR.Util.Vector.VecUtil.
 Require Import AD.Definitions.
 Require Import AD.Macro.
-(* Require AD.DepList. *)
 Require Import AD.Tactics.
-Require Import AD.vect.
 
 Local Open Scope program_scope.
 
@@ -51,7 +51,21 @@ Fixpoint denote_t τ : Set :=
   end
 where "⟦ τ ⟧ₜ" := (denote_t τ).
 
-Reserved Notation "⟦ Γ ⟧ₜₓ".
+Definition denote_ctx (Γ : Ctx) := hlist denote_t Γ.
+Notation "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
+Derive Signature for hlist.
+
+Lemma denote_ctx_eq :
+  forall (Γ : Ctx) (τ : ty) (h h' : ⟦ τ ⟧ₜ) (t t' : hlist denote_t Γ),
+  h = h' -> t = t' -> h ::: t = h' ::: t'.
+Proof. intros; rewrites. Qed.
+
+Equations denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
+denote_v (Top Γ τ) (HCons h t) := h;
+denote_v (Pop Γ τ σ v) (HCons h t) := denote_v v t.
+Notation "⟦ v ⟧ᵥ" := (denote_v v).
+
+(* Reserved Notation "⟦ Γ ⟧ₜₓ".
 Fixpoint denote_ctx (Γ : Ctx) : Type :=
   match Γ with
   | [] => unit
@@ -64,7 +78,7 @@ Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
   | Top Γ' τ' => fun gamma => fst gamma
   | Pop Γ' τ' σ x => fun gamma => denote_v x (snd gamma)
   end.
-Notation "⟦ v ⟧ᵥ" := (denote_v v).
+Notation "⟦ v ⟧ᵥ" := (denote_v v). *)
 
 Fixpoint vector_nth {s : Set} {n}
   (i : Fin.t n) : vector s n -> s :=
@@ -93,7 +107,7 @@ Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ by st
 (* STLC *)
 denote_tm (Γ:=Γ) (τ:=τ) (var Γ τ v) ctx := denote_v v ctx;
 denote_tm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) ctx := (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx);
-denote_tm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x, ctx);
+denote_tm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x ::: ctx);
 (* Arrays *)
 denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n f) ctx :=
   denote_array n (denote_tm ∘ f) ctx;
@@ -126,25 +140,25 @@ denote_array (S n) f ctx := Vcons (f (nat_to_fin n) ctx)
   ((denote_array n (shave_fin f)) ctx).
 
 Equations denote_env {Γ} (G : Env Γ): ⟦ Γ ⟧ₜₓ :=
-denote_env env_nil => tt;
+denote_env env_nil => HNil;
 denote_env (env_cons t G') with denote_env G' => {
-  denote_env (env_cons t G') X => (⟦ t ⟧ₜₘ X, X)
+  denote_env (env_cons t G') X => ⟦ t ⟧ₜₘ X ::: X
 }.
 Notation "⟦ s ⟧ₑ" := (denote_env s).
 
 Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   match Γ with
-  | [] => fun s ctx => tt
+  | [] => fun s ctx => HNil
   | h :: t => fun s ctx =>
-      (denote_tm (hd_sub s) ctx, denote_sub (tl_sub s) ctx)
+      denote_tm (hd_sub s) ctx ::: denote_sub (tl_sub s) ctx
   end.
 Notation "⟦ s ⟧ₛ" := (denote_sub s).
 
 Fixpoint denote_ren {Γ Γ'}: ren Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   match Γ with
-  | [] => fun r ctx => tt
+  | [] => fun r ctx => HNil
   | τ :: t => fun r ctx =>
-      (denote_tm (var Γ' τ (hd_ren r)) ctx, denote_ren (tl_ren r) ctx)
+      denote_tm (var Γ' τ (hd_ren r)) ctx ::: denote_ren (tl_ren r) ctx
   end.
 Notation "⟦ r ⟧ᵣ" := (denote_ren r).
 
@@ -168,7 +182,7 @@ Qed. *)
 
 Lemma denote_ren_elim : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
-  denote_ren r ctx = denote_ren (tl_ren (rename_lifted r)) (x, ctx).
+  denote_ren r ctx = denote_ren (tl_ren (rename_lifted r)) (x ::: ctx).
 Proof with eauto.
   induction Γ...
   intros. specialize IHΓ with (r:=tl_ren r).
@@ -181,7 +195,8 @@ Lemma denote_ren_commutes :
 Proof with quick.
   intros. generalize dependent Γ'.
   induction t; quick; try solve [simp denote_tm in *; rewrites]...
-  { simp denote_tm in *; induction v; rewrites. }
+  { simp denote_tm in *. induction v; simp denote_v...
+    simp denote_v. }
   { simp denote_tm in *. specialize IHt with (r:=rename_lifted r).
     simpl in IHt. simp rename_lifted in IHt.
     apply functional_extensionality...
@@ -199,32 +214,35 @@ Qed.
 
 Lemma denote_ren_shift : forall Γ Γ' τ (r:ren Γ Γ'),
   denote_ren (fun _ v => Pop _ _ τ (r _ v)) =
-    fun se => denote_ren r (snd se).
+    fun se => denote_ren r (htl se).
 Proof with quick.
   induction Γ... extensionality ctx.
-  apply injective_projections...
-  unfold tl_ren. rewrite IHΓ...
+  apply denote_ctx_eq;
+    simp denote_tm...
+  { unfold hd_ren. dependent elimination ctx.
+    simp denote_v... }
+  { unfold tl_ren. rewrite IHΓ... }
 Qed.
 
 Lemma denote_ren_id : forall Γ,
   denote_ren (@id_ren Γ) = Datatypes.id.
 Proof with quick.
   intros. extensionality x.
-  dependent induction Γ... destruct x...
-  destruct x...
-  apply injective_projections...
+  dependent induction Γ... dependent destruction x...
+  dependent destruction x...
+  apply denote_ctx_eq...
   unfold tl_ren, id_ren in *...
   rewrite denote_ren_shift...
 Qed.
 
 Lemma denote_shift : forall Γ τ σ (t : tm Γ τ) ctx,
-    ⟦ shift (σ:=σ) t ⟧ₜₘ ctx = ⟦ t ⟧ₜₘ (snd ctx).
+    ⟦ shift (σ:=σ) t ⟧ₜₘ ctx = ⟦ t ⟧ₜₘ (htl ctx).
 Proof with eauto.
   unfold shift. intros.
   rewrite <- denote_ren_commutes...
   pose proof denote_ren_elim as H.
-  destruct ctx as [x ctx].
-  specialize H with Γ Γ σ (fun t x => x) x ctx.
+  dependent destruction ctx.
+  specialize H with Γ Γ σ (fun t x => x) d ctx.
   unfold tl_ren in H.
   assert (H':
     (fun (σ0 : ty) (x : σ0 ∈ Γ) =>
@@ -238,7 +256,7 @@ Qed.
 
 Lemma denote_sub_elim : forall Γ Γ' τ
   (s : sub Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
-  denote_sub s ctx = denote_sub (tl_sub (substitute_lifted s)) (x, ctx).
+  denote_sub s ctx = denote_sub (tl_sub (substitute_lifted s)) (x ::: ctx).
 Proof with eauto.
   induction Γ; intros...
   intros. specialize IHΓ with (s := (tl_sub s)).
@@ -254,7 +272,7 @@ Proof with quick.
   intros. generalize dependent Γ'.
   induction t; intros; simp denote_tm; rewrites...
   { simpl. induction v...
-    intros. simpl. rewrite IHv... }
+    intros. simp denote_v. }
   { specialize IHt with (s:=substitute_lifted s)...
     apply functional_extensionality...
     simp denote_tm.
@@ -279,38 +297,24 @@ Qed.
 
 Lemma denote_sub_shift : forall Γ Γ' σ (s:sub Γ Γ'),
   denote_sub (fun _ v => shift (σ:=σ) (s _ v)) =
-    fun ctx => denote_sub s (snd ctx).
+    fun ctx => denote_sub s (htl ctx).
 Proof with quick.
   induction Γ... extensionality ctx.
-  apply injective_projections...
+  apply denote_ctx_eq...
   { unfold hd_sub. rewrite denote_shift... }
   { unfold tl_sub. rewrite IHΓ... }
-Qed.
-
-Lemma denote_sub_tl_simpl : forall Γ Γ' τ (ctx : ⟦ Γ' ⟧ₜₓ) (s : sub (τ::Γ) Γ'),
-  ⟦ tl_sub s ⟧ₛ ctx = snd (⟦ s ⟧ₛ ctx).
-Proof with quick.
-  intros...
 Qed.
 
 Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦ Γ ⟧ₜₓ),
   ⟦ id_sub ⟧ₛ ctx = ctx.
 Proof with quick.
   intros Γ...
-  unfold id_sub.
   induction Γ...
   { dependent destruction ctx... }
   { (* TODO: Issue doing induction on elements in product list *)
-    dependent destruction ctx...
-    intros.
-    unfold id_sub. unfold hd_sub. simp denote_tm...
-    fold (id_sub (Γ:=a::Γ)).
-    rewrite denote_sub_tl_simpl.
-    eapply injective_projections...
-    unfold id_sub.
-    rewrite denote_sub_tl_simpl.
-    unfold tl_sub.
-    unfold denote_sub.
+    dependent destruction ctx.
+    unfold hd_sub. simp denote_tm...
+    apply denote_ctx_eq...
     admit. }
 Admitted.
 

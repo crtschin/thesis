@@ -18,6 +18,7 @@ Require Vectors.Fin.
 Import EqNotations.
 Require Import CoLoR.Util.Vector.VecUtil.
 
+Require Import AD.DepList.
 Require Import AD.Definitions.
 Require Import AD.Macro.
 Require Import AD.Tactics.
@@ -81,7 +82,7 @@ SA (τ:=τ) (Datatypes.S n) S' f g :=
 Inductive instantiation : forall Γ,
     (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx Γ ⟧ₜₓ) -> Prop :=
   | inst_empty :
-      instantiation [] (Basics.const tt) (Basics.const tt)
+      instantiation [] (Basics.const HNil) (Basics.const HNil)
   | inst_cons :
       forall Γ τ,
       forall g1 g2,
@@ -90,14 +91,14 @@ Inductive instantiation : forall Γ,
         instantiation Γ sb Dsb ->
         S τ g1 g2 ->
         instantiation (τ::Γ)
-          (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r)).
+          (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: Dsb r)).
 
 Lemma derivative_id :
-  Derive (⟦ real_id ⟧ₜₘ tt) = fun _ => 1.
+  Derive (⟦ real_id ⟧ₜₘ HNil) = fun _ => 1.
 Proof with quick.
   extensionality r.
   simp denote_tm.
-  eassert (⟦ real_id ⟧ₜₘ tt = id).
+  eassert (⟦ real_id ⟧ₜₘ HNil = id).
   { unfold real_id. simp denote_tm.
     extensionality x. simp denote_tm... }
   rewrites. clear H.
@@ -146,7 +147,7 @@ Proof with quick.
   { (* Abs *)
     intros. simp S Dtm...
     specialize IHt with
-      (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r))...
+      (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: Dsb r))...
     eapply IHt. constructor; assumption. }
   { (* Build *)
     intros. simp S...
@@ -359,11 +360,22 @@ Proof with quick.
   intros. simp S in H.
 Qed.
 
+(* Check hhd.
+Check htl. *)
+
+(* Definition denote_ctx_hd {Γ : list ty} (ls : hlist denote_t Γ) :=
+  hhd ls.
+Definition denote_ctx_tl {Γ : list ty} (ls : hlist denote_t Γ) :=
+  htl ls. *)
+
 Equations D n
-  (f : R -> ⟦ repeat Real n ⟧ₜₓ): R -> ⟦ map Dt (repeat Real n) ⟧ₜₓ :=
+  (f : R -> hlist denote_t (repeat Real n))
+  : R -> hlist denote_t (map Dt (repeat Real n)) :=
 D 0 f r := f r;
 D (Datatypes.S n) f r :=
-  (((fst ∘ f) r, Derive (fst ∘ f) r), D n (snd ∘ f) r).
+  let elm := ((denote_ctx_hd ∘ f) r, Derive (denote_ctx_hd ∘ f) r) in
+  let rest := (D n (denote_ctx_tl ∘ f) r) in
+  HCons elm rest.
 
 Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop :=
   | differentiable_0 : differentiable 0 (fun _ => tt)

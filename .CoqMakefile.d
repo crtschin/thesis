@@ -16,9 +16,9 @@ CpdtTactics.vos CpdtTactics.vok CpdtTactics.required_vos: CpdtTactics.v
 Definitions.vo Definitions.glob Definitions.v.beautified Definitions.required_vo: Definitions.v Tactics.vo
 Definitions.vio: Definitions.v Tactics.vio
 Definitions.vos Definitions.vok Definitions.required_vos: Definitions.v Tactics.vos
-Denotation.vo Denotation.glob Denotation.v.beautified Denotation.required_vo: Denotation.v Definitions.vo Macro.vo Tactics.vo vect.vo
-Denotation.vio: Denotation.v Definitions.vio Macro.vio Tactics.vio vect.vio
-Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v Definitions.vos Macro.vos Tactics.vos vect.vos
+Denotation.vo Denotation.glob Denotation.v.beautified Denotation.required_vo: Denotation.v DepList.vo vect.vo Definitions.vo Macro.vo Tactics.vo
+Denotation.vio: Denotation.v DepList.vio vect.vio Definitions.vio Macro.vio Tactics.vio
+Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v DepList.vos vect.vos Definitions.vos Macro.vos Tactics.vos
 DepList.vo DepList.glob DepList.v.beautified DepList.required_vo: DepList.v CpdtTactics.vo
 DepList.vio: DepList.v CpdtTactics.vio
 DepList.vos DepList.vok DepList.required_vos: DepList.v CpdtTactics.vos
