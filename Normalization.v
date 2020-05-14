@@ -897,16 +897,11 @@ Proof with quick.
   { rewrite <- denote_sub_commutes...
     unfold hd_sub. simp cons_sub.
     rewrite denote_sub_tl_cons.
-    rewrite denote_sub_id_ctx...
-    (* unfold tl_sub...
-    destruct ctx...  *)
-    }
+    rewrite denote_sub_id_ctx... }
   { unfold compose.
     induction i...
     { induction n... }
     { unfold shave_fin. rewrite IHi... } }
-  (* { specialize IHstep with t2 t2' t2'...
-    rewrites... constructor. } *)
   { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t1')... constructor. }
   { destruct (⟦ e ⟧ₜₘ ctx)... rewrite (IHstep t2')... constructor. }
 Qed.
