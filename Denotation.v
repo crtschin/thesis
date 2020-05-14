@@ -24,19 +24,13 @@ Require Import AD.vect.
 Local Open Scope program_scope.
 
 (* Notations:
-
   ⟦ τ ⟧ₜ := denote_t τ, Currently piggybacks off of Coq's types.
   ⟦ Γ ⟧ₜₓ := denote_ctx Γ, A product list of types ensured to exist
                           in the context Γ.
   ⟦ v ⟧ₜₓ := denote_v v, A projection of the product list denoted by the typing
-                        context relevant to the variable referenced by v
+                          context relevant to the variable referenced by v
   ⟦ t ⟧ₜₘ := denote_tm t, Gives a function f of t such that it has the correct
                           denoted type of τ given the denoted context of Γ.
-*)
-
-(*
-  Goal: Write out the logical relation over types with the goal of having both
-    the proof of differentiability and witness in one.
 *)
 
 Reserved Notation "⟦ τ ⟧ₜ".
@@ -148,23 +142,9 @@ Fixpoint denote_ren {Γ Γ'}: ren Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   end.
 Notation "⟦ r ⟧ᵣ" := (denote_ren r).
 
-(* Lemmas for renaming and substitution in the denotated context. *)
-(* Many from Strongly Typed Terms in Coq by Nick Becton, et al. *)
-(* Lemma denote_shave_env_snd : forall τ Γ (e : Env τ (τ::Γ)),
-  snd ⟦ e ⟧ₑ = ⟦ shave_env e ⟧ₑ.
-Proof with quick.
-  dependent induction e.
-  simp shave_env.
-  simp denote_env...
-Qed.
-
-Lemma Ddenote_shave_env_snd : forall τ Γ (e : Env τ (τ::Γ)),
-  snd ⟦ Denv e ⟧ₑ = ⟦ Denv (shave_env e) ⟧ₑ.
-Proof with quick.
-  dependent induction e.
-  simp shave_env.
-  simp denote_env...
-Qed. *)
+(* Lemmas for renaming and substitution in the denotated context.
+  Many from Strongly Typed Terms in Coq by Nick Becton, et al.
+*)
 
 Lemma denote_ren_elim : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
