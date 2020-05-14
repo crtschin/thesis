@@ -5,39 +5,48 @@ Require Import Strings.String.
 Require Import Relations.
 Require Import Logic.JMeq.
 Require Import Reals.
+Require Vectors.Fin.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
+Require Import Coq.Program.Basics.
 
+Require Import CoLoR.Util.Vector.VecUtil.
 Require Import Equations.Equations.
-From AD Require Import Tactics.
+Require Import AD.Tactics.
 
-Open Scope R_scope.
+Local Open Scope program_scope.
 
 Inductive ty : Type :=
   | Real : ty
+  | Nat : ty
+  | Array : nat -> ty -> ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
   | Sum  : ty -> ty -> ty
 .
 
-Notation "A × B" := (Prod A B) (left associativity, at level 90).
-Notation "A <+> B" := (Sum A B) (left associativity, at level 90).
-Notation "A → B" := (Arrow A B) (right associativity, at level 20).
+Notation "'ℝ'" := (Real).
+Notation "'ℕ'" := (Nat).
+Notation "A × B" := (Prod A B) (left associativity, at level 89).
+Notation "A <+> B" := (Sum A B) (left associativity, at level 89).
+Notation "A → B" := (Arrow A B) (right associativity, at level 90).
 
-(* STLC with well-typed well-scoped debruijn *)
 (*
+  STLC with well-typed well-scoped debruijn
+
   Adapted from:
     - From Mathematics to Abstract Machine by Swierstra, et al.
     - Strongly Typed Term Representations in Coq by Benton, et al.
+    - Efficient Differentiable Programming in a
+        Functional Array-Processing Language by Amir Shaikhha, et al.
  *)
-Definition Ctx {x} := list x.
+Definition Ctx {x} : Type := list x.
 
 Inductive Var {T : Type} : list T -> T -> Type :=
   | Top : forall Γ τ, Var (τ::Γ) τ
   | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ
 .
 Derive Signature for Var.
-
 
 Notation "x ∈ Γ" := (Var Γ x) (at level 75).
 
@@ -52,9 +61,21 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | abs : forall τ σ,
     tm (σ::Γ) τ -> tm Γ (σ → τ)
 
+  (* Arrays *)
+  | build : forall τ n,
+    (Fin.t n -> tm Γ τ) -> tm Γ (Array n τ)
+  | get : forall {τ n},
+    Fin.t n -> tm Γ (Array n τ) -> tm Γ τ
+
   (* Reals *)
-  | const : R -> tm Γ Real
-  | add : tm Γ Real -> tm Γ Real -> tm Γ Real
+  | rval : forall (r : R), tm Γ ℝ
+  | add : tm Γ ℝ -> tm Γ ℝ -> tm Γ ℝ
+
+  (* Nat *)
+  | nsucc : tm Γ ℕ -> tm Γ ℕ
+  | nval : forall (n : nat), tm Γ ℕ
+  | nrec : forall τ,
+    tm Γ (τ → τ) -> tm Γ ℕ -> tm Γ τ -> tm Γ τ
 
   (* Products (currently using projection instead of pattern matching) *)
   | tuple : forall {τ σ},
@@ -64,44 +85,56 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | first : forall {τ σ}, tm Γ (τ × σ) -> tm Γ τ
   | second : forall {τ σ}, tm Γ (τ × σ) -> tm Γ σ
 
+  (* Sums *)
   | case : forall {τ σ ρ}, tm Γ (τ <+> σ) ->
     tm Γ (τ → ρ) ->
     tm Γ (σ → ρ) ->
     tm Γ ρ
-  | inl : forall {τ σ}, tm Γ τ -> tm Γ (τ <+> σ)
-  | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ <+> σ)
+  | inl : forall τ σ, tm Γ τ -> tm Γ (τ <+> σ)
+  | inr : forall τ σ, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
-(* Closed terms *)
-(* Inductive Closed : ty -> Type :=
-  | closure : forall {Γ τ}, tm Γ τ -> Env Γ -> Closed τ
-  | clapp : forall {τ σ}, Closed (σ → τ) -> Closed σ -> Closed τ
-  with Env : Ctx -> Type :=
-  | env_nil : Env []
-  | env_cons : forall {Γ τ}, Closed τ -> Env Γ -> Env (τ::Γ)
-.
-Scheme closed_env_rec_prop := Induction for Closed Sort Prop
-  with env_closed_rec_prop := Induction for Env Sort Prop.
-
-Scheme closed_env_rec_set := Induction for Closed Sort Set
-  with env_closed_rec_set := Induction for Env Sort Set.
-
-Scheme closed_env_rec := Induction for Closed Sort Type
-  with env_closed_rec := Induction for Env Sort Type. *)
-(* End Closed terms *)
+Definition letin {Γ τ σ} (e : tm Γ σ) (x : tm (σ::Γ) τ) : tm Γ τ :=
+  app Γ τ σ (abs Γ τ σ x) e.
+Definition vector_hot ( Γ : list ty ) ( n : nat ) ( i : Fin.t n ) :=
+  build Γ ℝ n (fun j => if Fin.eqb i j then rval Γ 1 else rval Γ 0).
+Definition vector_map { Γ τ σ n } ( a : tm Γ (Array n τ) )
+  ( f : tm Γ τ -> tm Γ σ ) : tm Γ (Array n σ) :=
+  build Γ σ n (fun i => f (get Γ i a)).
+Definition vector_map2 { Γ τ σ ρ n }
+  ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
+  ( f : tm Γ τ -> tm Γ σ -> tm Γ ρ ) : tm Γ (Array n ρ) :=
+  build Γ ρ n (fun i => f (get Γ i a1) (get Γ i a2)).
+Definition vector_zip { Γ τ σ n }
+  ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
+  : tm Γ (Array n ( τ × σ )) :=
+  vector_map2 a1 a2 (tuple Γ).
+Definition vector_fill { Γ τ } ( n : nat ) ( e : tm Γ τ )
+  : tm Γ (Array n τ) :=
+  build Γ τ n (fun _ => e).
+Definition vector_add {Γ n}
+  ( a1 a2 : tm Γ (Array n Real) ) : tm Γ (Array n Real) :=
+  vector_map2 a1 a2 (add Γ).
 
 Inductive Env : Ctx -> Type :=
   | env_nil : Env []
-  | env_cons : forall {Γ τ}, tm [] τ -> Env Γ -> Env (τ::Γ)
+  | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
 .
+Derive Signature for Env.
 
-Definition shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ.
-  induction Γ. constructor.
-  inversion G. assumption.
-Defined.
+Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
+shave_env (env_cons t G) := G.
+
+Lemma build_congr : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
+  ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
+Proof. intros; rewrites. Qed.
+
+(* Lemma ifold_congr : forall Γ τ tf tf' i (ta : tm Γ τ),
+  tf = tf' -> ifold Γ τ tf i ta = ifold Γ τ tf' i ta.
+Proof with quick. intros. rewrites. Qed. *)
 
 (* Examples *)
-Definition ex_id :=
+Definition real_id :=
   abs [] Real Real
     (var [Real] Real (Top _ _)).
 
@@ -150,15 +183,14 @@ Definition gsub (f : ty -> ty) Γ Γ' :=
   forall τ, Var (map f Γ) (f τ) -> tm (map f Γ') (f τ).
 
 Definition ren (Γ Γ' : list ty) :=
-  (* gren Datatypes.id Γ Γ'. *)
   forall τ, Var Γ τ -> Var Γ' τ.
 Definition sub (Γ Γ' : list ty) :=
-  (* gsub Datatypes.id Γ Γ'. *)
   forall τ, Var Γ τ -> tm Γ' τ.
 
 (* Helper functions for defining substitutions on the i'th variable *)
 Definition id_sub {Γ} : sub Γ Γ := var Γ.
-Equations cons_sub {Γ Γ' τ} (e: tm Γ' τ) (s: sub Γ Γ') : sub (τ::Γ) Γ' :=
+Equations cons_sub {Γ Γ' τ} (e: tm Γ' τ) (s: sub Γ Γ')
+  : sub (τ::Γ) Γ' :=
 cons_sub e s τ (Top Γ σ) := e;
 cons_sub e s τ (Pop Γ τ σ v) := s τ v.
 
@@ -172,7 +204,8 @@ Definition tl_sub {Γ Γ' τ} (s : sub (τ::Γ) Γ') : sub Γ Γ'
   := fun σ x => s σ (Pop Γ σ τ x).
 
 Definition id_ren {Γ} : ren Γ Γ := fun _ x => x.
-Definition hd_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : tm Γ' τ := var Γ' τ (r τ (Top Γ τ)).
+Definition hd_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : Var Γ' τ
+  := (r τ (Top Γ τ)).
 Definition tl_ren {Γ Γ' τ} (r : ren (τ::Γ) Γ') : ren Γ Γ'
   := fun σ x => r σ (Pop Γ σ τ x).
 
@@ -188,8 +221,20 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | app _ _ _ t1 t2 => app _ _ _ (rename r t1) (rename r t2)
   | abs _ _ _ f => abs _ _ _ (rename (rename_lifted r) f)
 
+  (* Arrays *)
+  | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
+  | get _ ti ta => get _ ti (rename r ta)
+  (* | ifold _ _ tf ti ta => ifold _ _ (rename r tf) (rename r ti) (rename r ta) *)
+
+  (* Nat *)
+  | nval _ n => nval _ n
+  | nsucc _ t => nsucc _ (rename r t)
+  (* | nval0 _ => nval0 _ *)
+  (* | nvalS _ n => nvalS _ n *)
+  | nrec _ _ f i d => nrec _ _ (rename r f) (rename r i) (rename r d)
+
   (* Reals *)
-  | const _ r => const _ r
+  | rval _ r => rval _ r
   | add _ t1 t2 => add _ (rename r t1) (rename r t2)
 
   (* Products *)
@@ -202,8 +247,8 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
       case _ (rename r e)
         (rename r c1)
         (rename r c2)
-  | inl _ e => inl _ (rename r e)
-  | inr _ e => inr _ (rename r e)
+  | inl _ _ _ e => inl _ _ _ (rename r e)
+  | inr _ _ _ e => inr _ _ _ (rename r e)
   end.
 
 Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
@@ -211,8 +256,8 @@ Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
 
 Equations substitute_lifted {Γ Γ' τ} (s : sub Γ Γ')
   : sub (τ::Γ) (τ::Γ') :=
-substitute_lifted s τ (Top _ _) := var (_::Γ') _ (Top Γ' _);
-substitute_lifted s τ (Pop _ _ _ v) := shift (s _ v).
+substitute_lifted s τ (Top Γ σ) := var (σ::Γ') σ (Top Γ' σ);
+substitute_lifted s τ (Pop Γ τ σ v) := shift (s τ v).
 
 Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   match t with
@@ -221,8 +266,23 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | app _ _ _ t1 t2 => app _ _ _ (substitute s t1) (substitute s t2)
   | abs _ _ _ f => abs _ _ _ (substitute (substitute_lifted s) f)
 
+  (* Arrays *)
+  (* | build_nil _ _ => build_nil _ _ *)
+  | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)
+  | get _ ti ta => get _ ti (substitute s ta)
+  (* | ifold _ _ tf ti ta =>
+    ifold _ _ (substitute s tf) (substitute s ti) (substitute s ta) *)
+
+  (* Nat *)
+  | nval _ n => nval _ n
+  | nsucc _ t => nsucc _ (substitute s t)
+  (* | nval0 _ => nval0 _ *)
+  (* | nvalS _ t => nvalS _ (substitute s t) *)
+  | nrec _ _ f i d => nrec _ _ (substitute s f) (substitute s i) (substitute s d)
+
+
   (* Reals *)
-  | const _ r => const _ r
+  | rval _ r => rval _ r
   | add _ t1 t2 => add _ (substitute s t1) (substitute s t2)
 
   (* Products *)
@@ -235,9 +295,15 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
       case _ (substitute s e)
         (substitute s c1)
         (substitute s c2)
-  | inl _ e => inl _ (substitute s e)
-  | inr _ e => inr _ (substitute s e)
+  | inl _ _ _ e => inl _ _ _ (substitute s e)
+  | inr _ _ _ e => inr _ _ _ (substitute s e)
   end.
+
+
+(*
+Equations substitute_env {Γ Γ'} (G: Env Γ) (sb : sub Γ Γ'): Env Γ' :=
+substitute_env env_nil s := env_nil;
+substitute_env (env_cons t G') s := env_cons (substitute sb t) G'. *)
 
 (*
   Tactics from:
@@ -265,7 +331,14 @@ Proof. intros. ExtVar. Qed.
 
 Lemma app_sub_id : forall Γ τ (t : tm Γ τ),
   substitute id_sub t = t.
-Proof. induction t; Rewrites lift_sub_id. Qed.
+Proof with quick.
+  induction t; rewrites;
+  try (rewrite lift_sub_id; rewrites).
+  { erewrite build_congr...
+    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
+Qed.
 
 Lemma lift_ren_id : forall Γ τ,
   rename_lifted (@id_ren Γ) = @id_ren (τ::Γ).
@@ -273,7 +346,13 @@ Proof. intros. ExtVar. Qed.
 
 Lemma app_ren_id : forall Γ τ (t : tm Γ τ),
   rename id_ren t = t.
-Proof. induction t; Rewrites lift_ren_id. Qed.
+Proof with quick.
+  induction t; Rewrites lift_ren_id.
+  { erewrite build_congr...
+    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
+Qed.
 
 (* Composing substitutions and renames *)
 Definition compose_ren_ren {Γ Γ' Γ''} (r : ren Γ' Γ'') (r' : ren Γ Γ')
@@ -293,9 +372,13 @@ Proof. intros. ExtVar. Qed.
 Lemma app_ren_ren : forall Γ Γ' Γ'' τ
     (t : tm Γ τ) (r : ren Γ' Γ'') (r' : ren Γ Γ'),
   rename (compose_ren_ren r r') t = rename r (rename r' t).
-Proof.
+Proof with quick.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_ren_ren.
+  { erewrite build_congr...
+    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_sub_ren : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (r : ren Γ Γ'),
@@ -307,9 +390,13 @@ Lemma app_sub_ren : forall Γ Γ' Γ'' τ
     (t : tm Γ τ) (s : sub Γ' Γ'') (r : ren Γ Γ'),
   substitute (compose_sub_ren s r) t =
     substitute s (rename r t).
-Proof with eauto.
+Proof with quick.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_ren.
+  { erewrite build_congr...
+    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_ren_sub : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (s : sub Γ Γ'),
@@ -328,6 +415,10 @@ Lemma app_ren_sub : forall Γ Γ' Γ'' τ
 Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_ren_sub.
+  { erewrite build_congr...
+    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
 Lemma lift_sub_sub : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (s' : sub Γ Γ'),
@@ -346,9 +437,12 @@ Lemma app_sub_sub : forall Γ Γ' Γ'' τ
 Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_sub.
+  { erewrite build_congr...
+    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
 
-(* Helpers *)
 Lemma rename_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (r : ren Γ Γ'),
   rename r (abs Γ τ σ t) = abs Γ' τ σ (rename (rename_lifted r) t).
 Proof. reflexivity. Qed.
@@ -372,30 +466,12 @@ Proof with eauto.
   unfold shift.
   rewrite <- app_sub_ren...
   generalize dependent σ.
-  induction t; rewrites.
-  { unfold compose_sub_ren in *...
-    rewrite lift_sub_id.
-    rewrite app_sub_id... }
+  induction t; rewrites;
+  try (unfold compose_sub_ren in *; quick;
+    rewrite lift_sub_id;
+    rewrite app_sub_id)...
+  { erewrite build_congr...
+    extensionality x... }
+  (* { erewrite ifold_congr...
+    extensionality x... } *)
 Qed.
-
-(*
-  Typing
-  Redundant to define this considering it is builtin to the
-   structure of the language?
-*)
-Definition has_type {Γ τ} (t : tm Γ τ) : ty := τ.
-Notation "Γ ⊢ t ∷ τ" := (@has_type Γ τ t) (at level 70).
-Corollary has_type_refl Γ τ (t : tm Γ τ) :
-  has_type t = τ.
-Proof. reflexivity. Qed.
-
-(* Fixpoint substitute_env {Γ Γ'} (s : sub Γ Γ') (E : Env Γ) : Env Γ' :=
-  match E with
-  | env_nil =>
-  | env_cons c E' => env_cons (substitute_closed s c) (substitute_env s E')
-  end
-with substitute_closed {Γ Γ' τ} (s : sub Γ Γ') (c : Closed τ) : Closed τ :=
-  match c with
-  | closure t E => closure (substitute s t) (substitute_env s E)
-  | clapp cf c => clapp (substitute_closed s cf) (substitute_closed s c)
-  end. *)

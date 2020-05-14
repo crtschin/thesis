@@ -9,18 +9,26 @@ Require Import Arith.PeanoNat.
 Require Import Program.Equality.
 
 (*
-Questions:
-(* Equations *)
-(* Opaque substitute_lifted *)
-(* Sum types *)
-(* Denotational instantiation *)
+
+Questions about recursion/iteration
+  2 domain theory libraries: Benton and Dockins
+    Benton's does not compile due to some infinite loop when rewriting (auto does not end)?
+    Dockins' does not compile due to missing rewrite constraints
+  Realizability of recursion/iteration without domain theory
+  Alternative to domain theory for recursion?
+    Formalizing a syntactic relation based on operational semantics and extend with step-indexing?
+
+Our current logical relation is over the denotations of functions
+At some point a logical relation over the denotational semantics instead of the operational semantics will require something akin to cpos.
+Problem being that Coq does not have a user-friendly library for working with cpos.
+
+Questions about polymorphism
+  Question about possibly extending the proofs from stlc to system F.
 
 Notational conventions:
   capital greeks for typing environment
   lowercase greeks for types
   lowercase latin for terms
-
-Functional extensionality is oft used and the derivative is (to be) defined axiomatically
 
 Literature:
 
@@ -28,7 +36,7 @@ Main paper:
 - Correctness of Automatic Differentiation via
     Diffeologies and Categorical Gluing by Huot, Staton and Vakar.
 
-Very relevant:
+Relevant:
 - On the Versatility of Open Logical Relations - Barthe, et al.
 
 Logical Relations:

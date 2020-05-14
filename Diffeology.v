@@ -1,4 +1,4 @@
-Require Import Logic.FunctionalExtensionality.
+(* Require Import Logic.FunctionalExtensionality.
 Require Import Strings.String.
 Require Import Relations.
 Require Import Logic.JMeq.
@@ -345,4 +345,4 @@ Local Open Scope R_scope.
     Qed.
 
     Definition add_smooth : R_diffeology -d> R_diffeology -D> R_diffeology.
-    Admitted.
+    Admitted. *)

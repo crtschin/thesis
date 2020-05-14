@@ -2,8 +2,10 @@ Require Import Lists.List.
 Import ListNotations.
 Require Import Logic.FunctionalExtensionality.
 Require Import Strings.String.
+Require Import Arith.PeanoNat.
 Require Import Relations.
 Require Import Logic.JMeq.
+Require Import Init.Datatypes.
 Require Import Reals.
 Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
@@ -12,116 +14,103 @@ Require Import Coquelicot.Derive.
 Require Import Coquelicot.Continuity.
 Require Import Coquelicot.Hierarchy.
 Require Import Equations.Equations.
+Require Vectors.Fin.
 Import EqNotations.
+Require Import CoLoR.Util.Vector.VecUtil.
 
 Require Import AD.Definitions.
 Require Import AD.Macro.
 Require Import AD.Tactics.
-Require Import AD.Normalization.
 Require Import AD.Denotation.
-(* Require Import AD.Tangent. *)
+Require Import AD.Normalization.
 
 Local Open Scope program_scope.
 Local Open Scope R_scope.
 
-(* Defined in section 5 *)
-(* Record Gl τ σ := make_gl {
-  Gl_P : (R -> ⟦τ⟧ₜ) -> (R -> ⟦σ⟧ₜ) -> Prop;
-}. *)
-
-Equations S τ : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
-S Real f g := (forall (x : R), ex_derive f x) /\
-  (fun r => g r) = (fun r => (f r, Derive f r));
+(*
+  Using a logical relation on the denotational semantics adapted from:
+    Correctness of Automatic Differentiation via
+      Diffeologies and Categorical Gluing by Huot, Staton and Vakar.
+*)
+Equations S τ :
+  (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop := {
+S Real f g :=
+  (forall (x : R), ex_derive f x) /\
+  (fun r => g r) =
+    (fun r => (f r, Derive f r));
+S Nat f g :=
+  f = g /\
+    ((f = fun _ => O) \/ (exists n, f = fun _ => Datatypes.S n));
+S (Array n τ) f g :=
+  forall i,
+  exists f1 g1,
+    S τ f1 g1 /\
+    (fun r => vector_nth i (f r)) = f1 /\
+    (fun r => vector_nth i (g r)) = g1;
 S (σ × ρ) f g :=
-  exists f1 f2 g1 g2 (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
+  exists f1 f2 g1 g2,
+  exists (s1 : S σ f1 f2) (s2 : S ρ g1 g2),
     (f = fun r => (f1 r, g1 r)) /\
     (g = fun r => (f2 r, g2 r));
 S (σ → ρ) f g :=
-  forall g1 g2,
-  forall (sσ : S σ g1 g2),
-  forall Γ h,
-  forall (t : tm Γ σ),
-    g1 = (⟦t⟧ₜₘ ∘ denote_env ∘ h) ->
-    g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h) ->
-    S ρ (fun x => f x (g1 x)) (fun x => g x (g2 x));
+  forall (g1 : R -> ⟦ σ ⟧ₜ)
+    (g2 : R -> ⟦ Dt σ ⟧ₜ) (sσ : S σ g1 g2),
+    S ρ (fun x => f x (g1 x))
+      (fun x => g x (g2 x));
 S (σ <+> ρ) f g :=
   (exists g1 g2,
-    forall (s: S σ g1 g2),
+    S σ g1 g2 /\
       f = Datatypes.inl ∘ g1 /\
       g = Datatypes.inl ∘ g2) \/
   (exists g1 g2,
-    forall (s: S ρ g1 g2),
+    S ρ g1 g2 /\
       f = Datatypes.inr ∘ g1 /\
-      g = Datatypes.inr ∘ g2).
+      g = Datatypes.inr ∘ g2) }.
+(* where SA {τ} n
+  (S' : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ (Dt τ) ⟧ₜ) -> Prop)
+  (f : R -> ⟦ Array n τ ⟧ₜ)
+  (g : R -> ⟦ Array n (Dt τ) ⟧ₜ) : Prop :=
+SA (τ:=τ) 0 S' f g := True;
+SA (τ:=τ) (Datatypes.S n) S' f g :=
+  exists f' g' f1 g1,
+    S' f1 g1 /\
+    SA n S' f' g' /\
+    (f = fun r => (f1 r, f' r)) /\
+    (g = fun r => (g1 r, g' r)). *)
 
-(* Inductive instantiation :
-  forall {Γ Γ'}, (⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ) -> Prop :=
-  | inst_empty : @instantiation [] [] Datatypes.id
-  | inst_cons : forall {Γ Γ' τ} (sb: ⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ) {g1 g2},
-      instantiation sb ->
-      (S τ g1 g2) ->
-      instantiation (fun (ctx: ⟦ τ::Γ' ⟧ₜₓ) => (sb (snd ctx))). *)
-
-Inductive instantiation :
-  forall {Γ Γ'}, sub Γ Γ' -> (R -> Env Γ') -> Prop :=
-  | inst_empty : forall {f}, @instantiation [] [] id_sub f
+Inductive instantiation : forall Γ,
+    (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx Γ ⟧ₜₓ) -> Prop :=
+  | inst_empty :
+      instantiation [] (Basics.const tt) (Basics.const tt)
   | inst_cons :
-      forall {Γ Γ' τ} {t : tm Γ' τ} {s : sub Γ Γ'} {f : R -> Env Γ'},
-      instantiation s f ->
-      (S τ (⟦t⟧ₜₘ ∘ denote_env ∘ f)
-        (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ f)) ->
-      instantiation (cons_sub t s) f.
+      forall Γ τ,
+      forall g1 g2,
+      forall (sb: R -> ⟦ Γ ⟧ₜₓ),
+      forall (Dsb: R -> ⟦ Dctx Γ ⟧ₜₓ),
+        instantiation Γ sb Dsb ->
+        S τ g1 g2 ->
+        instantiation (τ::Γ)
+          (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r)).
 
-(* Equations instantiation Γ {Γ'} (f : R -> Env Γ') : sub Γ Γ' -> Prop :=
-instantiation nil f s := True;
-instantiation (τ :: Γ) f s :=
-  exists g1 g2,
-    S τ g1 g2 /\
-      g1 = (⟦hd_sub s⟧ₜₘ ∘ denote_env ∘ f) /\
-      g2 = (⟦Dtm (hd_sub s)⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) /\
-      instantiation Γ f (tl_sub s). *)
+Lemma derivative_id :
+  Derive (⟦ real_id ⟧ₜₘ tt) = fun _ => 1.
+Proof with quick.
+  extensionality r.
+  simp denote_tm.
+  eassert (⟦ real_id ⟧ₜₘ tt = id).
+  { unfold real_id. simp denote_tm.
+    extensionality x. simp denote_tm... }
+  rewrites. clear H.
+  apply Derive_id.
+Qed.
 
-Lemma S_cong : forall τ f1 f2 g1 g2,
+Lemma inst_eq : forall Γ f1 f2 g1 g2,
+  g1 = f1 -> g2 = f2 -> instantiation Γ f1 f2 = instantiation Γ g1 g2.
+Proof. intros; rewrites. Qed.
+
+Lemma S_eq : forall τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S τ f1 f2 = S τ g1 g2.
-Proof. intros. rewrites. Qed.
-
-Lemma S_soundness : forall Γ τ (t t' : tm Γ τ) f,
-  (t -->* t') ->
-    S τ (⟦ t ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
-      S τ (⟦ t' ⟧ₜₘ ∘ denote_env ∘ f) (⟦ Dtm t' ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
-Proof with quick.
-  intros.
-  pose proof (soundness _ _ t t' H) as Heq.
-  pose proof (D_step _ _ t t' H) as H'.
-  pose proof (soundness _ _ (Dtm t) (Dtm t') H') as Heq'.
-  rewrite <- Heq. rewrite <- Heq'...
-Admitted.
-
-(*
-Lemma S_substitute_lifted :
-  forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (sb: sub Γ Γ') g g1 g2,
-  S σ g1 g2 ->
-  (exists (s : tm Γ' σ), S τ
-    (⟦substitute (cons_sub s sb) t⟧ₜₘ ∘ denote_env ∘ g)
-    (⟦Dtm (substitute (cons_sub s sb) t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)) ->
-  S τ
-    (fun r => ⟦substitute (substitute_lifted (τ:=σ) sb) t⟧ₜₘ
-      (g1 r, (denote_env (g r))))
-    (fun r => ⟦Dtm (substitute (substitute_lifted (τ:=σ) sb) t) ⟧ₜₘ
-      (g2 r, (denote_env (Denv (g r))))).
-Proof with quick.
-Admitted. *)
-
-Lemma S_exists : forall Γ τ g1 g2 (h : R -> Env Γ),
-  S τ g1 g2 ->
-    exists (t: tm Γ τ),
-      g1 = (⟦t⟧ₜₘ ∘ denote_env ∘ h) /\
-      g2 = (⟦Dtm t⟧ₜₘ ∘ denote_env ∘ Denv ∘ h).
-Proof.
-  intros. induction τ.
-  simp S in H.
-  exists (const Γ 0). split.
-Admitted.
+Proof. intros; rewrites. Qed.
 
 (*
   Plain words:
@@ -130,209 +119,293 @@ Admitted.
     to the term t is also in the relation S.
 *)
 Lemma fundamental :
-  forall Γ Γ' τ f
-    (t : tm Γ τ) (sb : sub Γ Γ'),
-  instantiation sb f ->
-  (* instantiation Γ f sb -> *)
-  S τ (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ f)
-    (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f).
+  forall Γ τ,
+  forall (t : tm Γ τ),
+  forall (sb : R -> ⟦ Γ ⟧ₜₓ),
+  forall (Dsb : R -> ⟦ Dctx Γ ⟧ₜₓ),
+  instantiation Γ sb Dsb ->
+  S τ (fun x => ⟦t⟧ₜₘ (sb x))
+    (fun x => ⟦Dtm (t)⟧ₜₘ (Dsb x)).
 Proof with quick.
-  intros Γ Γ' τ g t sb H.
-  generalize dependent Γ'.
-  (* pose proof (H τ) as H'. clear H. *)
-  dependent induction t; unfold compose in *.
+  unfold compose.
+  intros Γ τ t sb Dsb.
+  induction t; simp denote_tm in *; unfold compose in *.
   { (* Var *)
-    (* Using Inductive Instantiation *)
-    intros. induction H; dependent induction v...
-    simp cons_sub.
-
-    (* Using Equation Instantiation *)
-    (* induction v; intros;
-      simp instantiation in H;
-      (* specialize H with g; *)
-      destruct H as [g1 [g2 H]];
-      destruct H as [H [Heq1 [Heq2 H']]]; subst.
-    { unfold hd_sub in H... }
-    { erewrite S_cong.
-      simp instantiation in H.
-      unfold tl_sub... unfold tl_sub... } *)
-    }
+    intros; dependent induction v; dependent induction H;
+      quick; simp denote_tm cons_sub Dtm...
+    erewrite S_eq. eapply IHv...
+    all: extensionality x... }
   { (* App *)
     intros.
-    specialize IHt1 with Γ' g sb; specialize IHt2 with Γ' g sb.
+    specialize IHt1 with sb Dsb; specialize IHt2 with sb Dsb.
     pose proof (IHt1 H) as IHt1'; clear IHt1.
-    pose proof (IHt2 H) as IHt2'; clear IHt2...
+    pose proof (IHt2 H) as IHt2'; clear IHt2.
     simp S in IHt1'.
-
-    (* With terms in relation for functions *)
-    specialize IHt1' with
-      (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g)
-      (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)
-      Γ' g
-      (substitute sb t2)...
-
-    (* With existentials for term in relation for functions *)
-    (* pose proof (IHt1' IHt2') as [t IHt1]. clear IHt1'. *)
-    (* With existentials for context in relation for functions *)
-    (* pose proof (IHt1' IHt2') as [Γ0 [h IHt1]]. clear IHt1'.
-    eapply IHt1... *)
-    (* all: admit. *)
-    }
+    erewrite S_eq. eapply IHt1'...
+    all: extensionality x; simp denote_tm Dtm... }
   { (* Abs *)
-    intros. simp S. intros; subst.
-    simpl (substitute sb (abs Γ τ σ t)).
-    simp Dtm. simpl.
-
-    (* simp instantiation in H. *)
-    (* With existentials for context in relation *)
-    (* induction H.
-    exists []; exists f... subst... *)
-    (* specialize IHt with (σ::[])
-      (fun r => env_cons t0 (f r)) (cons_sub t0 id_sub). *)
-
-    induction H.
-    erewrite S_cong.
-    (* exists (substitute (substitute_lifted sb) t). *)
-    apply IHt.
-    instantiate (1:=f).
-    (* Show Existentials. *)
-    (* pose proof (cons_sub t @id_sub []). *)
-    (* instantiate (1:=id_sub). *)
-    (* simp instantiation. *)
-    (* exists (⟦ t0 ⟧ₜₘ ∘ denote_env ∘ h).
-    exists (⟦ Dtm t0 ⟧ₜₘ ∘ denote_env ∘ Denv ∘ h).
-    splits... *)
-    (* instantiate (1:=cons_sub t0 sb). *)
-    all: admit.
-
-    (* Induction on context *)
-    (* induction Γ'.
-    { intros. induction Γ.
-      simp S. simpl (substitute sb (abs [] τ σ t)).
-      simp Dtm. intros. fold (map Dt). subst.
-      eapply S_cong.
-      apply IHt.
-      instantiate (2:=g).
-      pose proof (|t0|).
-      instantiate (1:=(|t0|)).
-      simp instantiation.
-      intros.
-      exists (⟦ t0 ⟧ₜₘ ∘ denote_env ∘ h).
-      exists (⟦ Dtm t0 ⟧ₜₘ ∘ denote_env ∘ Denv ∘ h).
-      splits...
-      admit.
-      (* apply IHt. simp instantiation.
-      exists g1; exists g2; splits... *) }
-    { intros. simp S. intros.
-      simpl (substitute sb (abs _ τ σ t)).
-      simp Dtm. fold (map Dt).  } *)
-    }
+    intros. simp S Dtm...
+    specialize IHt with
+      (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r))...
+    eapply IHt. constructor; assumption. }
+  { (* Build *)
+    intros. simp S...
+    induction n.
+    { (* Induction on n, Base case = 0
+        Contradiction due to indices running from 1..n *)
+      inversion i. }
+    { (* Induction on n, IHn case
+        Give instances *)
+      pose proof (IHn (shave_fin t)) as H'; clear IHn.
+      simp Dtm denote_tm in *...
+      (* Destruct index,
+        Cons case handled by IHn *)
+      dependent destruction i...
+      clear H'.
+      exists (fun r =>
+        (denote_tm ∘ t) (nat_to_fin n) (sb r));
+      exists (fun r =>
+        (denote_tm ∘ (Dtm ∘ t)) (nat_to_fin n) (Dsb r))... } }
+  { (* Get *)
+    quick.
+    pose proof (IHt sb Dsb H) as H'; clear IHt.
+    simp S in *. simp SA in *.
+    induction n...
+    { (* Induction on n, Base case = 0
+        Contradiction due to indices running from 1..n *)
+      inversion t. }
+    { (* Induction on n, IHn case
+        Rewrite using logical relation *)
+      clear IHn.
+      simp Dtm.
+      specialize H' with t.
+      destruct H' as [f1 [g1 [Hs1 [Heq1 Heq2]]]].
+      subst. erewrite S_eq... } }
   { (* Const *)
-    quick. split.
-    { intros. apply ex_derive_const. }
-    apply functional_extensionality.
-    intros. unfold compose. rewrite Derive_const... }
+    intros. simp S.
+    (* Setup rewrite rule using 'denotation of (rval r) = const r' *)
+    assert (H': forall r, (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
+    { intros; extensionality r'; simp denote_tm; unfold const... }
+    splits...
+    { rewrite H'.
+      (* const is derivable *)
+      apply ex_derive_const. }
+    { extensionality x...
+      simp Dtm denote_tm...
+      rewrite H'. apply injective_projections...
+      (* Derivative of const is 0 *)
+      unfold const.
+      rewrite Derive_const... } }
   { (* Add *)
     simpl in *. intros.
-    pose proof (IHt1 Γ' g sb H) as [Hex1 H1]; clear IHt1.
-    pose proof (IHt2 Γ' g sb H) as [Hex2 H2]; clear IHt2.
-    split.
-    { intros.
-      specialize Hex1 with x.
-      specialize Hex2 with x.
-      apply (ex_derive_plus _ _ _ Hex1 Hex2). }
-    { apply functional_extensionality...
-      simp Dtm. simpl. unfold compose in *.
-      eapply equal_f in H1; eapply equal_f in H2.
-      rewrite H1; rewrite H2.
-      apply injective_projections...
+    (* Specialize IH to give evidence that
+      subterms are derivable/give derivative *)
+    pose proof (IHt1 sb Dsb H) as H1.
+    pose proof (IHt2 sb Dsb H) as H2.
+    simp S in H1; simp S in H2.
+    destruct H1 as [Heq1 Heq1'].
+    destruct H2 as [Heq2 Heq2'].
+    (* Prove addition of subterms is derivable
+      and give derivative value *)
+    autorewrite with S.
+    splits...
+    { (* Addition is derivable given subterms are derivable *)
+      apply (ex_derive_plus _ _ _ (Heq1 x) (Heq2 x)). }
+    { simp Dtm. simpl.
+      extensionality x.
+      eapply equal_f in Heq1'.
+      eapply equal_f in Heq2'.
+      simp denote_tm.
+      apply injective_projections;
+        rewrite Heq1'; rewrite Heq2'...
+      (* Rewrite using definition of denote_tm *)
+      assert
+        (H': (fun x0 : R => ⟦ add Γ t1 t2 ⟧ₜₘ (sb x0)) =
+          fun x0 : R => ⟦ t1 ⟧ₜₘ (sb x0) + ⟦ t2 ⟧ₜₘ (sb x0)).
+      { extensionality r; simp denote_tm... }
+      rewrite H'.
+      (* Derivative is addition of derivative of subterms *)
       rewrite Derive_plus... } }
+  { (* Nsucc *)
+    intros H. simp S.
+    pose proof (IHt sb Dsb H) as IHt.
+    simp S in IHt. destruct IHt as [IHeq IHex].
+    split.
+    { extensionality x. simp Dtm denote_tm.
+      pose proof (equal_f IHeq)... }
+    { right...
+      destruct IHex as [IH0|IHS].
+      { exists (0%nat).
+        extensionality x. simp denote_tm.
+        rewrite (equal_f IH0)... }
+      { destruct IHS as [x IHS]. exists (Datatypes.S x).
+        extensionality r. simp denote_tm.
+        rewrite (equal_f IHS)... } } }
+  { (* Nval *)
+    intros H. simp S. splits. induction n.
+    { left.
+      extensionality x. simp denote_tm... }
+    { right. exists n.
+      extensionality x. simp denote_tm... } }
+  { (* Bounded iteration *)
+    intros.
+    pose proof (IHt1 sb Dsb H) as IHt1.
+    pose proof (IHt2 sb Dsb H) as IHt2.
+    pose proof (IHt3 sb Dsb H) as IHt3.
+    simp S in IHt2.
+    destruct IHt2 as [IHt2eq IHt2case].
+    pose proof (equal_f IHt2eq) as IHt2'...
+    erewrite S_eq.
+  2:{ extensionality x. simp Dtm denote_tm.
+      reflexivity. }
+  2:{ extensionality x. simp Dtm denote_tm.
+      rewrite <- IHt2'. reflexivity. }
+    (* Case analysis on the denotation of the ℕ term *)
+    destruct IHt2case as [IHt20|IHt2S].
+    { (* 0 case:
+        Proven by the induction hypothesis
+          resulting from the base term *)
+      pose proof (equal_f IHt20) as IHt20'...
+      erewrite S_eq.
+    2:{ extensionality x. rewrite IHt20'...
+        reflexivity. }
+    2:{ extensionality x. rewrite IHt20'...
+        reflexivity. }
+      assumption. }
+    { (* (n+1) case:
+        Proven by the induction hypothesis
+          resulting from the function term *)
+      destruct IHt2S as [n IHt2S].
+      pose proof (equal_f IHt2S) as IHt2S'...
+      erewrite S_eq.
+    2:{ extensionality x. rewrite IHt2S'...
+        reflexivity. }
+    2:{ extensionality x. rewrite IHt2S'...
+        reflexivity. }
+      simp S in IHt1.
+      eapply IHt1. clear IHt2S' IHt2S.
+      induction n... } }
   { (* Tuples *)
-    simpl. intros.
-    pose proof (IHt1 Γ' g sb H) as H1'; clear IHt1.
-    pose proof (IHt2 Γ' g sb H) as H2'; clear IHt2.
-    exists (⟦ substitute sb t1 ⟧ₜₘ ∘ denote_env ∘ g).
-    exists (⟦ Dtm (substitute sb t1) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
-    exists (⟦ substitute sb t2 ⟧ₜₘ ∘ denote_env ∘ g).
-    exists (⟦ Dtm (substitute sb t2) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g)... }
+    intros... simp S.
+    (* Give instances using IHs *)
+    pose proof (IHt1 sb Dsb H) as H1'; clear IHt1.
+    pose proof (IHt2 sb Dsb H) as H2'; clear IHt2.
+    exists (⟦ t1 ⟧ₜₘ ∘ sb );
+      exists (⟦ Dtm t1 ⟧ₜₘ ∘ Dsb).
+    exists (⟦ t2 ⟧ₜₘ ∘ sb );
+      exists (⟦ Dtm t2 ⟧ₜₘ ∘ Dsb).
+    (* exists (substitute sb t1); exists (substitute sb t2). *)
+    unfold compose.
+    exists H1'; exists H2'... }
   { (* Projection 1 *)
-    intros. unfold compose in *.
-    specialize IHt with Γ' g sb.
-    pose proof (IHt H) as IHt'; clear IHt.
-    simp S in IHt'.
-    destruct IHt' as [f1 [f2 [g1 [g2 [S1 [S2 [H1 H2]]]]]]]...
-    erewrite S_cong; try (apply S1);
-    apply functional_extensionality_dep; intros;
-    eapply equal_f in H1; eapply equal_f in H2.
-    { rewrite H1... }
-    { simp Dtm... rewrite H2... } }
+    intros. simp Dtm.
+    specialize IHt with sb Dsb.
+    simp S in IHt; pose proof (IHt H) as H'; clear IHt.
+    destruct H' as [f1 [f2 [g1 [g2 [Hs1 [Hs2 [Heq1 Heq2]]]]]]].
+    erewrite S_eq; quick; extensionality x...
+    { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
+    { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
   { (* Projection 2 *)
-    intros. unfold compose in *.
-    specialize IHt with Γ' g sb.
-    pose proof (IHt H) as IHt'; clear IHt.
-    simp S in IHt'.
-    destruct IHt' as [f1 [f2 [g1 [g2 [S1 [S2 [H1 H2]]]]]]]...
-    erewrite S_cong; try (apply S2);
-    apply functional_extensionality_dep; intros;
-    eapply equal_f in H1; eapply equal_f in H2.
-    { rewrite H1... }
-    { simp Dtm... rewrite H2... } }
+    intros. simp Dtm.
+    specialize IHt with sb Dsb.
+    simp S in IHt; pose proof (IHt H) as H'; clear IHt.
+    destruct H' as [f1 [f2 [g1 [g2 [Hs1 [Hs2 [Heq1 Heq2]]]]]]].
+    erewrite S_eq; quick; extensionality x...
+    { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
+    { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
   { (* Case *)
     intros.
-    pose proof (IHt1 Γ' g sb H) as IH1; clear IHt1.
-    simp S in IH1. simpl. simp Dtm. simpl.
+    pose proof (IHt1 sb Dsb H) as IH1; clear IHt1.
+    pose proof (IHt2 sb Dsb H) as IH2; clear IHt2.
+    pose proof (IHt3 sb Dsb H) as IH3; clear IHt3.
+    simp S in *. simpl. simp Dtm. simpl.
+    (* Either term denotates to inl or inr *)
     destruct IH1 as [[g1 [g2 H']]|[g1 [g2 H']]].
-    all: admit.
-    (* induction H.
-    rewrite app_sub_id.
-    simp Dtm.
-    pose proof (IHt1 Γ' g sb H) as H1; clear IHt1.
-    pose proof (IHt2 Γ' g sb H) as H2; clear IHt2.
-    pose proof (IHt3 Γ' g sb H) as H3; clear IHt3.
-    simpl (substitute sb (case Γ t1 t2 t3)).
-    simp Dtm.
-    simp S in H1. destruct H1 as [H1|H1].
-    induction H... simpl. *)
-    }
+    { (* Scrutinee is inl *)
+      destruct H' as [Hs [Heq1 Heq2]].
+      erewrite S_eq. eapply IH2...
+      { extensionality x. eapply equal_f in Heq1.
+        simp denote_tm. rewrite Heq1... }
+      { extensionality x. eapply equal_f in Heq2.
+        simp denote_tm. rewrite Heq2... } }
+    { (* Scrutinee is inr *)
+      destruct H' as [Hs [Heq1 Heq2]].
+      erewrite S_eq. eapply IH3...
+      { extensionality x. eapply equal_f in Heq1.
+        simp denote_tm. rewrite Heq1... }
+      { extensionality x. eapply equal_f in Heq2.
+        simp denote_tm. rewrite Heq2... } } }
   { (* Inl *)
     intros. simp S. left...
-    exists (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g).
-    exists (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
-    split; unfold compose; extensionality x... }
+    exists (⟦ t ⟧ₜₘ ∘ sb );
+      exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
   { (* Inl *)
     intros. simp S. right...
-    exists (⟦ substitute sb t ⟧ₜₘ ∘ denote_env ∘ g).
-    exists (⟦ Dtm (substitute sb t) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ g).
-    split; unfold compose; extensionality x... }
-Admitted.
+    exists (⟦ t ⟧ₜₘ ∘ sb );
+      exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
+Qed.
 
 Lemma S_correct_R :
-  forall Γ (t : tm Γ Real) f,
-  S Real (fun r => (⟦ t ⟧ₜₘ (denote_env (f r))))
-    (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) ->
-  (⟦ Dtm t ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) =
-  fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-    Derive (fun x => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
-Proof. intros. destruct H. quick. Qed.
+  forall Γ (t : tm Γ Real),
+  forall (f1 : R -> ⟦ Γ ⟧ₜₓ),
+  forall  (f2 : R -> ⟦ Dctx Γ ⟧ₜₓ),
+  S Real (fun r => ⟦ t ⟧ₜₘ (f1 r))
+    (fun r => ⟦ Dtm t ⟧ₜₘ (f2 r)) ->
+  (forall x, ex_derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) x) /\
+  (⟦ Dtm t ⟧ₜₘ ∘ f2) =
+  fun r => (⟦ t ⟧ₜₘ (f1 r),
+    Derive (fun x => ⟦ t ⟧ₜₘ (f1 x)) r).
+Proof with quick.
+  intros. simp S in H.
+Qed.
 
-Lemma S_correct_prod :
-  forall Γ τ σ (t : tm Γ τ) (s : tm Γ σ) f,
-  S (τ × σ) (⟦ tuple _ t s ⟧ₜₘ ∘ denote_env ∘ f)
-    (⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f) ->
-  ⟦ Dtm (tuple _ t s) ⟧ₜₘ ∘ denote_env ∘ Denv ∘ f =
-    fun r => (⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r))),
-              (⟦ Dtm s ⟧ₜₘ (denote_env (Denv (f r))))).
-Proof. quick. Qed.
+Equations D n
+  (f : R -> ⟦ repeat Real n ⟧ₜₓ): R -> ⟦ map Dt (repeat Real n) ⟧ₜₓ :=
+D 0 f r := f r;
+D (Datatypes.S n) f r :=
+  (((fst ∘ f) r, Derive (fst ∘ f) r), D n (snd ∘ f) r).
+
+Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop :=
+  | differentiable_0 : differentiable 0 (fun _ => tt)
+  | differentiable_Sn :
+    forall n (f : R -> ⟦ repeat Real n ⟧ₜₓ),
+    forall (g : R -> R),
+      differentiable n f ->
+      (forall x, ex_derive g x) ->
+      differentiable (Datatypes.S n) (fun x => (g x, f x)).
 
 Theorem semantic_correct_R :
-  forall (t : tm [] Real) (f : R -> Env []),
-  (fun r => ⟦ Dtm t ⟧ₜₘ (denote_env (Denv (f r)))) =
-    fun r => (⟦ t ⟧ₜₘ (denote_env (f r)),
-      Derive (fun (x : R) => ⟦ t ⟧ₜₘ (denote_env (f x))) r).
+  forall n,
+  forall (f : R -> ⟦ repeat Real n ⟧ₜₓ),
+  forall (t : tm (repeat Real n) Real),
+    differentiable n f ->
+    (⟦ Dtm t ⟧ₜₘ ∘ D n f) =
+      (fun r => (⟦ t ⟧ₜₘ (f r),
+        Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f x)) r)).
 Proof with quick.
-  intros.
-  rewrite <- (app_sub_id [] Real t).
-  apply S_correct_R.
-  apply (fundamental [] [] Real f t id_sub).
-  constructor.
+  intros...
+  eapply S_correct_R.
+  eapply fundamental.
+  clear t.
+  (* Prove every term in the context is in the relation
+    by induction on number of real terms in context *)
+  induction n...
+  { (* N = 0
+      Prove f : R -> ⟦ repeat Real 0 ⟧ₜₓ is equal to 'const tt' *)
+    erewrite inst_eq;
+      try (extensionality r).
+  2:{ remember (f r) as e. dependent destruction e.
+      reflexivity. }
+  2:{ simp D. remember (f r) as e. dependent destruction e.
+      reflexivity. }
+    fold (@Basics.const unit R tt); constructor. }
+  { (* N = n + 1  *)
+    erewrite inst_eq;
+      try (extensionality r).
+  2:{ instantiate (1 := fun r => (fst (f r), snd (f r))).
+      apply injective_projections; easy. }
+  2:{ simp D. reflexivity. }
+    dependent destruction H.
+    constructor...
+    simp S. splits... }
 Qed.

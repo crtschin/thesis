@@ -1,34 +1,105 @@
-\documentclass[a4, 12pt]{article}
-% \usepackage[margin=1in]{geometry}
+\documentclass[11pt, final]{article}
+\usepackage{mathpartir}
+\usepackage{stmaryrd}
+\usepackage{mathtools}
+\usepackage{array,booktabs,ragged2e}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{fancyhdr}
 \usepackage{amsthm}
-\usepackage{todo}
+\usepackage{microtype}
+\usepackage[draft=false,cache]{minted}
+\setlength{\marginparwidth}{3cm}
+\usepackage[obeyFinal]{todonotes}
+\usepackage{libertine}
+% \usepackage{libertinust1math}
 \usepackage{amsmath}
+\usepackage[justification=centering]{caption}
+\usepackage{csquotes}
+\usepackage{etoolbox}
 \usepackage{showkeys}
 \usepackage[
-backend=biber,
-bibstyle=ieee,
-citestyle=ieee,
-sorting=ynt,
-hyperref=true,
-backref=true
+  backend=biber,
+  bibstyle=ieee,
+  citestyle=ieee,
+  sorting=ynt,
+  hyperref=true,
+  backref=true
 ]{biblatex}
-\addbibresource{refs.bib}
+% \usepackage[hidelinks]{hyperref}
 \usepackage[hidelinks]{hyperref}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]
+\setmonofont{Inconsolata}[Scale=MatchLowercase]
+\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}
+\renewcommand{\figurename}{Listing}
+\setminted[coq]{escapeinside=~~,mathescape}
+\newcommand{\br}[1]{\langle #1 \rangle}
+\def\Yields{\Downarrow}
+\newcommand{\makefootnotelist}[1]{%
+    \parbox{0.8\textwidth} {%
+        \footnotesize{%
+            \renewcommand*{\do}[1]{##1\\}%
+            \dolistcsloop{#1}}}}%
+\newcommand{\fancyfootnote}[1]{%
+    \footnotemark{}%
+    \def\listname{footlist\thepage}%
+    \def\n{$^{\the\numexpr\value{footnote}}$}
+    \ifcsdef{\listname}%
+        {\listcseadd{\listname}{\n\ #1}}%
+        {\csedef{\listname}{}%
+        \listcseadd{\listname}{\n\ #1}}%
+    \fancypagestyle{fancyfootnote}{%
+        \fancyfoot[L]{\makefootnotelist{\listname}}%
+        \fancyfoot[C]{}%
+        \fancyfoot[R]{\thepage}%
+    }\thispagestyle{fancyfootnote}}%
+\fancypagestyle{plain}{%
+  \fancyfoot[C]{\thepage}
+}
 
+\addbibresource{references.bib}
+\setlength{\headheight}{15pt}
 \pagestyle{fancy}
-\fancyhf{}
 \lhead{Utrecht University}
-\cfoot{\thepage}
-\rfoot{Curtis Chin Jen Sem}
+\rfoot{\thepage}
+\cfoot{ }
 \renewcommand{\headrulewidth}{0.5pt}
 \renewcommand{\footrulewidth}{0.5pt}
+\renewcommand{\listingscaption}{Code snippet}
+
+\def\Vakar{V\'{a}k\'{a}r}
+\def\<#1>{\csname keyword@@#1\endcsname}
+\begingroup
+\makeatletter
+\def\do#1{\expandafter\doaux\expandafter{\keyword@style{#1}}{#1}}
+\def\doaux#1#2{\global\@namedef{keyword@@#2}{#1}}
+\def\keyword@style#1{\textbf{#1}}
+\do{Coq}
+\do{Agda}
+\def\keyword@style#1{\texttt{#1}}
+\do{bottom}
+\do{Equations}
+\do{Coquelicot}
+\do{Program}
+\do{Set}
+\do{Prop}
+\do{Type}
+\do{return}
+\do{simpl}
+\do{Either}
+\do{sb}
+\do{Dsb}
+\do{Reals}
+\do{R}
+\endgroup
+
 \begin{document}
 
 \begin{titlepage}
+\pagenumbering{gobble}
 
 \begin{figure}
    \begin{minipage}{0.48\textwidth}
@@ -54,7 +125,7 @@ backref=true
 \vspace{0.5in}
 
 \noindent\makebox[\linewidth]{\rule{\linewidth}{1.2pt}}
-\textsc{ \textbf{\large Formalized Proof of Automatic Differentiation in Coq }}
+\textsc{\textbf{\large Formalized Proof of Automatic Differentiation in \<Coq>}}
 \noindent\makebox[\linewidth]{\rule{\linewidth}{1.2pt}}
 
 \vspace{0.5in}
@@ -63,49 +134,69 @@ backref=true
     \begin{flushleft}
         \textit{Student:} \\
         Curtis Chin Jen Sem \\
-        crtschin@gmail.com
+        % crtschin@gmail.com
     \end{flushleft}
 \end{minipage}
 \begin{minipage}{0.48\textwidth}
     \begin{flushright}
     \textit{Supervisors:} \\
-    Mathijs V\'{a}k\'{a}r \\
-    Email
-    \end{flushright}
-    \begin{flushright}
+    Mathijs \Vakar{} \\
     Wouter Swierstra \\
-    Email
+    % Email
+    % \end{flushright}
+    % \begin{flushright}
+    % Email
     \end{flushright}
 \end{minipage}
 
 \vspace{2in}
 
 \textbf{\large Department of Information and Computing Science} \\
-
-\today
+\textit{Last updated: \today}
 
 \end{titlepage}
 
 \newpage
 
+\pagenumbering{arabic}
 \setcounter{page}{2}
 \tableofcontents
 \newpage
 
 \section{Introduction}
 
-AI and machine learning research has sparked a lot of new interest in recent times due to its many applications and ability to solve very difficult problems. One of the principle techniques in practice is the use of gradient descent, which tries optimize some problem by trying to calculate the local minimum of a differentiable function.
+AI and machine learning research has sparked a lot of new interest in recent times. It has been used in fields such as computer vision, natural language processing, and as opponents in various games such as chess and Go.
+In machine learning and more specifically neural network research, researchers set up functions referred to as layers between the input and output data and through an algorithm called back propagation, try to optimize the network such that it learns how to solve the problem implied by the data.
+Back propagation makes heavy use of automatic differentiation, but programming in an environment which allows for automatic differentiation can be limited.
 
-This is regularly done using a technique called Automatic Differentiation. There has been a recent surge of interest in formulating languages for defining automatic differentiable functions. This could have many benefits such as both applying many of the established high and low level optimizations known in programming languages research, ease defining functions for use in a gradient descent optimization through higher order functions and correctness through the use of a possible type system.
+Frameworks such as Tangent\fancyfootnote{https://github.com/google/tangent} or autograd\fancyfootnote{https://github.com/HIPS/autograd} make use of source code transformations and operator overloading, which can restrict which high-level optimizations one is able to apply to generated code. Support for higher-order derivatives is also limited.
 
-We aim to formalize an extendable proof of an implementation of automatic differentiation on a simply typed lambda calculus in the Coq proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future. Our formalization is based on a recent proof by Stanton Huot, and Vak\"{a}r\ref. They proved, using a denotational model of diffeological spaces, that their forward mode emulating macro is correct when applied to a simply typed lambda calculus with products, co-products and inductive types.
-\todo*
+Programming language research has a rich history with many well-known both high- and low-level optimization techniques such as partial evaluation and deforestation.
+If instead of a framework, we were to have a programming language that is able to facilitate automatic differentiation, we would be able to apply many of these techniques. Through the use of higher-order functions and type systems, we would also get additional benefits such as code-reusability and correctness.
 
-% Ideally?:
-% Contributing an extendable proof of a simply typed lambda calculus
-% On which both the correctness of optimizations and language
-% extensions could be proven
-% Proof of optimizations maintaining correctness (partial evaluation)
+In this thesis, we will aim to formalize an extendable correctness proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
+Our formalization is based on a recent proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}.
+They proved, using a denotational model of diffeological spaces, that their forward mode emulating macro is correct when applied to a simply-typed lambda calculus with products, co-products and inductive types.
+
+\todo{Fill in}
+
+With this thesis we will aim for the following goals:
+\begin{itemize}
+  \item Formalize the proofs of both the forward mode and continuation-based automatic differentiation algorithms specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
+  % \item Formulate the proofs such that it facilitates further extensions.
+  % \item Extend the proof to polymorphic types.
+  % \item Adapt the proof to a small imperative language.
+  \item Prove that well-known compile-time optimizations such as the partial evaluation, are correct with respect to the semantics of automatic differentiation.
+  \item Extend the proof with the array types and compile-time optimization rules by Shaikhha, et. al.\cite{Shaikha2019}.
+  % \item (TODO: UNLIKELY) Extend the original proof with iteration and possibly recursion.
+  % \item (TODO: MAYBE) Extend the original proof with inductive types.
+  % \item (TODO: MAYBE) Extend the original proof with polymorphism.
+  % \item (TODO: MAYBE) Adapt the proof to a small imperative language.
+  % \item (TODO: LIKELY) Prove that well-known optimizations such as the partial evaluation, are correct with respect to automatic differentiation.
+  % \item (TODO: LIKELY) Prove the correctness of the continuation-based automatic differentiation algorithm.
+\end{itemize}
+
+As a notational convention, we will use specialized notation in the definitions themselves. Coq normally requires that pretty printed notations be defined separately from the definitions they reference. The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.
 
 \section{Background}
 
@@ -113,72 +204,438 @@ We aim to formalize an extendable proof of an implementation of automatic differ
 
 % http://jmlr.org/papers/volume18/17-468/17-468.pdf
 
-One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function. The idea being to use the gradient in the gradient descent algorithm\ref. Automatic is a generalization of backpropogation. Automatic differentiation has a long and rich history, where its purpose is to calculate the derivative of a function, or in other words, calculate the derivative of function described by an arbitrary program\ref. So the semantics which one would normally expect in programming language is extended with relevant concepts such as derivative values and the chain rule.
+One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function. The gradient itself is used in the gradient descent algorithm to optimize an objective function by determining the direction of steepest descent\cite{Baydin2015AutomaticDI}.
+Automatic differentiation has a long and rich history, where its driving motivation is to be able to automatically calculate the derivative of a function in a manner that is both correct and fast.
+Through techniques such as source-code transformations or operator overloading, one is able to implement an automatic differentiation algorithm which can transform any program which implements some function to one that calculates its derivative.
+So in addition to the standard semantics present in most programming languages, concepts relevant to differentiation such as derivative values and the chain rule are needed.
 
-Automatic or algorithmic differentiation is beneficial over other methods of automatically calculating the derivatives of functions such as numerical differentiation or symbolic differentiation due to its balance between speed and computational complexity. There are two main modes of automatic differentiation which I will both discuss. These are namely forward and reverse mode AD. In this paper we will prove the semantics of a forward mode AD algorithm correct. The algorithm being a very simple macro on the syntax of a simply typed lambda calculus.
+Automatic or algorithmic differentiation is beneficial over other methods of automatically calculating the derivatives of functions such as numerical differentiation or symbolic differentiation due to its balance between speed and computational complexity.
+There are two main variants of automatic differentiation, namely forward mode and reverse mode automatic differentiation.
 
-\todo*
+In forward mode automatic differentiation every term in the function trace is annotated with the corresponding derivative of that term. These are also known as the respectively the primal and tangent traces. So every partial derivative of every sub-function is calculated parallel to its counterpart. We will take the function $f(x, y) = x^2 + (x - y)$ as an example. The dependencies between the terms and operations of the function is visible in the computational graph in Figure~\ref{fig:func_trace}. The corresponding traces are filled in Table~\ref{table:func_trace} for the input values $x = 2, y = 1$. We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$. In this paper we will prove the correctness of a simple forward mode automatic differentiation algorithm with respect to the semantics of a simply-typed lambda calculus.
+
+Reverse mode automatic differentiation takes a different approach. It tries to work backwards from the output by annotating each intermediate variable $v_i$ with an adjoint $v'_i=\frac{\delta y_i}{\delta v_i}$. To do this, two passes are necessary. Like the forward mode variant the primal trace is needed to determine the intermediate variables and function dependencies. These are recorded in the first pass. The second pass actually calculates the derivatives by working backwards from the output using the adjoints, also called the adjoint trace.
+
+The choice between automatic differentiation variant is heavily dependent on the function being differentiated. The number of applications of the forward mode algorithm is dependent on the number of input variables, as it has to be redone for each possible partial derivative of the function. On the other hand, reverse mode AD has to work backwards from each output variable. In machine learning research, reverse mode AD is generally preferred as the objective functions regularly contain a very small number of output variables. How one does reverse mode automatic differentiation on a functional language is still an active area of research. Huot, Staton and \Vakar{} have proposed a continuation-based algorithm which mimic much of the same ideas as reverse mode automatic differentiation\cite{huot2020correctness}.
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.6]{assets/function_trace.png}
+  \caption{Computational graph of $f(x, y) = x^2 + (x - y)$}
+  \label{fig:func_trace}
+\end{figure}
+
+\begin{table}
+  \begin{center}
+    \begin{tabular}{ l l l l l | l l l l l }
+      \hline
+      \multicolumn{5}{l}{Primal trace} & \multicolumn{5}{l}{Tangent trace} \\
+      \hline
+$v_{-1} $&$=$&$x$&$=$&$2$             &$v'_{-1}$&$=$&$x'$&$=$&$1$ \\
+$v_0    $&$=$&$y$&$=$&$1$             &$v'_{0}$&$=$&$y'$&$=$&$0$ \\
+      \hline
+$v_1    $&$=$&$v_{-1}^2$&$=$&$4$      &$v'_{1}$&$=$&$2*v_{-1}$&$=$&$4$ \\
+$v_2    $&$=$&$v_{-1} - v_{0}$&$=$&$1$&$v'_{2}$&$=$&$v'_{-1}-v'_{0}$&$=$&$1$ \\
+$v_3    $&$=$&$v_1 + v_2$&$=$&$5$     &$v'_{3}$&$=$&$v'_1 + v'_2$&$=$&$5$ \\
+      \hline
+$f      $&$=$&$v_3$&$=$&$5$           &$f'$&$=$&$v'_3$&$=$&$5$ \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{Primal and tangent traces of $f(x, y) = x^2 + (x - y)$}
+  \label{table:func_trace}
+\end{table}
 
 \subsection{Denotational semantics}
 % A formal semantics of programming language: An introduction
 
-The notion of denotational semantics, created by Dana Scott and Christopher Strachey\ref, tries to find underlying mathematical objects able to explain the properties of programming languages. Their original search for a solution for lambda calculi led them to well-known concepts such as partial orderings and least fixed points. In this model, programs are interpreted as partial functions and computation by taking fixpoint of such functions. Non-termination on the other hand is symbolized by a value bottom that is lower in the ordering relation than any other element. This search for an underlying mathematical foundation for languages is also known as domain theory.
+The notion of denotational semantics tries to find underlying mathematical models able to underpin the concepts known in programming languages. The most well-known example is the solution given by Dana Scott and Christopher Strachey\cite{Scott1977} for lambda calculi, also called domain theory.
+To be able to formalize non-termination and partiality, they thought to use concepts such as partial orderings and least fixed points\cite{aaby2020}.
+In this model, programs are interpreted as partial functions, and recursive computations as taking the fixpoint of such functions.
+Non-termination, on the other hand, is formalized as a value \<bottom> that is lower in the ordering relation than any other element.
 
-In this specific case, we try to find a satisfactory model we can use to show that our implementation of forward mode automatic differentiation is correct when applied to a simply typed lambda calculus. In the original pen and paper proof of automatic differentiation this paper was inspired by, the models used were diffeological spaces, which are the useful generalization of smooth manifolds and as such describe sets whose functions are always differentiable. For the purpose of this thesis, however, this was deemed overkill and much too difficult and time consuming to implement in a mathematically sound manner in Coq. As such we chose to make use of Coq's existing types as denotation.
+In our specific case, we try to find a satisfactory model we can use to show that our implementation of forward mode automatic differentiation is correct when applied to a simply-typed lambda calculus.
+In the original pen and paper proof of automatic differentiation this thesis is based on, the mathematical models used were diffeological spaces, which are a generalization of smooth manifolds.
+For the purpose of this thesis, however, we were able to avoid using diffeological spaces as recursion, iteration and concepts dealing with non-termination and partiality are left out of the scope of this thesis.
+\<Coq> has very limited support for domain theoretical models.
+There are possible libraries which have resulted from experiments trying to encode domain theoretical models\cite{Benton2009}\cite{Dockins2014}, but these are incompatible with recent versions of \<Coq>.
+As a part of its type system, \<Coq> contains a set-theoretical model available under the sort \<Set>, which is satisfactory as the denotational semantics for our language.
 
-\todo*
+Because we use the real numbers as the ground type in our language, we also needed an encoding of the real numbers in Coq. The library for real numbers in \<Coq> has improved in recent times from one based on a completely axiomatic definition to one involving Cauchy sequences\fancyfootnote{https://coq.inria.fr/library/Coq.Reals.ConstructiveCauchyReals.html}. For the purposes of this thesis, however, we needed differentiability as the denotational result of applying the macro operation. Instead of encoding this by hand, we opted for the more comprehensive library \<Coquelicot>\cite{Boldo2015CoquelicotAU}, which contains many general definitions for differentiating functions.
+
+\todo{Fill in}
 
 \subsection{Coq}
 
-Coq is a proof assistant created by Thierry Coquand as an implementation of his calculus of constructions type theory\ref. In the 30 years since it has been released, research has contributed to extending the proof assistant with additional features such as inductive and co-inductive data types\ref, GADTs\ref and advanced modular constructions for organizing immense proofs\ref.
+\<Coq> is a proof assistant based on the calculus of constructions type theory created by Thierry Coquand and G\'{e}rard Huet\cite{Coquand1988}.
+In the past 30 years since it has been released, research has contributed to extending the proof assistant with additional features such as inductive and co-inductive data types\cite{Coquand1990}, dependent pattern matching\cite{Sozeau2010} and advanced modular constructions for organizing large mathematical proofs\cite{Sozeau2008}\cite{Mahboubi2013}.
 
-The core of calculus of constructions is based on constructive logic and so many of the laws known in classical logic are not present. Examples include the law of the excluded middle, $\forall A, A \vee \neg A$, or the law of functional extensionality, $\forall x, f(x) = g(x) \rightarrow f = g$. They can, however, be safely added to Coq without making its logic inconsistent. Due to its usefulness in proving propositions over functions, we will make use of the functional extensionality axiom in Coq.
+The core of this type theory is based on constructive logic and so many of the laws known in classical logic are not provable.
+An example includes the law of the excluded middle, $\forall A, A \vee \neg A$.
+In some cases they can, however, be safely added to \<Coq> without making its logic inconsistent. These are readily available in the standard library.
+Due to its usefulness in proving propositions over functions, we will make use of the functional extensionality axiom in \<Coq>.
 
 \subsubsection{Language representation}
+\label{sec:language_repr}
 
-When defining a simply typed lambda calculus, there are two main representations. The arguably simpler variant, known as an extrinsic representation, is traditionally the one introduced to new students learning Coq. In the extensional representation, the terms themselves are untyped and typing judgments are defined separately. The other approach, also called an intrinsic representation or strongly typed terms, makes use of just a single well-typed definition. Ill-typed terms are made impossible by the type checker. This representation, while beneficial in the proof load, however complicates much of the normal machinery involved in programming language theory. One example is how one would define operations on the language such as substitutions in a way to maintain the type-correctness. The main contribution of the paper is an intrinsic treatment of terms and substitution without any coercions\ref.
+\begin{figure}
+  \begin{mathpar}
+    \inferrule*[Right=\textsc{TVar}]
+      {elem\ n\ \Gamma = \tau}
+      {\Gamma \vdash var\ n : \tau} \and
+    \inferrule*[Right=\textsc{TAbs}]
+      {(\sigma, \Gamma) \vdash t : \tau}
+      {\Gamma \vdash t : \sigma \rightarrow \tau} \\ \and
+    \inferrule*[Right=\textsc{TApp}]
+      {\Gamma \vdash t1 : \sigma \rightarrow \tau \\
+        \Gamma \vdash t2 : \sigma}
+      {\Gamma \vdash t1\ t2 : \tau}
+  \end{mathpar}
+  \label{fig:stlc_infer}
+  \caption{Type-inferrence rules for a simply-typed lambda calculus using De-Bruijn indices}
+\end{figure}
 
-But even when choosing an intrinsic representation, the problem of variable binding persists. Much meta-theoretical research has been done on possible approaches to this problem each with their own advantages and obstacles. The POPLmark challenge gives a comprehensive overview of each of the possibilities in various proof assistants. An example of an approach is the nominal representation where every variable is named. While this does follow the standard format used in regular mathematics, problems such as alpha-conversion and capture-avoidance arise.
+When defining a simply-typed lambda calculus, there are two main possibilities\cite{plfa2019}.
+The arguably simpler variant, known as an extrinsic representation, is traditionally the one introduced to new students learning \<Coq>.
+In the extrinsic representation, the terms themselves are untyped and typing judgments are defined separately as relations between the types and terms. A basic example of working with this is given in Software Foundations\cite{Pierce:SF2}.
+This, however, required many additional lemmas and machinery to be proved to be able to work with both substitutions and contexts as these are defined separate from the terms.
+As an example, the preservation property which states that reduction does not change the type of a term, needs to be proven explicitly.
+The other approach, also called an intrinsic representation, makes use of just a single well-typed definition.
+Ill-typed terms are made impossible by the type checker.
+This representation, while beneficial in the proof load, however complicates much of the normal machinery involved in programming language theory.
+One example is how one would define operations such as substitutions or weakening.
 
-The approach used in the rest of this thesis is closely related to the de-bruijn representation, which numbers variables relative to the binding lambda term. Instead of using numbers to represent the distance, we make use of indices which should be present in the typing context. This approach was fleshed out by Nick Benton, et. al.\ref. While this does subvert the problems present in the nominal representation, it unfortunately does have problems of its own. Variable substitutions are defined using two seperate renaming and substitution operations. Renaming is formulated as a function from variables to variables just changing the typing context and substitution actually swaps the variables for terms. Due to using indices from the context as variables, some lifting boilerplate is needed to manipulate the current context.
-% Give an example?
-\todo*
+But even when choosing an intrinsic representation, the problem of variable binding persists.
+Much meta-theoretical research has been done on possible approaches to this problem each with their own advantages and disadvantages.
+The POPLmark challenge gives a comprehensive overview of each of the possibilities in various proof assistants\cite{Aydemir2005}.
+An example of an approach is the nominal representation where every variable is named.
+While this does follow the standard format used in regular mathematics, problems such as alpha-conversion and capture-avoidance appears.
 
-\subsubsection{Dependent types}
+\begin{listing}[h]
+  \begin{minted}{coq}
+  Inductive ty : Type :=
+    | ~unit~ : ~ty~
+    | ~\Rightarrow~ : ~ty \rightarrow ty \rightarrow ty~.
 
-In Coq, one can normally write function definitions using either case-analysis as in other functional languages, or using Coq's tactics. If proof terms are present in the function definition, however, it is standard to write it using tactics because of the otherwise cumbersome and verbose code needed to pattern-match on the arguments. Writing definitions using tactics also has its limitations, the user is allowed definitions that later are uncovered to be unprovable, the definitions are opaque such that the standard `simpl` tactic which invokes Coq's reduction mechanic is not able to reduce the term. This often requires the user to write and use proofs of the functions reducibility at its argument.
+  Inductive tm : Type :=
+    | var : ~string \rightarrow tm ~
+    | abs : ~string \rightarrow ty \rightarrow tm \rightarrow tm~
+    | app : ~tm \rightarrow tm \rightarrow tm~.
+  \end{minted}
+  \caption{Simply typed \lambda-calculus using an extrinsic nominal representation.}
+  \label{lst:nominal_stlc}
+\end{listing}
 
-In \ref Matthieu Sozeau introduces an extensions to Coq via a new keyword `Program` which allows the use of case-analysis in more complex definitions. To be more specific, it introduces a method called Predicate subtyping to Coq which allows more permissive definitions with the proofs accompanying them being written separately. It does this in the language Russell, which contains a slightly weaker type system in that terms do not require proof terms for subset types. This definition is translated into Coq where the missing proofs are filled in. While this does improve on the previous situation, using the definitions in proofs can often be unwieldy due to the amount of boilerplate introduced. This can make debugging error messages even harder than it already is in a proof assistant.
+The approach used in the rest of this thesis is an extension of the De-Bruijn representation which numbers variables relative to the binding lambda term.
+In this representation the variables are referred to as well-typed De-Bruijn indices.
+A significant benefit of this representation is that the problems of capture avoidance and alpha equivalence are avoided.
+As an alternative, instead of using numbers to represent the distance, indices within the typing context can be used to ensure that a variable is always well-typed and well-scoped.
+While the idea of using type indexed terms has been both described and used by many authors\cite{Altenkirch99}\cite{McBride04}\cite{Adams06}, the specific formulation used in this thesis using separate substitutions and rename operations was fleshed out in Coq by Nick Benton, et. al.\cite{Benton2011}, and was also used as one of the examples in the second POPLmark challenge which deals with logical relations\cite{poplmark_reloaded}.
+While this does avoid the problems present in the nominal representation, it unfortunately does have some problems of its own.
+Variable substitutions have to be defined using two separate renaming and substitution operations.
+Renaming is formulated as extending the typing context of variables, while substitution actually swaps the variables for terms.
+Due to using indices from the context as variables, some lifting boilerplate is also needed to manipulate contexts.
 
-\todo*
+\begin{listing}[h]
+  \begin{minted}{coq}
+  Inductive ~\tau \in \Gamma~ : Type :=
+    | Top : ~\forall \Gamma \tau, \tau \in (\tau::\Gamma)~
+    | Pop : ~\forall \Gamma \tau \sigma, \tau \in \Gamma \rightarrow \tau \in (\sigma::\Gamma)~.
 
-Sozeau further improves on this in \ref by introducing a method for user-friendlier dependently typed programming in Coq as the `Equations` library. This introduces `Agda` like with-clauses when pattern matching. It makes use of a notion called covering where a set of equations should be an exhaustive covering of a function signature. There are two main ways to integrate this in a dependently typed environment, externally where it is integrated as high-level constructs in the pattern matching core as Agda does it or internally by using the existing type theory and finding witnesses of the covering to prove the definition correct. This was invaluable when using well-scoped well-typed de-bruijn representation discussed in the previous section.
+  Inductive tm ~\Gamma \tau~ : Type :=
+    | var : ~\forall \Gamma \tau, \tau \in \Gamma \rightarrow tm \Gamma \tau~
+    | abs : ~\forall \Gamma \tau \sigma, tm (\sigma::\Gamma) \tau \rightarrow tm \Gamma (\sigma \Rightarrow \tau)~
+    | app : ~\forall \Gamma \tau \sigma, tm \Gamma (\sigma \Rightarrow \tau) \rightarrow tm \Gamma \sigma \rightarrow tm \Gamma \tau~.
+  \end{minted}
+  \caption{Basis of a simply-typed \lambda-calculus using a strongly typed intrinsic formulation.}
+  \label{lst:strong_stlc}
+\end{listing}
+\todo{Extend example}
 
-\todo*
+\subsubsection{Dependently-typed programming in Coq}
+
+In \<Coq>, one can normally write function definitions using either case-analysis as is done in other functional languages, or using \<Coq>'s tactics language.
+Using the standard case-analysis functionality can cause the code to be complicated and verbose, even more so when proof terms are present in the function signature.
+This has been caused by the previously poor support in Coq for dependent pattern matching.
+Using the return keyword, one is able to vary the result type of a match expression. But due to requirement Coq used to have that case expressions be syntactically total, this could be very annoying to work with.
+One other possibility would be to write the function as a relation between its input and output.
+This also has its limitations as you then lose computability as Coq treats these definitions opaquely. In this case the standard \<simpl> tactic which invokes \<Coq>'s reduction mechanism is not able to reduce instances of the term.
+This often requires the user to write many more proofs to be able to work with the definitions.
+
+As an example, we will work through defining a length indexed list and a corresponding head function limited to lists of length at least one in Snippet~\ref{lst:dt_ilist}.
+Using the \<Coq> keyword return, it is possible to let the return type of a match expressions depend on the result of one of the type arguments.
+This makes it possible to define an auxiliary function which, while total on the length of the list, has an incorrect return type. It namely returns the type unit if the input list had the length zero.
+We can then use this auxiliary function in the actual head function by specifying that the list has length at least one.
+It should be noted that more recent versions of Coq do not require that case expressions be syntactically total, so specifying that the input list has a length of at least zero is enough to eliminate the requirement for the zero-case.
+
+\begin{listing}
+  \begin{minted}{coq}
+  Inductive ilist : ~Type \rightarrow nat \rightarrow Type~ :=
+    | nil : ~\forall A, ilist A 0~
+    | cons : ~\forall A n, A \rightarrow ilist A n \rightarrow ilist A (S n)~
+
+  Definition hd' {A} n (ls : ilist A n) :=
+    match ls in (ilist A n) return
+      (match n with
+      | O => unit
+      | S _ => A end) with
+    | nil => tt
+    | cons h _ => h
+  end.
+
+  Definition hd {A} n (ls : ilist A (S n)) : A := hd' n ls.
+  \end{minted}
+  \caption{Definition of a length indexed list and hd using the return keyword, adapted from Certified Programming with Dependent Types\cite{ChlipalaCPDT}.}
+  \label{lst:dt_ilist}
+\end{listing}
+
+Mathieu Sozeau introduces an extension to \<Coq> via a new keyword \<Program> which allows the use of case-analysis in more complex definitions\cite{Sozeau2006}\cite{Sozeau2007}.
+To be more specific, it allows definitions to be specified separately from their accompanying proofs, possibly filling them in automatically if possible.
+While this does improve on the previous situation, using the definitions in proofs can often be unwieldy due to the amount of boilerplate introduced.
+This makes debugging error messages even harder than it already is in a proof assistant. This approach was used by Benton in his formulation of strongly typed terms.
+
+Sozeau further improves on this introducing a method for user-friendlier dependently-typed pattern matching in \<Coq> in the form of the \<Equations> library\cite{Sozeau2010}\cite{Sozeau2019}.
+This introduces \<Agda>-like dependent pattern matching with with-clauses.
+It does this by using a notion called coverings, where a covering is a set of equations such that the pattern matchings of the type signature are exhaustive.
+There are two main ways to integrate this in a dependently typed environment, externally where it is integrated as high-level constructs in the pattern matching core as \<Agda> does it, or internally by using the existing type theory and finding witnesses of the covering to prove the definition correct, which is the approach used by Sozeau.
+Due to the intrinsic typeful representation this paper uses, much of this was invaluable when defining the substitution operators as the regular type checker in Coq often had difficulty unifying dependently typed terms in certain cases.
+
+\begin{listing}
+  \begin{minted}{coq}
+  Equations hd {A n} (ls : ilist A n) (pf : n <> 0) : A :=
+  hd nil pf with pf eq_refl := {};
+  hd (cons h n) _ := h.
+  \end{minted}
+  \caption{Definition of hd using \<Equations>}
+  \label{lst:dt_ilist_hd_equations}
+\end{listing}
+
+\todo{Fill in}
 
 \subsection{Logical relations}
 
+Logical relations is a technique often employed when proving programming language properties of statically typed languages\cite{skorstengaard2019introduction}. There are two main ways they are used, namely as unary and binary relations.
+Unary logical relations, also known as logical predicates, are predicates over single terms and are typically used to prove language characteristics such as type safety or strong normalization.
+Binary logical relations on the other hand are used to prove program equivalences, usually in the context of denotational semantics as we will do.
+There have been many variations on the versatile technique from syntactic step-indexed relations which have been used to solve recursive types\cite{Ahmed2006}, to open relations which enable working with terms of non-ground type\cite{barthe2020versatility}\cite{huot2020correctness}.
+Logical relations in essence are relations between terms defined by induction on their types.
+A logical relations proof consists of 2 main steps.
+The first states the terms for which the property is expected to hold are in the relation, while the second states that the property of interest follows from the relation.
+The second step is easier to prove as it usually follows from the definition of the relation. The first on the other hand, will often require proving a generalized variant, called the fundamental property of the logical relation.
+In most cases this requires that the relation is correct with respect to applying substitutions.
+
+A well-known logical relations proof is the proof of strong normalization of well-typed terms, which states that all terms eventually terminate.
+An example of a logical relation used in such a proof using the intrinsic strongly-typed formulation is given in Snippet~\ref{lst:sn_logical_relation}.
+Noteworthy is the case for function types, which indicates that an application should maintain the strongly normalization property.
+If one were to attempt the proof of strong normalization without using logical relations, they would get stuck in the cases dealing with function types.
+More specifically when reducing an application, the induction hypothesis is not strong enough to prove that substituting the argument into the body of the abstraction also results in a terminating term.
+The proof given in the paper this thesis is based on, is a logical relations proof on the denotation semantics using diffeological spaces as its domains\cite{huot2020correctness}.
+A similar, independent proof of correctness was given by Barthe, et. al.\cite{barthe2020versatility} using a syntactic relation.
+
+\begin{listing}
+  \begin{minted}{coq}
+    Equations SN {~\Gamma~} ~\tau~ (t : ~tm \Gamma \tau~): Prop :=
+    SN unit t := halts t;
+    SN ~(\tau \Rightarrow \sigma)~ t := halts t ~$\wedge$~
+      ~(\forall (s : tm \Gamma \tau), SN \tau s \rightarrow SN \sigma (app \Gamma \sigma \tau t s))~;
+  \end{minted}
+  \caption{Example of a logical predicate used in a strong normalizations proof in the intrinsic strongly-typed formulation}
+  \label{lst:sn_logical_relation}
+\end{listing}
+
 \section{Preliminary Results}
-\todo*
 
-\subsection{Preliminary Proof}
-\todo*
+\subsection{Language definitions}
 
-\subsection{Proof Extension}
-\todo*
+We currently mimic the types used in the base language of the paper~\cite{huot2020correctness} extended with sum types, shown in Snippet~\ref{lst:stlc_types}.
+The paper itself initially makes use of the standard types found in a simply-typed lambda calculus extended with products and R as the only ground type.
+These are also the types used by Barthe, et. al.\cite{barthe2020versatility} in their proof. In a later section Huot and Staton, \Vakar{} extended their language with sum and inductive types.
+Note that we use the unconventional symbol \texttt{<+>} for sum types instead of the more common \texttt{+}, because Coq already uses the latter for their own sum types.
+
+\begin{listing}
+  \begin{minted}{coq}
+  Inductive ty : Type :=
+    | Real : ty
+    | ~\Rightarrow~ : ~ty \rightarrow ty \rightarrow ty~
+    | ~\times~ : ~ty \rightarrow ty \rightarrow ty~
+    | ~<+>~ : ~ty \rightarrow ty \rightarrow ty~.
+  \end{minted}
+  \caption{Definition of the types present in the language}
+  \label{lst:stlc_types}
+\end{listing}
+
+We have chosen the intrinsic strongly-typed formulation used by Nick Benton et. al.\cite{Benton2011} as the general framework to work in.
+This includes the various substitution and lifting operations for working with typing contexts. Typing contexts themselves consists of lists of types, while variables are typed indices into this list. We almost perfectly mimic the example shown in Snippet~\ref{lst:strong_stlc}.
+
+We have simplified a few of the language constructs used in the main paper by Huot, Staton, and \Vakar{}\cite{huot2020correctness}, shown in Snippet~\ref{lst:stlc_terms}. For working with product types they make use of n-products and pattern matching, while we have opted for projection tuples. They proceeded to extended their base language with arbitrarily sized variant types, which we have substituted for standard sums reminiscent of the \<Either> type in Haskell along with specialized case expressions. Both of these changes were intended to simplify the language as much as possible while still retaining the same core functionality and types.
+
+\begin{listing}
+  \begin{minted}{coq}
+Definition Ctx {x} : Type := list x.
+
+Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
+  (* Base STLC *)
+  | var : ~forall \tau,
+    \tau ∈ \Gamma \rightarrow tm \Gamma \tau~
+  | app : ~forall \tau \sigma,
+    tm \Gamma (\sigma \Rightarrow \tau) \rightarrow
+    tm \Gamma \sigma \rightarrow
+    tm \Gamma \tau~
+  | abs : ~forall \tau \sigma,
+    tm (\sigma::\Gamma) \tau \rightarrow tm \Gamma (\sigma \Rightarrow \tau)~
+
+  (* Operations on the real numbers *)
+  | const : ~R \rightarrow tm \Gamma Real~
+  | add : ~tm \Gamma Real \rightarrow tm \Gamma Real \rightarrow tm \Gamma Real~
+
+  (* Projection products *)
+  | tuple : ~forall {\tau \sigma},
+    tm \Gamma \tau \rightarrow
+    tm \Gamma \sigma \rightarrow
+    tm \Gamma (\tau \times \sigma)~
+  | first : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \tau~
+  | second : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \sigma~
+
+  (* Sums *)
+  | case : ~forall {\tau \sigma \rho}, tm \Gamma (\tau + \sigma) \rightarrow
+    tm \Gamma (\tau \Rightarrow \rho) \rightarrow
+    tm \Gamma (\sigma \Rightarrow \rho) \rightarrow
+    tm \Gamma \rho~
+  | inl : ~forall \tau \sigma, tm \Gamma \tau \rightarrow tm \Gamma (\tau + \sigma)~
+  | inr : ~forall \tau \sigma, tm \Gamma \sigma \rightarrow tm \Gamma (\tau + \sigma).~
+
+  \end{minted}
+  \caption{Definition of the language constructs present in the language}
+  \label{lst:stlc_terms}
+\end{listing}
+
+\subsection{Preliminary proofs}
+
+We have completed a preliminary proof of \texttt{Theorem 1} by Huot, Staton and \Vakar{}\cite{huot2020correctness} extended with sum types.
+This consists of a formulation of semantic correctness of a forward-mode automatic differentiation algorithm using a macro.
+The proof is done using a logical relation on the denotational semantics using the set-theoretic types in \<Coq> as the underlying domain.
+The definition of the logical relation along with the lemma stating its fundamental property is shown in Snippet~\ref{lst:direct_logical_relation} and~\ref{lst:direct_fundamental}, while Snippet~\ref{lst:direct_correctness} states the actual correctness theorem.
+During development, we also discovered that while the abstract proof was correct, the concrete fundamental lemma used in the proof of \texttt{Theorem 1} in the paper was incorrect.
+
+\begin{listing}
+  \begin{minted}{coq}
+Equations S ~\tau~ :
+  ~(R \rightarrow $\llbracket$ \tau $\rrbracket$) \rightarrow (R \rightarrow $\llbracket$ D \tau $\rrbracket$) \rightarrow Prop~ :=
+S Real f g :=
+  ~(\forall (x : R), ex\_derive f x) $\wedge$~
+  (fun r => g r) =
+    (fun r => (f r, Derive f r));
+S (~\sigma \times \rho~) f g :=
+  ~\exists~ f1 f2 g1 g2,
+  ~\exists (s1 : S \sigma f1 f2) (s2 : S \rho g1 g2),~
+    (f = fun r => (f1 r, g1 r)) ~$\wedge$~
+    (g = fun r => (f2 r, g2 r));
+S (~\sigma \Rightarrow \rho~) f g :=
+  ~\forall (g1 : R \rightarrow $\llbracket$ \sigma $\rrbracket$),~
+  ~\forall (g2 : R \rightarrow $\llbracket$ D \sigma $\rrbracket$),~
+    ~S \sigma g1 g2 \rightarrow~
+    ~S \rho (fun x => f x (g1 x))~
+      (fun x => g x (g2 x));
+S (~\sigma <+> \rho~) f g :=
+  (~\exists~ g1 g2,
+    ~S \sigma g1 g2 $\wedge$~
+      ~f = inl \circ g1 $\wedge$~
+      ~g = inl \circ g2) $\vee$~
+  (~\exists~ g1 g2,
+    ~S \rho g1 g2 $\wedge$~
+      ~f = inr \circ g1 $\wedge$~
+      ~g = inr \circ g2)~.
+  \end{minted}
+  \caption{Definition of the logical relation}
+  \label{lst:direct_logical_relation}
+\end{listing}
+
+\begin{listing}
+  \begin{minted}{coq}
+Inductive instantiation : ~forall \Gamma~,
+    ~(R \rightarrow $\llbracket$ \Gamma $\rrbracket$) \rightarrow (R \rightarrow $\llbracket$ D \Gamma $\rrbracket$) \rightarrow Prop :=~
+| inst_empty : instantiation [] (const tt) (const tt)
+| inst_cons :
+  ~\forall \Gamma \tau g1 g2,~
+  ~\forall (sb: R \rightarrow $\llbracket$ \Gamma $\rrbracket$) (Dsb: R \rightarrow $\llbracket$ D \Gamma $\rrbracket$),~
+    ~instantiation \Gamma sb Dsb \rightarrow~
+    ~S \tau g1 g2 \rightarrow~
+    ~instantiation (\tau::\Gamma)
+      (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r)).~
+
+Lemma fundamental :
+    ~\forall \Gamma \tau (t : tm \Gamma \tau),~
+    ~\forall (sb : R \rightarrow $\llbracket$ \Gamma $\rrbracket$) (Dsb : R \rightarrow $\llbracket$ D \Gamma $\rrbracket$),~
+  ~instantiation \Gamma sb Dsb \rightarrow~
+  ~S \tau ($\llbracket$ t $\rrbracket$ \circ sb)~
+    ~($\llbracket$ Dtm t $\rrbracket$ \circ Dsb).~
+  \end{minted}
+  \caption{Definition of the fundamental property of the logical relation in Snippet~\ref{lst:direct_logical_relation}}
+  \label{lst:direct_fundamental}
+\end{listing}
+
+\begin{listing}
+  \begin{minted}{coq}
+Equations D n
+  ~(f : R \rightarrow $\llbracket$ repeat Real n $\rrbracket$): R \rightarrow $\llbracket$ map Dt (repeat Real n) $\rrbracket$ :=~
+D 0 f r := f r;
+D (S n) f r :=
+  ~(((fst \circ f) r, Derive (fst \circ f) r), D n (snd \circ f) r).~
+
+Inductive differentiable : ~\forall n, (R \rightarrow $\llbracket$ repeat Real n $\rrbracket$) \rightarrow Prop :=~
+| differentiable_0 : differentiable 0 (fun _ => tt)
+| differentiable_Sn :
+  ~\forall n (f : R \rightarrow $\llbracket$ repeat Real n $\rrbracket$),~
+  ~\forall (g : R \rightarrow R),~
+    ~differentiable n f \rightarrow~
+    ~(\forall x,~ ex_derive g x) ~\rightarrow~
+    ~differentiable (S n) (fun x => (g x, f x)).~
+
+Theorem semantic_correct_R :
+  ~\forall n (t : tm (repeat Real n) Real),~
+  ~\forall (f : R \rightarrow $\llbracket$ repeat Real n $\rrbracket$),~
+    ~differentiable n f \rightarrow~
+    ~($\llbracket$ Dtm t $\rrbracket$ \circ D n f) =~
+      ~fun r => ($\llbracket$ t $\rrbracket$ (f r),~
+        ~Derive (fun (x : R) => $\llbracket$ t $\rrbracket$ (f x)) r).~
+  \end{minted}
+  \caption{Definition of the correctness theorem}
+  \label{lst:direct_correctness}
+\end{listing}
 
 \section{Timetable and Planning}
-\todo*
+
+\subsection{Extensions}
+
+We will be looking to extend the current prototype proof with the continuation-based AD macro mentioned by Huot, Staton, and \Vakar{}\cite{huot2020correctness}.
+We will also try to extend the proof with array types which should be better for performance than the n-tuples used in the original proof.
+We will be trying to extend the proof with the results achieved by Shaikhha, et. al.\cite{Shaikha2019}, where they also successfully implement several compile-time optimizations. % One possibility is to go towards a SSA (static single assignment) representation which has many benefits as a well-known possible internal representation for use in compilers\cite{Pop2006}.
+% One other benefit is that this representation can also be transformed into a minimal functional language\cite{chakravarty2004347}.
+
+\todo{Fill in}
 
 \subsection{Deadlines}
-\todo*
 
-\subsection{Fill in missing holes}
-\todo*
+The hard deadlines for the first and second phases of the thesis are respectively May $1^{st}$ and September $18^{th}$. The ambition is to follow the framework of deadlines in Table~\ref{tbl:deadlines}. Note that until the proofs deadline, the proofs and paper will largely be written in parallel with each other.
 
-\subsection{Generalize prototype for variants and inductive types}
-\todo*
+\todo{Fill in}
+\begin{table}
+  \begin{center}
+    \begin{tabular}{ | m{5cm} | m{5cm} | }
+      \hline
+      Deadline          & Date  \\
+      \hline
+      Proposal deadline & 1/5/2020 \\
+      Finish proofs & 15/7/2020 \\
+      Finish first draft & 15/8/2020 \\
+      Thesis deadline & 18/9/2020 \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{Framework of deadlines}
+  \label{tbl:deadlines}
+\end{table}
 
 \printbibliography
-% \bibliographystyle{IEEEtran}
+\makeatother
 \end{document}
