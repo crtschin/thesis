@@ -94,28 +94,6 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | inr : forall τ σ, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
-Definition letin {Γ τ σ} (e : tm Γ σ) (x : tm (σ::Γ) τ) : tm Γ τ :=
-  app Γ τ σ (abs Γ τ σ x) e.
-Definition vector_hot ( Γ : list ty ) ( n : nat ) ( i : Fin.t n ) :=
-  build Γ ℝ n (fun j => if Fin.eqb i j then rval Γ 1 else rval Γ 0).
-Definition vector_map { Γ τ σ n } ( a : tm Γ (Array n τ) )
-  ( f : tm Γ τ -> tm Γ σ ) : tm Γ (Array n σ) :=
-  build Γ σ n (fun i => f (get Γ i a)).
-Definition vector_map2 { Γ τ σ ρ n }
-  ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
-  ( f : tm Γ τ -> tm Γ σ -> tm Γ ρ ) : tm Γ (Array n ρ) :=
-  build Γ ρ n (fun i => f (get Γ i a1) (get Γ i a2)).
-Definition vector_zip { Γ τ σ n }
-  ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
-  : tm Γ (Array n ( τ × σ )) :=
-  vector_map2 a1 a2 (tuple Γ).
-Definition vector_fill { Γ τ } ( n : nat ) ( e : tm Γ τ )
-  : tm Γ (Array n τ) :=
-  build Γ τ n (fun _ => e).
-Definition vector_add {Γ n}
-  ( a1 a2 : tm Γ (Array n Real) ) : tm Γ (Array n Real) :=
-  vector_map2 a1 a2 (add Γ).
-
 Inductive Env : Ctx -> Type :=
   | env_nil : Env []
   | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
@@ -125,13 +103,9 @@ Derive Signature for Env.
 Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
 shave_env (env_cons t G) := G.
 
-Lemma build_congr : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
+Lemma build_eq : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
   ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
 Proof. intros; rewrites. Qed.
-
-(* Lemma ifold_congr : forall Γ τ tf tf' i (ta : tm Γ τ),
-  tf = tf' -> ifold Γ τ tf i ta = ifold Γ τ tf' i ta.
-Proof with quick. intros. rewrites. Qed. *)
 
 (* Examples *)
 Definition real_id :=
@@ -299,12 +273,6 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | inr _ _ _ e => inr _ _ _ (substitute s e)
   end.
 
-
-(*
-Equations substitute_env {Γ Γ'} (G: Env Γ) (sb : sub Γ Γ'): Env Γ' :=
-substitute_env env_nil s := env_nil;
-substitute_env (env_cons t G') s := env_cons (substitute sb t) G'. *)
-
 (*
   Tactics from:
     Strongly Typed Term Representations in Coq by Benton, et al.
@@ -334,10 +302,8 @@ Lemma app_sub_id : forall Γ τ (t : tm Γ τ),
 Proof with quick.
   induction t; rewrites;
   try (rewrite lift_sub_id; rewrites).
-  { erewrite build_congr...
+  { erewrite build_eq...
     extensionality x... }
-  (* { erewrite ifold_congr...
-    extensionality x... } *)
 Qed.
 
 Lemma lift_ren_id : forall Γ τ,
@@ -348,10 +314,8 @@ Lemma app_ren_id : forall Γ τ (t : tm Γ τ),
   rename id_ren t = t.
 Proof with quick.
   induction t; Rewrites lift_ren_id.
-  { erewrite build_congr...
+  { erewrite build_eq...
     extensionality x... }
-  (* { erewrite ifold_congr...
-    extensionality x... } *)
 Qed.
 
 (* Composing substitutions and renames *)
@@ -375,10 +339,8 @@ Lemma app_ren_ren : forall Γ Γ' Γ'' τ
 Proof with quick.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_ren_ren.
-  { erewrite build_congr...
+  { erewrite build_eq...
     extensionality x... }
-  (* { erewrite ifold_congr...
-    extensionality x... } *)
 Qed.
 
 Lemma lift_sub_ren : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (r : ren Γ Γ'),
@@ -393,10 +355,8 @@ Lemma app_sub_ren : forall Γ Γ' Γ'' τ
 Proof with quick.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_ren.
-  { erewrite build_congr...
+  { erewrite build_eq...
     extensionality x... }
-  (* { erewrite ifold_congr...
-    extensionality x... } *)
 Qed.
 
 Lemma lift_ren_sub : forall Γ Γ' Γ'' τ (r : ren Γ' Γ'') (s : sub Γ Γ'),
@@ -415,7 +375,7 @@ Lemma app_ren_sub : forall Γ Γ' Γ'' τ
 Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_ren_sub.
-  { erewrite build_congr...
+  { erewrite build_eq...
     extensionality x... }
   (* { erewrite ifold_congr...
     extensionality x... } *)
@@ -437,7 +397,7 @@ Lemma app_sub_sub : forall Γ Γ' Γ'' τ
 Proof with eauto.
   intros. generalize dependent Γ'. generalize dependent Γ''.
   induction t; Rewrites lift_sub_sub.
-  { erewrite build_congr...
+  { erewrite build_eq...
     extensionality x... }
   (* { erewrite ifold_congr...
     extensionality x... } *)
@@ -470,8 +430,34 @@ Proof with eauto.
   try (unfold compose_sub_ren in *; quick;
     rewrite lift_sub_id;
     rewrite app_sub_id)...
-  { erewrite build_congr...
+  { erewrite build_eq...
     extensionality x... }
-  (* { erewrite ifold_congr...
-    extensionality x... } *)
 Qed.
+
+Definition letin {Γ τ σ} (e : tm Γ σ) (x : tm (σ::Γ) τ) : tm Γ τ :=
+  app Γ τ σ (abs Γ τ σ x) e.
+Definition ifold {Γ τ} (tf : tm Γ (ℕ → τ → τ)) (n : tm Γ ℕ) (td : tm Γ τ)
+  : tm Γ τ :=
+  nrec Γ τ
+    (app Γ (τ → τ) ℕ (abs Γ (τ → τ) ℕ
+      (app (ℕ::Γ) (τ → τ) ℕ (shift tf) (nsucc (ℕ::Γ) (var (ℕ::Γ) ℕ (Top Γ ℕ))))) (nval Γ 0%nat))
+    n td.
+Definition vector_hot ( Γ : list ty ) ( n : nat ) ( i : Fin.t n ) :=
+  build Γ ℝ n (fun j => if Fin.eqb i j then rval Γ 1 else rval Γ 0).
+Definition vector_map { Γ τ σ n } ( a : tm Γ (Array n τ) )
+  ( f : tm Γ τ -> tm Γ σ ) : tm Γ (Array n σ) :=
+  build Γ σ n (fun i => f (get Γ i a)).
+Definition vector_map2 { Γ τ σ ρ n }
+  ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
+  ( f : tm Γ τ -> tm Γ σ -> tm Γ ρ ) : tm Γ (Array n ρ) :=
+  build Γ ρ n (fun i => f (get Γ i a1) (get Γ i a2)).
+Definition vector_zip { Γ τ σ n }
+  ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
+  : tm Γ (Array n ( τ × σ )) :=
+  vector_map2 a1 a2 (tuple Γ).
+Definition vector_fill { Γ τ } ( n : nat ) ( e : tm Γ τ )
+  : tm Γ (Array n τ) :=
+  build Γ τ n (fun _ => e).
+Definition vector_add {Γ n}
+  ( a1 a2 : tm Γ (Array n Real) ) : tm Γ (Array n Real) :=
+  vector_map2 a1 a2 (add Γ).
