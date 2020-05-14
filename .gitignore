@@ -39,5 +39,6 @@ nra.cache
 # End of https://www.gitignore.io/api/coq
 
 *.md
+!README.md
 *-ignore/
 Sf2/
