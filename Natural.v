@@ -102,26 +102,3 @@ Proof with quick.
     rewrite IHeval1. simp denote_tm.
     rewrites. }
 Qed.
-
-(* Lemma D_natural : forall Γ τ (t1 : tm Γ τ) (t2 : tm Γ τ),
-  t1 ⇓ t2 -> Dtm t1 ⇓ Dtm t2.
-Proof with quick.
-  intros.
-  induction H; simpl; rewrites; simp Dtm in *; try (econstructor; quick).
-  { fold Dt.
-    (* TODO: Prove D_sub *)
-    rewrite D_sub'.
-    unfold Basics.compose.
-    eassert ((fun (σ0 : ty) (x : σ0 ∈ σ :: Γ) => Dtm ((| t2' |) σ0 x))
-      = (fun (σ0 : ty) (x : σ0 ∈ σ :: Γ) => ((| Dtm t2' |) (Dt σ0) (Dv x)))).
-    { extensionality ρ.
-      extensionality v.
-      rewrite D_cons_sub... }
-    rewrite H1. admit. }
-  { constructor; eapply EV_Fst... }
-  { assert (Rdefinitions.IZR BinNums.Z0 =
-      Rdefinitions.Rplus Rdefinitions.R0 Rdefinitions.R0).
-    { rewrite Rplus_0_r... }
-    rewrite H1.
-    eapply EV_Add; eapply EV_Snd... }
-Admitted. *)

@@ -34,14 +34,25 @@ Local Open Scope R_scope.
       Diffeologies and Categorical Gluing by Huot, Staton and Vakar.
 *)
 Equations S τ :
-  (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop := {
+  (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ Dt τ ⟧ₜ) -> Prop :=
 S Real f g :=
+  (* When (τ := ℝ), we need to prove that the function of which we track the
+      derivative, f, is both derivable and that g contains exactly that
+      derivative
+  *)
   (forall (x : R), ex_derive f x) /\
   (fun r => g r) =
     (fun r => (f r, Derive f r));
 S Nat f g :=
+  (* When (τ := ℕ), we do not need to keep track of the derivative
+      as the tangent space at each related point is 0-dimensional and
+      any related functions will also be constant.
+  *)
   f = g /\
     ((f = fun _ => O) \/ (exists n, f = fun _ => Datatypes.S n));
+(* For composed constructs, the relation needs to be preserved by the
+    underlying subcomponents
+*)
 S (Array n τ) f g :=
   forall i,
   exists f1 g1,
@@ -66,19 +77,11 @@ S (σ <+> ρ) f g :=
   (exists g1 g2,
     S ρ g1 g2 /\
       f = Datatypes.inr ∘ g1 /\
-      g = Datatypes.inr ∘ g2) }.
-(* where SA {τ} n
-  (S' : (R -> ⟦ τ ⟧ₜ) -> (R -> ⟦ (Dt τ) ⟧ₜ) -> Prop)
-  (f : R -> ⟦ Array n τ ⟧ₜ)
-  (g : R -> ⟦ Array n (Dt τ) ⟧ₜ) : Prop :=
-SA (τ:=τ) 0 S' f g := True;
-SA (τ:=τ) (Datatypes.S n) S' f g :=
-  exists f' g' f1 g1,
-    S' f1 g1 /\
-    SA n S' f' g' /\
-    (f = fun r => (f1 r, f' r)) /\
-    (g = fun r => (g1 r, g' r)). *)
+      g = Datatypes.inr ∘ g2).
 
+(* Helper definition to ensure that the context is only built
+    from terms whose denotation are contained in the relation
+*)
 Inductive instantiation : forall Γ,
     (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx Γ ⟧ₜₓ) -> Prop :=
   | inst_empty :
@@ -126,7 +129,7 @@ Lemma fundamental :
   forall (Dsb : R -> ⟦ Dctx Γ ⟧ₜₓ),
   instantiation Γ sb Dsb ->
   S τ (fun x => ⟦t⟧ₜₘ (sb x))
-    (fun x => ⟦Dtm (t)⟧ₜₘ (Dsb x)).
+    (fun x => ⟦Dtm t⟧ₜₘ (Dsb x)).
 Proof with quick.
   unfold compose.
   intros Γ τ t sb Dsb.
@@ -346,6 +349,10 @@ Proof with quick.
       exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
 Qed.
 
+(* Very simple lemma which states that terms of type ℝ whose denotation are in
+    the relation is both derivable and applying the macro to the term results
+    in the derivative
+*)
 Lemma S_correct_R :
   forall Γ (t : tm Γ Real),
   forall (f1 : R -> ⟦ Γ ⟧ₜₓ),
@@ -404,18 +411,16 @@ Proof with quick.
   induction n...
   { (* N = 0
       Prove f : R -> ⟦ repeat Real 0 ⟧ₜₓ is equal to 'const tt' *)
+    (* Rewrite it as such *)
     erewrite inst_eq;
-      try (extensionality r).
-  2:{ remember (f r) as e. dependent destruction e.
-      reflexivity. }
-  2:{ simp D. remember (f r) as e. dependent destruction e.
-      reflexivity. }
-    fold (@Basics.const unit R tt); constructor. }
+      try (extensionality r; simp D; remember (f r) as e;
+        dependent destruction e; reflexivity).
+    fold (@Basics.const unit R tt). constructor. }
   { (* N = n + 1  *)
     erewrite inst_eq;
       try (extensionality r).
   2:{ instantiate (1 := fun r => (fst (f r), snd (f r))).
-      apply injective_projections; easy. }
+      now apply injective_projections. }
   2:{ simp D. reflexivity. }
     dependent destruction H.
     constructor...

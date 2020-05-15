@@ -24,19 +24,13 @@ Require Import AD.Tactics.
 Local Open Scope program_scope.
 
 (* Notations:
-
   ⟦ τ ⟧ₜ := denote_t τ, Currently piggybacks off of Coq's types.
   ⟦ Γ ⟧ₜₓ := denote_ctx Γ, A product list of types ensured to exist
                           in the context Γ.
   ⟦ v ⟧ₜₓ := denote_v v, A projection of the product list denoted by the typing
-                        context relevant to the variable referenced by v
+                          context relevant to the variable referenced by v
   ⟦ t ⟧ₜₘ := denote_tm t, Gives a function f of t such that it has the correct
                           denoted type of τ given the denoted context of Γ.
-*)
-
-(*
-  Goal: Write out the logical relation over types with the goal of having both
-    the proof of differentiability and witness in one.
 *)
 
 Reserved Notation "⟦ τ ⟧ₜ".
@@ -96,10 +90,10 @@ Fixpoint nat_to_fin n : Fin.t (S n) :=
 Definition shave_fin {A n} (f : Fin.t (S n) -> A) : Fin.t n -> A :=
   fun i => f (FS i).
 
-Fixpoint loop_down {A} (n : nat) (f : A -> A) (a : A) :=
+Fixpoint iterate {A} (n : nat) (f : A -> A) (a : A) :=
   match n with
   | 0 => a
-  | S n => f (loop_down n f a)
+  | S n => f (iterate n f a)
   end.
 
 Reserved Notation "⟦ t ⟧ₜₘ".
@@ -116,7 +110,7 @@ denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := vector_nth i (⟦ ta ⟧ₜₘ 
 denote_tm (Γ:=Γ) (τ:=τ) (nval Γ n) ctx := n;
 denote_tm (Γ:=Γ) (τ:=τ) (nsucc Γ t) ctx := Datatypes.S (⟦t⟧ₜₘ ctx);
 denote_tm (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti ta) ctx :=
-  loop_down (⟦ ti ⟧ₜₘ ctx) (⟦ tf ⟧ₜₘ ctx) (⟦ ta ⟧ₜₘ ctx);
+  iterate (⟦ ti ⟧ₜₘ ctx) (⟦ tf ⟧ₜₘ ctx) (⟦ ta ⟧ₜₘ ctx);
 (* Reals *)
 denote_tm (Γ:=Γ) (τ:=τ) (rval Γ r) ctx := r;
 denote_tm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx;
@@ -162,23 +156,9 @@ Fixpoint denote_ren {Γ Γ'}: ren Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   end.
 Notation "⟦ r ⟧ᵣ" := (denote_ren r).
 
-(* Lemmas for renaming and substitution in the denotated context. *)
-(* Many from Strongly Typed Terms in Coq by Nick Becton, et al. *)
-(* Lemma denote_shave_env_snd : forall τ Γ (e : Env τ (τ::Γ)),
-  snd ⟦ e ⟧ₑ = ⟦ shave_env e ⟧ₑ.
-Proof with quick.
-  dependent induction e.
-  simp shave_env.
-  simp denote_env...
-Qed.
-
-Lemma Ddenote_shave_env_snd : forall τ Γ (e : Env τ (τ::Γ)),
-  snd ⟦ Denv e ⟧ₑ = ⟦ Denv (shave_env e) ⟧ₑ.
-Proof with quick.
-  dependent induction e.
-  simp shave_env.
-  simp denote_env...
-Qed. *)
+(* Lemmas for renaming and substitution in the denotated context.
+  Many from Strongly Typed Terms in Coq by Nick Becton, et al.
+*)
 
 Lemma denote_ren_elim : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
@@ -305,15 +285,19 @@ Proof with quick.
   { unfold tl_sub. rewrite IHΓ... }
 Qed.
 
+Lemma denote_sub_tl_simpl :
+  forall Γ Γ' τ (ctx : ⟦ Γ' ⟧ₜₓ) (sb : sub (τ::Γ) Γ'),
+    ⟦ tl_sub sb ⟧ₛ ctx = htl (⟦ sb ⟧ₛ ctx).
+Proof. quick. Qed.
+
 Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦ Γ ⟧ₜₓ),
   ⟦ id_sub ⟧ₛ ctx = ctx.
 Proof with quick.
-  intros Γ...
+  intros Γ ctx.
+  unfold id_sub.
   induction Γ...
   { dependent destruction ctx... }
-  { (* TODO: Issue doing induction on elements in product list *)
-    dependent destruction ctx.
-    unfold hd_sub. simp denote_tm...
+  { dependent destruction ctx.
     apply denote_ctx_eq...
     admit. }
 Admitted.
