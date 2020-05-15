@@ -76,10 +76,10 @@ Fixpoint nat_to_fin n : Fin.t (S n) :=
 Definition shave_fin {A n} (f : Fin.t (S n) -> A) : Fin.t n -> A :=
   fun i => f (FS i).
 
-Fixpoint loop_down {A} (n : nat) (f : A -> A) (a : A) :=
+Fixpoint iterate {A} (n : nat) (f : A -> A) (a : A) :=
   match n with
   | 0 => a
-  | S n => f (loop_down n f a)
+  | S n => f (iterate n f a)
   end.
 
 Reserved Notation "⟦ t ⟧ₜₘ".
@@ -96,7 +96,7 @@ denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := vector_nth i (⟦ ta ⟧ₜₘ 
 denote_tm (Γ:=Γ) (τ:=τ) (nval Γ n) ctx := n;
 denote_tm (Γ:=Γ) (τ:=τ) (nsucc Γ t) ctx := Datatypes.S (⟦t⟧ₜₘ ctx);
 denote_tm (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti ta) ctx :=
-  loop_down (⟦ ti ⟧ₜₘ ctx) (⟦ tf ⟧ₜₘ ctx) (⟦ ta ⟧ₜₘ ctx);
+  iterate (⟦ ti ⟧ₜₘ ctx) (⟦ tf ⟧ₜₘ ctx) (⟦ ta ⟧ₜₘ ctx);
 (* Reals *)
 denote_tm (Γ:=Γ) (τ:=τ) (rval Γ r) ctx := r;
 denote_tm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx;
@@ -278,7 +278,7 @@ Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦ Γ ⟧ₜₓ),
 Proof with quick.
   intros Γ...
   unfold id_sub.
-  induction Γ...
+  dependent induction ctx...
   { dependent destruction ctx... }
   { (* TODO: Issue doing induction on elements in product list *)
     dependent destruction ctx...

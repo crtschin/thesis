@@ -86,18 +86,17 @@ Proof with quick.
   simpl.
   unfold hd_sub. simp shift_var. simp denote_tm...
   unfold tl_sub.
-  assert (
-    (fun (σ0 : ty) (x0 : σ0 ∈ Γ) =>
-      var (σ :: ρ :: Γ) σ0 (shift_var (Pop Γ σ0 σ x0))) =
-    tl_sub (tl_sub (fun (σ0 : ty) (x0 : σ0 ∈ σ :: ρ :: Γ) =>
-      var (σ :: ρ :: Γ) σ0 x0))).
-  { extensionality φ. extensionality v. simp shift_var... }
-  rewrite H. clear H.
+  assert (H:
+    (fun φ (x : φ ∈ Γ) =>
+      var (σ :: ρ :: Γ) φ (shift_var (Pop Γ φ σ x))) =
+    tl_sub (tl_sub (fun φ (x : φ ∈ σ :: ρ :: Γ) =>
+      var (σ :: ρ :: Γ) φ x))).
+  { extensionality φ. extensionality v. now simp shift_var. }
+  rewrite_c H.
+  assert (H: (fun (σ0 : ty) (x0 : σ0 ∈ σ :: ρ :: Γ) => var (σ :: ρ :: Γ) σ0 x0)
+    = id_sub (Γ:=σ::ρ::Γ))...
+  rewrite_c H.
   rewrite 2 denote_sub_tl_simpl.
-  assert ((fun (σ0 : ty) (x0 : σ0 ∈ σ :: ρ :: Γ) => var (σ :: ρ :: Γ) σ0 x0)
-    = id_sub (Γ:=σ::ρ::Γ)).
-  { reflexivity. }
-  rewrite H. clear H.
   rewrite denote_sub_id_ctx...
 Qed.
 
