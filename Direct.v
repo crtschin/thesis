@@ -1,26 +1,20 @@
-Require Import Lists.List.
-Import ListNotations.
-Require Import Logic.FunctionalExtensionality.
-Require Import Strings.String.
 Require Import Arith.PeanoNat.
-Require Import Relations.
-Require Import Logic.JMeq.
-Require Import Init.Datatypes.
-Require Import Reals.
-Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
-Require Import Arith_base.
+Require Import Coq.Program.Equality.
 Require Import Coquelicot.Derive.
-Require Import Coquelicot.Continuity.
 Require Import Coquelicot.Hierarchy.
 Require Import Equations.Equations.
+Require Import Init.Datatypes.
+Require Import Lists.List.
+Require Import Logic.FunctionalExtensionality.
+Require Import Logic.JMeq.
+Require Import Reals.
 Require Vectors.Fin.
-Import EqNotations.
-Require Import CoLoR.Util.Vector.VecUtil.
+Import ListNotations.
 
+Require Import AD.Tactics.
 Require Import AD.Definitions.
 Require Import AD.Macro.
-Require Import AD.Tactics.
 Require Import AD.Denotation.
 
 Local Open Scope program_scope.
@@ -300,14 +294,14 @@ Proof with quick.
   { (* Tuples *)
     intros... simp S.
     (* Give instances using IHs *)
-    pose proof (IHt1 sb Dsb H) as H1'; clear IHt1.
-    pose proof (IHt2 sb Dsb H) as H2'; clear IHt2.
+    pose proof (IHt1 sb Dsb H) as IHt1.
+    pose proof (IHt2 sb Dsb H) as IHt2.
     exists (⟦ t1 ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t1 ⟧ₜₘ ∘ Dsb).
     exists (⟦ t2 ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t2 ⟧ₜₘ ∘ Dsb).
     unfold compose.
-    exists H1'; exists H2'... }
+    exists IHt1; exists IHt2... }
   { (* Projection 1 *)
     intros. simp Dtm.
     specialize IHt with sb Dsb.
@@ -400,14 +394,16 @@ Theorem semantic_correct_R :
 Proof with quick.
   intros...
   eapply S_correct_R.
+  (* Fundamental lemma proves that the ℝ term is in the relation
+      given each of the terms in the context are in the relation. *)
   eapply fundamental.
   clear t.
   (* Prove every term in the context is in the relation
     by induction on number of real terms in context *)
   induction n...
   { (* N = 0
-      Prove f : R -> ⟦ repeat Real 0 ⟧ₜₓ is equal to 'const tt' *)
-    (* Rewrite it as such *)
+      Prove f : R -> ⟦ repeat Real 0 ⟧ₜₓ is equal to 'const tt'
+      Rewrite it as such *)
     erewrite inst_eq;
       try (extensionality r; simp D; remember (f r) as e;
         dependent destruction e; reflexivity).
