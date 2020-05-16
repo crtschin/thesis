@@ -22,18 +22,9 @@ Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v Definitions.
 DepList.vo DepList.glob DepList.v.beautified DepList.required_vo: DepList.v CpdtTactics.vo
 DepList.vio: DepList.v CpdtTactics.vio
 DepList.vos DepList.vok DepList.required_vos: DepList.v CpdtTactics.vos
-Diffeology.vo Diffeology.glob Diffeology.v.beautified Diffeology.required_vo: Diffeology.v 
-Diffeology.vio: Diffeology.v 
-Diffeology.vos Diffeology.vok Diffeology.required_vos: Diffeology.v 
-Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Denotation.vo Normalization.vo
-Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Denotation.vio Normalization.vio
-Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Denotation.vos Normalization.vos
-Ext.vo Ext.glob Ext.v.beautified Ext.required_vo: Ext.v Tactics.vo Definitions.vo Normalization.vo
-Ext.vio: Ext.v Tactics.vio Definitions.vio Normalization.vio
-Ext.vos Ext.vok Ext.required_vos: Ext.v Tactics.vos Definitions.vos Normalization.vos
-Imp.vo Imp.glob Imp.v.beautified Imp.required_vo: Imp.v 
-Imp.vio: Imp.v 
-Imp.vos Imp.vok Imp.required_vos: Imp.v 
+Direct.vo Direct.glob Direct.v.beautified Direct.required_vo: Direct.v Definitions.vo Macro.vo Tactics.vo Denotation.vo
+Direct.vio: Direct.v Definitions.vio Macro.vio Tactics.vio Denotation.vio
+Direct.vos Direct.vok Direct.required_vos: Direct.v Definitions.vos Macro.vos Tactics.vos Denotation.vos
 Macro.vo Macro.glob Macro.v.beautified Macro.required_vo: Macro.v Definitions.vo Tactics.vo
 Macro.vio: Macro.v Definitions.vio Tactics.vio
 Macro.vos Macro.vok Macro.required_vos: Macro.v Definitions.vos Tactics.vos
@@ -46,18 +37,9 @@ Normalization.vos Normalization.vok Normalization.required_vos: Normalization.v 
 Rewrite.vo Rewrite.glob Rewrite.v.beautified Rewrite.required_vo: Rewrite.v Tactics.vo Definitions.vo Normalization.vo Macro.vo Denotation.vo
 Rewrite.vio: Rewrite.v Tactics.vio Definitions.vio Normalization.vio Macro.vio Denotation.vio
 Rewrite.vos Rewrite.vok Rewrite.required_vos: Rewrite.v Tactics.vos Definitions.vos Normalization.vos Macro.vos Denotation.vos
-Semantics.vo Semantics.glob Semantics.v.beautified Semantics.required_vo: Semantics.v Definitions.vo Macro.vo Diffeology.vo
-Semantics.vio: Semantics.v Definitions.vio Macro.vio Diffeology.vio
-Semantics.vos Semantics.vok Semantics.required_vos: Semantics.v Definitions.vos Macro.vos Diffeology.vos
-Syntactic.vo Syntactic.glob Syntactic.v.beautified Syntactic.required_vo: Syntactic.v 
-Syntactic.vio: Syntactic.v 
-Syntactic.vos Syntactic.vok Syntactic.required_vos: Syntactic.v 
 Tactics.vo Tactics.glob Tactics.v.beautified Tactics.required_vo: Tactics.v 
 Tactics.vio: Tactics.v 
 Tactics.vos Tactics.vok Tactics.required_vos: Tactics.v 
-Tangent.vo Tangent.glob Tangent.v.beautified Tangent.required_vo: Tangent.v 
-Tangent.vio: Tangent.v 
-Tangent.vos Tangent.vok Tangent.required_vos: Tangent.v 
 vect.vo vect.glob vect.v.beautified vect.required_vo: vect.v coquelicotComplements.vo
 vect.vio: vect.v coquelicotComplements.vio
 vect.vos vect.vok vect.required_vos: vect.v coquelicotComplements.vos

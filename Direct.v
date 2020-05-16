@@ -22,7 +22,6 @@ Require Import AD.Definitions.
 Require Import AD.Macro.
 Require Import AD.Tactics.
 Require Import AD.Denotation.
-Require Import AD.Normalization.
 
 Local Open Scope program_scope.
 Local Open Scope R_scope.
@@ -47,8 +46,7 @@ S Nat f g :=
       as the tangent space at each related point is 0-dimensional and
       any related functions will also be constant.
   *)
-  f = g /\
-    ((f = fun _ => O) \/ (exists n, f = fun _ => Datatypes.S n));
+  f = g /\ (exists n, f = fun _ => n);
 (* For composed constructs, the relation needs to be preserved by the
     underlying subcomponents
 *)
@@ -130,22 +128,33 @@ Lemma fundamental :
   S τ (fun x => ⟦t⟧ₜₘ (sb x))
     (fun x => ⟦Dtm t⟧ₜₘ (Dsb x)).
 Proof with quick.
-  unfold compose.
   intros Γ τ t sb Dsb.
-  induction t; simp denote_tm in *; unfold compose in *.
+  induction t; simp denote_tm in *.
   { (* Var *)
-    intros; dependent induction v; dependent induction H;
-      quick; simp denote_tm cons_sub Dtm...
-    erewrite S_eq. eapply IHv...
-    all: extensionality x... }
+    intros.
+    (* Using induction on the type being referenced by
+        the variable in the context. Destructing the
+        instantiation term should indicate that the relation
+        is preserved by the context *)
+    induction v; dependent destruction H.
+    { (* v := Top, we already know that the relation is preserved by
+          every term in the context. *)
+      assumption. }
+    { (* v := Pop, proven by the induction hypothesis obtained from
+          the variable. *)
+      simp Dtm.
+      erewrite S_eq. eapply IHv...
+      all: extensionality x... } }
   { (* App *)
     intros.
-    specialize IHt1 with sb Dsb; specialize IHt2 with sb Dsb.
-    pose proof (IHt1 H) as IHt1'; clear IHt1.
-    pose proof (IHt2 H) as IHt2'; clear IHt2.
-    simp S in IHt1'.
-    erewrite S_eq. eapply IHt1'...
-    all: extensionality x; simp denote_tm Dtm... }
+    pose proof (IHt1 sb Dsb H) as IHt1.
+    pose proof (IHt2 sb Dsb H) as IHt2.
+    (* The relation is preserved by function terms,
+        so we apply the corresponding induction hypothesis. *)
+    simp S in IHt1.
+    erewrite S_eq. eapply IHt1...
+    (* The leftover equalities are proven by simple rewriting. *)
+    all: extensionality x; now simp denote_tm Dtm. }
   { (* Abs *)
     intros. simp S Dtm...
     specialize IHt with
@@ -159,35 +168,32 @@ Proof with quick.
       inversion i. }
     { (* Induction on n, IHn case
         Give instances *)
-      pose proof (IHn (shave_fin t)) as H'; clear IHn.
+      pose proof (IHn (shave_fin t)) as IHn.
       simp Dtm denote_tm in *...
-      (* Destruct index,
-        Cons case handled by IHn *)
+      (* Case analysis on index,
+        (+1) case is automatically handled by IHn *)
       dependent destruction i...
-      clear H'.
-      exists (fun r =>
-        (denote_tm ∘ t) (nat_to_fin n) (sb r));
-      exists (fun r =>
-        (denote_tm ∘ (Dtm ∘ t)) (nat_to_fin n) (Dsb r))... } }
-  { (* Get *)
-    quick.
-    pose proof (IHt sb Dsb H) as H'; clear IHt.
-    simp S in *. simp SA in *.
-    induction n...
-    { (* Induction on n, Base case = 0
-        Contradiction due to indices running from 1..n *)
-      inversion t. }
-    { (* Induction on n, IHn case
-        Rewrite using logical relation *)
       clear IHn.
-      simp Dtm.
-      specialize H' with t.
-      destruct H' as [f1 [g1 [Hs1 [Heq1 Heq2]]]].
-      subst. erewrite S_eq... } }
+      (* For the 1 case,
+        Give the correct terms which should correspond to the
+          denotation of the `head` of the build term
+          `build Γ τ (Datatypes.S n) t` *)
+      exists (fun r =>
+        ⟦ t (nat_to_fin n) ⟧ₜₘ (sb r)).
+      exists (fun r =>
+        ⟦ Dtm (t (nat_to_fin n)) ⟧ₜₘ (Dsb r))... } }
+  { (* Get
+        Proven by logical relation where (τ:=Array n τ) *)
+    intros H.
+    pose proof (IHt sb Dsb H) as IHt. simp S in *.
+    specialize IHt with t.
+    destruct IHt as [f1 [g1 [Hs1 [Heq1 Heq2]]]]; subst.
+    erewrite S_eq... }
   { (* Const *)
     intros. simp S.
     (* Setup rewrite rule using 'denotation of (rval r) = const r' *)
-    assert (H': forall r, (fun x0 : R => ⟦ rval Γ r ⟧ₜₘ (sb x0)) = const r).
+    assert (H': forall r,
+      (fun x : R => ⟦ rval Γ r ⟧ₜₘ (sb x)) = const r).
     { intros; extensionality r'; simp denote_tm; unfold const... }
     splits...
     { rewrite H'.
@@ -203,14 +209,14 @@ Proof with quick.
     simpl in *. intros.
     (* Specialize IH to give evidence that
       subterms are derivable/give derivative *)
-    pose proof (IHt1 sb Dsb H) as H1.
-    pose proof (IHt2 sb Dsb H) as H2.
-    simp S in H1; simp S in H2.
-    destruct H1 as [Heq1 Heq1'].
-    destruct H2 as [Heq2 Heq2'].
+    pose proof (IHt1 sb Dsb H) as IHt1.
+    pose proof (IHt2 sb Dsb H) as IHt2.
+    simp S in IHt1, IHt2.
+    destruct IHt1 as [Heq1 Heq1'].
+    destruct IHt2 as [Heq2 Heq2'].
     (* Prove addition of subterms is derivable
       and give derivative value *)
-    autorewrite with S.
+    simp S.
     splits...
     { (* Addition is derivable given subterms are derivable *)
       apply (ex_derive_plus _ _ _ (Heq1 x) (Heq2 x)). }
@@ -220,13 +226,13 @@ Proof with quick.
       eapply equal_f in Heq2'.
       simp denote_tm.
       apply injective_projections;
-        rewrite Heq1'; rewrite Heq2'...
+        rewrite_c Heq1'; rewrite_c Heq2'...
       (* Rewrite using definition of denote_tm *)
       assert
-        (H': (fun x0 : R => ⟦ add Γ t1 t2 ⟧ₜₘ (sb x0)) =
-          fun x0 : R => ⟦ t1 ⟧ₜₘ (sb x0) + ⟦ t2 ⟧ₜₘ (sb x0)).
-      { extensionality r; simp denote_tm... }
-      rewrite H'.
+        (H': (fun x : R => ⟦ add Γ t1 t2 ⟧ₜₘ (sb x)) =
+          fun x : R => ⟦ t1 ⟧ₜₘ (sb x) + ⟦ t2 ⟧ₜₘ (sb x))
+        by (extensionality r; now simp denote_tm).
+      rewrite_c H'.
       (* Derivative is addition of derivative of subterms *)
       rewrite Derive_plus... } }
   { (* Nsucc *)
@@ -236,20 +242,16 @@ Proof with quick.
     split.
     { extensionality x. simp Dtm denote_tm.
       pose proof (equal_f IHeq)... }
-    { right...
-      destruct IHex as [IH0|IHS].
-      { exists (0%nat).
-        extensionality x. simp denote_tm.
-        rewrite (equal_f IH0)... }
-      { destruct IHS as [x IHS]. exists (Datatypes.S x).
+    { destruct IHex as [n IHex].
+      destruct n.
+      { exists 1%nat. extensionality x.
+        simp denote_tm. rewrite (equal_f IHex)... }
+      { exists (Datatypes.S (Datatypes.S n)).
         extensionality r. simp denote_tm.
-        rewrite (equal_f IHS)... } } }
+        rewrite (equal_f IHex)... } } }
   { (* Nval *)
-    intros H. simp S. splits. induction n.
-    { left.
-      extensionality x. simp denote_tm... }
-    { right. exists n.
-      extensionality x. simp denote_tm... } }
+    intros H. simp S. splits.
+    exists n. extensionality x. simp denote_tm... }
   { (* Bounded iteration *)
     intros.
     pose proof (IHt1 sb Dsb H) as IHt1.
@@ -257,18 +259,24 @@ Proof with quick.
     pose proof (IHt3 sb Dsb H) as IHt3.
     simp S in IHt2.
     destruct IHt2 as [IHt2eq IHt2case].
+    (* ℕ terms are not differentiated, so applying the
+        macro does not add a tangent term and the denotations
+        of the term and the macro applied variant are equal.
+      Rewrite using this fact. *)
     pose proof (equal_f IHt2eq) as IHt2'...
     erewrite S_eq.
   2:{ extensionality x. simp Dtm denote_tm.
       reflexivity. }
   2:{ extensionality x. simp Dtm denote_tm.
       rewrite <- IHt2'. reflexivity. }
+    clear IHt2' IHt2eq.
     (* Case analysis on the denotation of the ℕ term *)
-    destruct IHt2case as [IHt20|IHt2S].
+    destruct IHt2case as [n IHt2case].
+    destruct n.
     { (* 0 case:
         Proven by the induction hypothesis
           resulting from the base term *)
-      pose proof (equal_f IHt20) as IHt20'...
+      pose proof (equal_f IHt2case) as IHt20'...
       erewrite S_eq.
     2:{ extensionality x. rewrite IHt20'...
         reflexivity. }
@@ -277,16 +285,17 @@ Proof with quick.
       assumption. }
     { (* (n+1) case:
         Proven by the induction hypothesis
-          resulting from the function term *)
-      destruct IHt2S as [n IHt2S].
-      pose proof (equal_f IHt2S) as IHt2S'...
+          resulting from the function term
+        Need to rewrite the number term as its
+          denotation and do straightforward induction *)
+      pose proof (equal_f IHt2case) as IHt2S'...
       erewrite S_eq.
     2:{ extensionality x. rewrite IHt2S'...
         reflexivity. }
     2:{ extensionality x. rewrite IHt2S'...
         reflexivity. }
       simp S in IHt1.
-      eapply IHt1. clear IHt2S' IHt2S.
+      eapply IHt1. clear IHt2S' IHt2case.
       induction n... } }
   { (* Tuples *)
     intros... simp S.
@@ -297,7 +306,6 @@ Proof with quick.
       exists (⟦ Dtm t1 ⟧ₜₘ ∘ Dsb).
     exists (⟦ t2 ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t2 ⟧ₜₘ ∘ Dsb).
-    (* exists (substitute sb t1); exists (substitute sb t2). *)
     unfold compose.
     exists H1'; exists H2'... }
   { (* Projection 1 *)
