@@ -143,10 +143,13 @@ Proof with quick.
   unfold ren. intros τ v.
 Admitted.
 
-Fail Equations? ren_c n m :
-  ren (map (Dt n) (repeat Real m)) (map (Dt_c n) (repeat Real m)) :=
-ren_c n m τ (Top Γ τ) := _;
-ren_c n m τ (Pop Γ τ σ v) := _.
+Equations? ren_c Γ n :
+  ren (map (Dt n) Γ) (map (Dt_c n) Γ) :=
+ren_c nil n τ v with v := { };
+ren_c (τ::Γ) n τ v with v := {
+  | Top Γ τ => _;
+  | Pop Γ τ σ x => _
+}.
 
 Definition ren_c' Γ n :
   ren (map (Dt_c n) Γ) (map (Dt n) Γ).
@@ -154,6 +157,7 @@ Proof with quick.
   unfold ren.
 Admitted.
 
+(*
 Lemma ren_ren' : forall Γ n m v,
   ren_c n m Γ (ren_c' n m Γ v) = v.
 Proof with quick.
@@ -164,7 +168,7 @@ Lemma ren'_ren : forall Γ n m v,
   ren_c' n m Γ (ren_c n m Γ v) = v.
 Proof with quick.
   intros.
-Admitted.
+Admitted. *)
 
 (*
 Lemma rename_ren'_ren :
@@ -180,19 +184,6 @@ Lemma rename_ren_ren' :
 Proof with quick.
   intros.
 Admitted. *)
-
-Definition lam_r {Γ n}
-  (t : tm (map (Dt n) Γ) (Dt n Real))
-  : tm (map (Dt_c n) Γ) (Dt_c n Real) :=
-  tuple _ (first _ (rename (ren_c Γ n) t))
-    (abs _ _ Real ((shift (σ:=Real) (second _ (rename (ren_c Γ n) t))))).
-
-Definition ev_r {Γ n}
-  : tm (map (Dt_c n) Γ) (Dt_c n Real) ->
-    tm (map (Dt n) Γ) (Dt n Real) :=
-  fun t => tuple _
-    (first _ (rename (ren_c' Γ n) t))
-    (app _ _ _ (second _ (rename (ren_c' Γ n) t)) (rval _ 1)).
 
 Equations lam {Γ n} τ
   (t : tm (map (Dt n) Γ) (Dt n τ))
@@ -252,8 +243,5 @@ Proof with quick.
     unfold shift... simp denote_tm.
     rewrite <- app_ren_ren.
     rewrite <- denote_ren_commutes. admit. }
-  { unfold compose.
-    simp lam.
-    simp ev. admit. }
   all: admit.
 Admitted.
