@@ -36,7 +36,7 @@ S Real f g :=
   (fun r => g r) =
     (fun r => (f r, Derive f r));
 S Nat f g :=
-  (* When (τ := ℕ), we do not need to keep track of the derivative
+  (* When (τ := ℕ), we do not need to keep track of the derivative,
       as the tangent space at each related point is 0-dimensional and
       any related functions will also be constant.
   *)
@@ -71,7 +71,7 @@ S (σ <+> ρ) f g :=
       g = Datatypes.inr ∘ g2).
 
 (* Helper definition to ensure that the context is only built
-    from terms whose denotation are contained in the relation
+    from terms whose denotation are in the relation
 *)
 Inductive instantiation : forall Γ,
     (R -> ⟦ Γ ⟧ₜₓ) -> (R -> ⟦ Dctx Γ ⟧ₜₓ) -> Prop :=
@@ -99,6 +99,8 @@ Proof with quick.
   apply Derive_id.
 Qed.
 
+(* Very useful helper definitions for rewriting the relations,
+    as the denotations we're working on are functions *)
 Lemma inst_eq : forall Γ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> instantiation Γ f1 f2 = instantiation Γ g1 g2.
 Proof. intros; rewrites. Qed.
@@ -214,7 +216,7 @@ Proof with quick.
     splits...
     { (* Addition is derivable given subterms are derivable *)
       apply (ex_derive_plus _ _ _ (Heq1 x) (Heq2 x)). }
-    { simp Dtm. simpl.
+    { simp Dtm.
       extensionality x.
       eapply equal_f in Heq1'.
       eapply equal_f in Heq2'.
@@ -320,22 +322,22 @@ Proof with quick.
     { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
   { (* Case *)
     intros.
-    pose proof (IHt1 sb Dsb H) as IH1; clear IHt1.
-    pose proof (IHt2 sb Dsb H) as IH2; clear IHt2.
-    pose proof (IHt3 sb Dsb H) as IH3; clear IHt3.
+    pose proof (IHt1 sb Dsb H) as IHt1.
+    pose proof (IHt2 sb Dsb H) as IHt2.
+    pose proof (IHt3 sb Dsb H) as IHt3.
     simp S in *. simpl. simp Dtm. simpl.
     (* Either term denotates to inl or inr *)
-    destruct IH1 as [[g1 [g2 H']]|[g1 [g2 H']]].
+    destruct IHt1 as [[g1 [g2 H']]|[g1 [g2 H']]].
     { (* Scrutinee is inl *)
       destruct H' as [Hs [Heq1 Heq2]].
-      erewrite S_eq. eapply IH2...
+      erewrite S_eq...
       { extensionality x. eapply equal_f in Heq1.
-        simp denote_tm. rewrite Heq1... }
+        simp denote_tm. now rewrite Heq1. }
       { extensionality x. eapply equal_f in Heq2.
-        simp denote_tm. rewrite Heq2... } }
+        simp denote_tm. now rewrite Heq2. } }
     { (* Scrutinee is inr *)
       destruct H' as [Hs [Heq1 Heq2]].
-      erewrite S_eq. eapply IH3...
+      erewrite S_eq...
       { extensionality x. eapply equal_f in Heq1.
         simp denote_tm. rewrite Heq1... }
       { extensionality x. eapply equal_f in Heq2.

@@ -254,6 +254,6 @@ Proof with quick.
     rewrite <- denote_ren_commutes. admit. }
   { unfold compose.
     simp lam.
-    simp ev. }
+    simp ev. admit. }
   all: admit.
 Admitted.
