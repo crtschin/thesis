@@ -16,9 +16,8 @@ Import EqNotations.
 
 From AD Require vect.
 From Equations Require Import Equations.
-From AD Require Import Definitions.
 From AD Require Import Tactics.
-From AD Require Import Denotation.
+From AD Require Import Simply.
 
 Local Open Scope program_scope.
 Local Open Scope type_scope.
@@ -28,11 +27,11 @@ Local Open Scope type_scope.
 Fixpoint Dt_c (n : nat) (σ : ty) : ty :=
   match σ with
   | Real => Real × (Real → Array n Real)
-  | Nat => Nat
+  (* | Nat => Nat *)
   | Array m τ => Array m (Dt_c n τ)
   | τ1 × τ2 => (Dt_c n τ1 × Dt_c n τ2)
   | τ1 → τ2 => (Dt_c n τ1 → Dt_c n τ2)
-  | τ1 <+> τ2 => (Dt_c n τ1 <+> Dt_c n τ2)
+  (* | τ1 <+> τ2 => (Dt_c n τ1 <+> Dt_c n τ2) *)
   end.
 
 Definition Dctx_c n Γ : Ctx := map (Dt_c n) Γ.
@@ -55,10 +54,10 @@ Dtm_c n (Γ:=Γ) (τ:=τ) (build Γ τ m ta) =>
   build _ _ _ (Dtm_c n ∘ ta);
 Dtm_c n (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm_c n ta);
 (* Nat *)
-Dtm_c n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval _ m;
+(* Dtm_c n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval _ m;
 Dtm_c n (Γ:=Γ) (τ:=τ) (nsucc Γ m) := nsucc _ (Dtm_c n m);
 Dtm_c n (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti t) :=
-  nrec _ _ (Dtm_c n tf) (Dtm_c n ti) (Dtm_c n t);
+  nrec _ _ (Dtm_c n tf) (Dtm_c n ti) (Dtm_c n t); *)
 (* Reals *)
 Dtm_c n (Γ:=Γ) (τ:=τ) (rval Γ r) :=
   tuple _ (rval _ r) (abs _ _ _ (build _ _ _ (const (rval _ 0))));
@@ -76,21 +75,21 @@ Dtm_c n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm_c n t1 := {
 (* Products *)
 Dtm_c n (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) := tuple _ (Dtm_c n t1) (Dtm_c n t2);
 Dtm_c n (Γ:=Γ) (τ:=τ) (first Γ p) := first _ (Dtm_c n p);
-Dtm_c n (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm_c n p);
+Dtm_c n (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm_c n p).
 (* Sums *)
-Dtm_c n (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm_c n e) (Dtm_c n c1) (Dtm_c n c2);
+(* Dtm_c n (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm_c n e) (Dtm_c n c1) (Dtm_c n c2);
 Dtm_c n (Γ:=Γ) (τ:=τ) (inl Γ _ _ e) := inl _ _ _ (Dtm_c n e);
-Dtm_c n (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm_c n e).
+Dtm_c n (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm_c n e). *)
 
 (* Forward *)
 Fixpoint Dt n τ : ty :=
   match τ with
   | Real => Real × Array n Real
-  | Nat => Nat
+  (* | Nat => Nat *)
   | Array m t => Array m (Dt n t)
   | t1 × t2 => Dt n t1 × Dt n t2
   | t1 → t2 => Dt n t1 → Dt n t2
-  | t1 <+> t2 => Dt n t1 <+> Dt n t2
+  (* | t1 <+> t2 => Dt n t1 <+> Dt n t2 *)
   end.
 
 Definition Dctx n Γ : Ctx := map (Dt n) Γ.
@@ -112,10 +111,10 @@ Dtm n (Γ:=Γ) (τ:=τ) (build Γ τ m ta) =>
   build _ _ _ (Dtm n ∘ ta);
 Dtm n (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm n ta);
 (* Nat *)
-Dtm n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval _ m;
+(* Dtm n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval _ m;
 Dtm n (Γ:=Γ) (τ:=τ) (nsucc Γ m) := nsucc _ (Dtm n m);
 Dtm n (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti t) :=
-  nrec _ _ (Dtm n tf) (Dtm n ti) (Dtm n t);
+  nrec _ _ (Dtm n tf) (Dtm n ti) (Dtm n t); *)
 (* Reals *)
 Dtm n (Γ:=Γ) (τ:=τ) (rval Γ r) :=
   tuple _ (rval _ r) (build _ _ _ (const (rval _ 0)));
@@ -130,16 +129,16 @@ Dtm n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm n t1 := {
 (* Products *)
 Dtm n (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) := tuple _ (Dtm n t1) (Dtm n t2);
 Dtm n (Γ:=Γ) (τ:=τ) (first Γ p) := first _ (Dtm n p);
-Dtm n (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm n p);
+Dtm n (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm n p).
 (* Sums *)
-Dtm n (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm n e) (Dtm n c1) (Dtm n c2);
+(* Dtm n (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm n e) (Dtm n c1) (Dtm n c2);
 Dtm n (Γ:=Γ) (τ:=τ) (inl Γ _ _ e) := inl _ _ _ (Dtm n e);
-Dtm n (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm n e).
+Dtm n (Γ:=Γ) (τ:=τ) (inr Γ _ _ e) := inr _ _ _ (Dtm n e). *)
 
 (* Definition lam_ctx τ : Ctx -> Ctx. *)
 
-Definition ren_c n m :
-  ren (map (Dt n) (repeat Real m)) (map (Dt_c n) (repeat Real m)).
+Definition ren_c Γ n :
+  ren (map (Dt n) Γ) (map (Dt_c n) Γ).
 Proof with quick.
   unfold ren. intros τ v.
 Admitted.
@@ -149,8 +148,8 @@ Fail Equations? ren_c n m :
 ren_c n m τ (Top Γ τ) := _;
 ren_c n m τ (Pop Γ τ σ v) := _.
 
-Definition ren_c' n m :
-  ren (map (Dt_c n) (repeat Real m)) (map (Dt n) (repeat Real m)).
+Definition ren_c' Γ n :
+  ren (map (Dt_c n) Γ) (map (Dt n) Γ).
 Proof with quick.
   unfold ren.
 Admitted.
@@ -182,22 +181,45 @@ Proof with quick.
   intros.
 Admitted. *)
 
-Definition lam_r {n m}
-  (t : tm (map (Dt n) (repeat Real m)) (Dt n Real))
-  : tm (map (Dt_c n) (repeat Real m)) (Dt_c n Real) :=
-  tuple _ (first _ (rename (ren_c n m) t))
-    (abs _ _ Real ((shift (σ:=Real) (second _ (rename (ren_c n m) t))))).
+Definition lam_r {Γ n}
+  (t : tm (map (Dt n) Γ) (Dt n Real))
+  : tm (map (Dt_c n) Γ) (Dt_c n Real) :=
+  tuple _ (first _ (rename (ren_c Γ n) t))
+    (abs _ _ Real ((shift (σ:=Real) (second _ (rename (ren_c Γ n) t))))).
 
-Fail Equations? lam {n m} τ
-  (t : tm (map (Dt n) (repeat Real m)) (Dt n τ))
-  : tm (map (Dt_c n) (repeat Real m)) (Dt_c n τ) :=
-lam ℝ z := lam_r z;
-lam ℕ z := rename (ren_c n m) z;
-lam (τ1 × τ2) z
-  := tuple _ (lam τ1 (first _ z)) (lam τ2 (second _ z));
-lam (τ1 → τ2) z := _;
-lam (Array m τ) z := _;
-lam (τ1 <+> τ2) z
+Definition ev_r {Γ n}
+  : tm (map (Dt_c n) Γ) (Dt_c n Real) ->
+    tm (map (Dt n) Γ) (Dt n Real) :=
+  fun t => tuple _
+    (first _ (rename (ren_c' Γ n) t))
+    (app _ _ _ (second _ (rename (ren_c' Γ n) t)) (rval _ 1)).
+
+Equations lam {Γ n} τ
+  (t : tm (map (Dt n) Γ) (Dt n τ))
+  : tm (map (Dt_c n) Γ) (Dt_c n τ) := {
+lam ℝ t := tuple _ (first _ (rename (ren_c Γ n) t))
+  (abs _ _ Real ((shift (σ:=Real) (second _ (rename (ren_c Γ n) t)))));
+lam (τ1 × τ2) t
+  := tuple _ (lam τ1 (first _ t)) (lam τ2 (second _ t));
+lam (τ1 → τ2) t
+  := abs (map (Dt_c n) Γ) (Dt_c n τ2) (Dt_c n τ1)
+    (lam (Γ:=τ1::Γ) _ (app _ _ _ (shift t)
+      (ev _ (var _ _ (Dv_c n (Top Γ _))))));
+lam (Array m τ) t := build _ _ m (fun i => lam _ (get _ i t)) }
+where ev {Γ n} τ (t : tm (map (Dt_c n) Γ) (Dt_c n τ))
+  : tm (map (Dt n) Γ) (Dt n τ) :=
+ev ℝ t := tuple _
+    (first _ (rename (ren_c' Γ n) t))
+    (app _ _ _ (second _ (rename (ren_c' Γ n) t)) (rval _ 1));
+ev (τ1 × τ2) t
+  := tuple _ (ev τ1 (first _ t)) (ev τ2 (second _ t));
+ev (τ1 → τ2) t
+  := abs (map (Dt n) Γ) (Dt n τ2) (Dt n τ1)
+    (ev (Γ:=τ1::Γ) _ (app _ _ _ (shift t)
+      (lam _ (var _ _ (Dv (Top Γ _))))));
+ev (Array m τ) t := build _ _ m (fun i => ev _ (get _ i t)).
+
+(* lam (τ1 <+> τ2) z
   :=
   (* Transform sums by splitting the sum into its cases *)
   case (Dctx n (repeat Real m)) z
@@ -217,32 +239,21 @@ lam (τ1 <+> τ2) z
     (abs (map (Dt n) (repeat ℝ m))
       (Dt_c n τ1 <+> Dt_c n τ2) (Dt_c n τ2)
       (inr (τ2 :: map (Dt n) (repeat ℝ m)) _ _
-        (lam τ2 (var _ _ (Top _ _))))).
-
-Definition ev_r {n m}
-  : tm (map (Dt_c n) (repeat Real m)) (Dt_c n Real) ->
-    tm (map (Dt n) (repeat Real m)) (Dt n Real) :=
-  fun z => tuple _
-    (first _ (rename (ren_c' n m) z))
-    (app _ _ _ (second _ (rename (ren_c' n m) z)) (rval _ 1)).
+        (lam τ2 (var _ _ (Top _ _))))). *)
 
 Lemma four :
-  (* forall τ τ1 τ2, *)
-  forall n m (t : tm (repeat Real m) Real),
-  (* (τ <> (τ1 → τ2)) -> *)
-  ⟦ev_r (lam_r (Dtm n t))⟧ₜₘ = ⟦Dtm n t⟧ₜₘ.
+  forall Γ τ n (t : tm Γ τ),
+  ⟦ev τ (lam τ (Dtm n t))⟧ₜₘ = ⟦ Dtm n t ⟧ₜₘ.
 Proof with quick.
   intros. remember (Dtm n t) as t'.
-  dependent induction t';
-    unfold lam_r; unfold ev_r; quick.
-  { extensionality ctx. simp denote_tm.
-    apply injective_projections...
-    { apply f_equal.
-      rewrite ren'_ren... }
-    { simp denote_tm. simp rename_lifted...
-      apply f_equal.
-      erewrite ren'_ren... } }
-  { extensionality ctx. simp denote_tm.
-    apply injective_projections...
-    all: admit.
+  induction τ; quick; extensionality ctx; simp denote_tm.
+  { rewrite <- denote_ren_commutes. simp lam. simp denote_tm...
+    rewrite denote_ren_commutes.
+    unfold shift... simp denote_tm.
+    rewrite <- app_ren_ren.
+    rewrite <- denote_ren_commutes. admit. }
+  { unfold compose.
+    simp lam.
+    simp ev. }
+  all: admit.
 Admitted.

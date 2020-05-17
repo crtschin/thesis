@@ -60,7 +60,7 @@
   \fancyfoot[C]{\thepage}
 }
 
-\addbibresource{references.bib}
+\addbibresource{./references.bib}
 \setlength{\headheight}{15pt}
 \pagestyle{fancy}
 \lhead{Utrecht University}
@@ -69,6 +69,7 @@
 \renewcommand{\headrulewidth}{0.5pt}
 \renewcommand{\footrulewidth}{0.5pt}
 \renewcommand{\listingscaption}{Code snippet}
+\newcommand{\comment}[1]{}
 
 \def\Vakar{V\'{a}k\'{a}r}
 \def\<#1>{\csname keyword@@#1\endcsname}
@@ -120,12 +121,12 @@
 
 \center
 
-\textsc{\large Master Thesis Proposal}
+\textsc{\large Master Thesis}
 
 \vspace{0.5in}
 
 \noindent\makebox[\linewidth]{\rule{\linewidth}{1.2pt}}
-\textsc{\textbf{\large Formalized Proof of Automatic Differentiation in \<Coq>}}
+\textsc{\textbf{\large Formalized Proof of Forward-Mode Automatic Differentiation in \<Coq>}}
 \noindent\makebox[\linewidth]{\rule{\linewidth}{1.2pt}}
 
 \vspace{0.5in}
@@ -158,8 +159,15 @@
 
 \newpage
 
+\begin{abstract}
+  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean quis dapibus lorem. Praesent volutpat feugiat erat. Quisque quis hendrerit lectus, et malesuada nisi. Quisque id elementum lectus. Phasellus sit amet ante ornare, hendrerit orci non, consectetur erat. Phasellus pulvinar orci urna. Donec fringilla fringilla ornare. Sed ut tempus arcu, eget ornare ligula.
+
+  Ut varius pretium pellentesque. Nam sit amet sapien lobortis nisl faucibus tempor. Curabitur non enim venenatis, euismod elit convallis, auctor sapien. Praesent eget urna sed justo luctus malesuada. In scelerisque metus nibh, ullamcorper efficitur eros fermentum non. Phasellus accumsan congue diam, non fringilla lorem fringilla sit amet. Ut molestie feugiat sagittis. Integer in lobortis justo, et euismod augue. Suspendisse nec euismod lectus, at condimentum magna. Pellentesque eu elementum dui.
+\end{abstract}
+\newpage
+
 \pagenumbering{arabic}
-\setcounter{page}{2}
+\setcounter{page}{3}
 \tableofcontents
 \newpage
 
@@ -220,7 +228,7 @@ The choice between automatic differentiation variant is heavily dependent on the
 
 \begin{figure}
   \centering
-  \includegraphics[scale=0.6]{assets/function_trace.png}
+  \includegraphics[scale=0.6]{./assets/function_trace.png}
   \caption{Computational graph of $f(x, y) = x^2 + (x - y)$}
   \label{fig:func_trace}
 \end{figure}
@@ -443,198 +451,50 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
   \label{lst:sn_logical_relation}
 \end{listing}
 
-\section{Preliminary Results}
-
-\subsection{Language definitions}
-
-We currently mimic the types used in the base language of the paper~\cite{huot2020correctness} extended with sum types, shown in Snippet~\ref{lst:stlc_types}.
-The paper itself initially makes use of the standard types found in a simply-typed lambda calculus extended with products and R as the only ground type.
-These are also the types used by Barthe, et. al.\cite{barthe2020versatility} in their proof. In a later section Huot and Staton, \Vakar{} extended their language with sum and inductive types.
-Note that we use the unconventional symbol \texttt{<+>} for sum types instead of the more common \texttt{+}, because Coq already uses the latter for their own sum types.
-
-\begin{listing}
-  \begin{minted}{coq}
-  Inductive ty : Type :=
-    | Real : ty
-    | ~\Rightarrow~ : ~ty \rightarrow ty \rightarrow ty~
-    | ~\times~ : ~ty \rightarrow ty \rightarrow ty~
-    | ~<+>~ : ~ty \rightarrow ty \rightarrow ty~.
-  \end{minted}
-  \caption{Definition of the types present in the language}
-  \label{lst:stlc_types}
-\end{listing}
-
-We have chosen the intrinsic strongly-typed formulation used by Nick Benton et. al.\cite{Benton2011} as the general framework to work in.
-This includes the various substitution and lifting operations for working with typing contexts. Typing contexts themselves consists of lists of types, while variables are typed indices into this list. We almost perfectly mimic the example shown in Snippet~\ref{lst:strong_stlc}.
-
-We have simplified a few of the language constructs used in the main paper by Huot, Staton, and \Vakar{}\cite{huot2020correctness}, shown in Snippet~\ref{lst:stlc_terms}. For working with product types they make use of n-products and pattern matching, while we have opted for projection tuples. They proceeded to extended their base language with arbitrarily sized variant types, which we have substituted for standard sums reminiscent of the \<Either> type in Haskell along with specialized case expressions. Both of these changes were intended to simplify the language as much as possible while still retaining the same core functionality and types.
-
-\begin{listing}
-  \begin{minted}{coq}
-Definition Ctx {x} : Type := list x.
-
-Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
-  (* Base STLC *)
-  | var : ~forall \tau,
-    \tau ∈ \Gamma \rightarrow tm \Gamma \tau~
-  | app : ~forall \tau \sigma,
-    tm \Gamma (\sigma \Rightarrow \tau) \rightarrow
-    tm \Gamma \sigma \rightarrow
-    tm \Gamma \tau~
-  | abs : ~forall \tau \sigma,
-    tm (\sigma::\Gamma) \tau \rightarrow tm \Gamma (\sigma \Rightarrow \tau)~
-
-  (* Operations on the real numbers *)
-  | const : ~R \rightarrow tm \Gamma Real~
-  | add : ~tm \Gamma Real \rightarrow tm \Gamma Real \rightarrow tm \Gamma Real~
-
-  (* Projection products *)
-  | tuple : ~forall {\tau \sigma},
-    tm \Gamma \tau \rightarrow
-    tm \Gamma \sigma \rightarrow
-    tm \Gamma (\tau \times \sigma)~
-  | first : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \tau~
-  | second : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \sigma~
-
-  (* Sums *)
-  | case : ~forall {\tau \sigma \rho}, tm \Gamma (\tau + \sigma) \rightarrow
-    tm \Gamma (\tau \Rightarrow \rho) \rightarrow
-    tm \Gamma (\sigma \Rightarrow \rho) \rightarrow
-    tm \Gamma \rho~
-  | inl : ~forall \tau \sigma, tm \Gamma \tau \rightarrow tm \Gamma (\tau + \sigma)~
-  | inr : ~forall \tau \sigma, tm \Gamma \sigma \rightarrow tm \Gamma (\tau + \sigma).~
-
-  \end{minted}
-  \caption{Definition of the language constructs present in the language}
-  \label{lst:stlc_terms}
-\end{listing}
-
-\subsection{Preliminary proofs}
-
-We have completed a preliminary proof of \texttt{Theorem 1} by Huot, Staton and \Vakar{}\cite{huot2020correctness} extended with sum types.
-This consists of a formulation of semantic correctness of a forward-mode automatic differentiation algorithm using a macro.
-The proof is done using a logical relation on the denotational semantics using the set-theoretic types in \<Coq> as the underlying domain.
-The definition of the logical relation along with the lemma stating its fundamental property is shown in Snippet~\ref{lst:direct_logical_relation} and~\ref{lst:direct_fundamental}, while Snippet~\ref{lst:direct_correctness} states the actual correctness theorem.
-During development, we also discovered that while the abstract proof was correct, the concrete fundamental lemma used in the proof of \texttt{Theorem 1} in the paper was incorrect.
-
-\begin{listing}
-  \begin{minted}{coq}
-Equations S ~\tau~ :
-  ~(R \rightarrow $\llbracket$ \tau $\rrbracket$) \rightarrow (R \rightarrow $\llbracket$ D \tau $\rrbracket$) \rightarrow Prop~ :=
-S Real f g :=
-  ~(\forall (x : R), ex\_derive f x) $\wedge$~
-  (fun r => g r) =
-    (fun r => (f r, Derive f r));
-S (~\sigma \times \rho~) f g :=
-  ~\exists~ f1 f2 g1 g2,
-  ~\exists (s1 : S \sigma f1 f2) (s2 : S \rho g1 g2),~
-    (f = fun r => (f1 r, g1 r)) ~$\wedge$~
-    (g = fun r => (f2 r, g2 r));
-S (~\sigma \Rightarrow \rho~) f g :=
-  ~\forall (g1 : R \rightarrow $\llbracket$ \sigma $\rrbracket$),~
-  ~\forall (g2 : R \rightarrow $\llbracket$ D \sigma $\rrbracket$),~
-    ~S \sigma g1 g2 \rightarrow~
-    ~S \rho (fun x => f x (g1 x))~
-      (fun x => g x (g2 x));
-S (~\sigma <+> \rho~) f g :=
-  (~\exists~ g1 g2,
-    ~S \sigma g1 g2 $\wedge$~
-      ~f = inl \circ g1 $\wedge$~
-      ~g = inl \circ g2) $\vee$~
-  (~\exists~ g1 g2,
-    ~S \rho g1 g2 $\wedge$~
-      ~f = inr \circ g1 $\wedge$~
-      ~g = inr \circ g2)~.
-  \end{minted}
-  \caption{Definition of the logical relation}
-  \label{lst:direct_logical_relation}
-\end{listing}
-
-\begin{listing}
-  \begin{minted}{coq}
-Inductive instantiation : ~forall \Gamma~,
-    ~(R \rightarrow $\llbracket$ \Gamma $\rrbracket$) \rightarrow (R \rightarrow $\llbracket$ D \Gamma $\rrbracket$) \rightarrow Prop :=~
-| inst_empty : instantiation [] (const tt) (const tt)
-| inst_cons :
-  ~\forall \Gamma \tau g1 g2,~
-  ~\forall (sb: R \rightarrow $\llbracket$ \Gamma $\rrbracket$) (Dsb: R \rightarrow $\llbracket$ D \Gamma $\rrbracket$),~
-    ~instantiation \Gamma sb Dsb \rightarrow~
-    ~S \tau g1 g2 \rightarrow~
-    ~instantiation (\tau::\Gamma)
-      (fun r => (g1 r, sb r)) (fun r => (g2 r, Dsb r)).~
-
-Lemma fundamental :
-    ~\forall \Gamma \tau (t : tm \Gamma \tau),~
-    ~\forall (sb : R \rightarrow $\llbracket$ \Gamma $\rrbracket$) (Dsb : R \rightarrow $\llbracket$ D \Gamma $\rrbracket$),~
-  ~instantiation \Gamma sb Dsb \rightarrow~
-  ~S \tau ($\llbracket$ t $\rrbracket$ \circ sb)~
-    ~($\llbracket$ Dtm t $\rrbracket$ \circ Dsb).~
-  \end{minted}
-  \caption{Definition of the fundamental property of the logical relation in Snippet~\ref{lst:direct_logical_relation}}
-  \label{lst:direct_fundamental}
-\end{listing}
-
-\begin{listing}
-  \begin{minted}{coq}
-Equations D n
-  ~(f : R \rightarrow $\llbracket$ repeat Real n $\rrbracket$): R \rightarrow $\llbracket$ map Dt (repeat Real n) $\rrbracket$ :=~
-D 0 f r := f r;
-D (S n) f r :=
-  ~(((fst \circ f) r, Derive (fst \circ f) r), D n (snd \circ f) r).~
-
-Inductive differentiable : ~\forall n, (R \rightarrow $\llbracket$ repeat Real n $\rrbracket$) \rightarrow Prop :=~
-| differentiable_0 : differentiable 0 (fun _ => tt)
-| differentiable_Sn :
-  ~\forall n (f : R \rightarrow $\llbracket$ repeat Real n $\rrbracket$),~
-  ~\forall (g : R \rightarrow R),~
-    ~differentiable n f \rightarrow~
-    ~(\forall x,~ ex_derive g x) ~\rightarrow~
-    ~differentiable (S n) (fun x => (g x, f x)).~
-
-Theorem semantic_correct_R :
-  ~\forall n (t : tm (repeat Real n) Real),~
-  ~\forall (f : R \rightarrow $\llbracket$ repeat Real n $\rrbracket$),~
-    ~differentiable n f \rightarrow~
-    ~($\llbracket$ Dtm t $\rrbracket$ \circ D n f) =~
-      ~fun r => ($\llbracket$ t $\rrbracket$ (f r),~
-        ~Derive (fun (x : R) => $\llbracket$ t $\rrbracket$ (f x)) r).~
-  \end{minted}
-  \caption{Definition of the correctness theorem}
-  \label{lst:direct_correctness}
-\end{listing}
-
-\section{Timetable and Planning}
-
-\subsection{Extensions}
-
-We will be looking to extend the current prototype proof with the continuation-based AD macro mentioned by Huot, Staton, and \Vakar{}\cite{huot2020correctness}.
-We will also try to extend the proof with array types which should be better for performance than the n-tuples used in the original proof.
-We will be trying to extend the proof with the results achieved by Shaikhha, et. al.\cite{Shaikha2019}, where they also successfully implement several compile-time optimizations. % One possibility is to go towards a SSA (static single assignment) representation which has many benefits as a well-known possible internal representation for use in compilers\cite{Pop2006}.
-% One other benefit is that this representation can also be transformed into a minimal functional language\cite{chakravarty2004347}.
-
-\todo{Fill in}
-
-\subsection{Deadlines}
-
-The hard deadlines for the first and second phases of the thesis are respectively May $1^{st}$ and September $18^{th}$. The ambition is to follow the framework of deadlines in Table~\ref{tbl:deadlines}. Note that until the proofs deadline, the proofs and paper will largely be written in parallel with each other.
-
-\todo{Fill in}
-\begin{table}
-  \begin{center}
-    \begin{tabular}{ | m{5cm} | m{5cm} | }
-      \hline
-      Deadline          & Date  \\
-      \hline
-      Proposal deadline & 1/5/2020 \\
-      Finish proofs & 15/7/2020 \\
-      Finish first draft & 15/8/2020 \\
-      Thesis deadline & 18/9/2020 \\
-      \hline
-    \end{tabular}
-  \end{center}
-  \caption{Framework of deadlines}
-  \label{tbl:deadlines}
-\end{table}
+\comment{
+Two approaches:
+depth: language -> topic
+  - stlc:
+    - language definition
+    - macro
+    - denotation
+    - proof
+  - sums and products:
+    - language definition
+    - macro
+    - denotation
+    - proof
+  - arrays and primitive recursion:
+    - language definition
+    - macro
+    - denotation
+    - proof
+breadth: topic -> language
+  - language definition
+    - stlc
+    - sums and products
+    - arrays and primitive recursion
+  - macro
+    - stlc
+    - sums and products
+    - arrays and primitive recursion
+  - denotation
+    - stlc
+    - sums and products
+    - arrays and primitive recursion
+  - proof
+    - stlc
+    - sums and products
+    - arrays and primitive recursion
+}
+\section{Simply Typed Lambda Calculus}
+\section{Adding Sums and Products}
+\section{Arrays and Primitive Recursion}
+\section{Optimization}
+\section{Discussion}
+  \subsection{Problems}
+  \subsection{Future Work}
+\section{Conclusion}
 
 \printbibliography
 \makeatother

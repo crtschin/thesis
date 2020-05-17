@@ -236,7 +236,7 @@ Qed.
 
 Lemma denote_sub_elim : forall Γ Γ' τ
   (s : sub Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
-  denote_sub s ctx = denote_sub (tl_sub (substitute_lifted s)) (x ::: ctx).
+  ⟦ s ⟧ₛ  ctx = ⟦ (tl_sub (substitute_lifted s)) ⟧ₛ (x ::: ctx).
 Proof with eauto.
   induction Γ; intros...
   intros. specialize IHΓ with (s := (tl_sub s)).
@@ -247,7 +247,7 @@ Qed.
 
 Lemma denote_sub_commutes :
   forall Γ Γ' τ (t : tm Γ τ) (s : sub Γ Γ') (ctx : ⟦ Γ' ⟧ₜₓ),
-    ⟦ t ⟧ₜₘ (denote_sub s ctx) = ⟦ substitute s t ⟧ₜₘ ctx.
+    ⟦ t ⟧ₜₘ (⟦ s ⟧ₛ  ctx) = ⟦ substitute s t ⟧ₜₘ ctx.
 Proof with quick.
   intros. generalize dependent Γ'.
   induction t; intros; simp denote_tm; rewrites...
@@ -268,7 +268,7 @@ Proof with quick.
 Qed.
 
 Lemma denote_sub_id : forall Γ τ (t : tm Γ τ) (ctx : ⟦ Γ ⟧ₜₓ),
-  ⟦ t ⟧ₜₘ (denote_sub id_sub ctx) = ⟦ t ⟧ₜₘ ctx.
+  ⟦ t ⟧ₜₘ (⟦ id_sub ⟧ₛ ctx) = ⟦ t ⟧ₜₘ ctx.
 Proof with quick.
   intros.
   rewrite denote_sub_commutes...
@@ -299,12 +299,18 @@ Proof with quick.
   { dependent destruction ctx... }
   { dependent destruction ctx.
     apply denote_ctx_eq...
+  (* { destruct ctx... }
+  { (* TODO: Issue doing induction on elements in product list *)
+    dependent destruction ctx...
+    eapply injective_projections...
+    rewrite denote_sub_tl_simpl.
+    unfold denote_sub. *)
     admit. }
 Admitted.
 
 Lemma denote_sub_tl_cons :
   forall Γ Γ' τ (t : tm Γ' τ) ctx (sb : sub Γ Γ'),
-  denote_sub (tl_sub (cons_sub t sb)) ctx = denote_sub sb ctx.
+    ⟦ (tl_sub (cons_sub t sb)) ⟧ₛ ctx = ⟦ sb ⟧ₛ ctx.
 Proof with quick.
   intros.
   unfold id_sub.
