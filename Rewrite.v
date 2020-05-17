@@ -13,6 +13,7 @@ Require Import Reals.
 Local Open Scope program_scope.
 
 From Equations Require Import Equations.
+From AD Require Import DepList.
 From AD Require Import Tactics.
 From AD Require Import Definitions.
 From AD Require Import Normalization.
@@ -78,7 +79,7 @@ where "t ~> s" := (rwrt t s).
 
 Lemma shift2_snd :
   forall Γ τ σ ρ (t : tm (σ::Γ) τ) (x : ⟦ σ ⟧ₜ) (y : ⟦ ρ ⟧ₜ) (ctx : ⟦ Γ ⟧ₜₓ),
-  ⟦ t ⟧ₜₘ (x, ctx) = ⟦ shift2 t ⟧ₜₘ (x, (y, ctx)).
+  ⟦ t ⟧ₜₘ (x ::: ctx) = ⟦ shift2 t ⟧ₜₘ (x ::: y ::: ctx).
 Proof with quick.
   intros.
   unfold shift2.

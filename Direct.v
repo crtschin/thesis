@@ -369,31 +369,24 @@ Proof with quick.
   intros. simp S in H.
 Qed.
 
-(* Check hhd.
-Check htl. *)
-
-(* Definition denote_ctx_hd {Γ : list ty} (ls : hlist denote_t Γ) :=
-  hhd ls.
-Definition denote_ctx_tl {Γ : list ty} (ls : hlist denote_t Γ) :=
-  htl ls. *)
-
 Equations D n
   (f : R -> hlist denote_t (repeat Real n))
   : R -> hlist denote_t (map Dt (repeat Real n)) :=
 D 0 f r := f r;
 D (Datatypes.S n) f r :=
-  let elm := ((denote_ctx_hd ∘ f) r, Derive (denote_ctx_hd ∘ f) r) in
-  let rest := (D n (denote_ctx_tl ∘ f) r) in
-  HCons elm rest.
+  @denote_ctx_cons (map Dt (repeat Real n)) (Dt ℝ)
+    ((denote_ctx_hd ∘ f) r, Derive (denote_ctx_hd ∘ f) r)
+    (D n (denote_ctx_tl ∘ f) r).
 
 Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop :=
-  | differentiable_0 : differentiable 0 (fun _ => tt)
+  | differentiable_0 : differentiable 0 (fun _ => HNil)
   | differentiable_Sn :
     forall n (f : R -> ⟦ repeat Real n ⟧ₜₓ),
     forall (g : R -> R),
       differentiable n f ->
       (forall x, ex_derive g x) ->
-      differentiable (Datatypes.S n) (fun x => (g x, f x)).
+      differentiable (Datatypes.S n) (fun x =>
+        @denote_ctx_cons (repeat ℝ n) ℝ (g x) (f x)).
 
 Theorem semantic_correct_R :
   forall n,
@@ -423,8 +416,10 @@ Proof with quick.
   { (* N = n + 1  *)
     erewrite inst_eq;
       try (extensionality r).
-  2:{ instantiate (1 := fun r => (fst (f r), snd (f r))).
-      now apply injective_projections. }
+  2:{ instantiate (1 := fun r =>
+        denote_ctx_cons (denote_ctx_hd (f r)) (denote_ctx_tl (f r)))...
+      remember (f r) as e. dependent destruction e.
+      now apply denote_ctx_eq. }
   2:{ simp D. reflexivity. }
     dependent destruction H.
     constructor...

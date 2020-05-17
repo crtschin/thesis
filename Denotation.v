@@ -48,6 +48,10 @@ where "⟦ τ ⟧ₜ" := (denote_t τ).
 Definition denote_ctx (Γ : Ctx) := hlist denote_t Γ.
 Notation "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
 Derive Signature for hlist.
+Definition denote_ctx_hd {Γ : Ctx} (l : hlist denote_t Γ):= hhd l.
+Definition denote_ctx_tl {Γ : Ctx} (l : hlist denote_t Γ):= htl l.
+Definition denote_ctx_cons {Γ τ} (t : ⟦ τ ⟧ₜ)
+  (l : hlist denote_t Γ):= @HCons ty denote_t τ Γ t l.
 
 Lemma denote_ctx_eq :
   forall (Γ : Ctx) (τ : ty) (h h' : ⟦ τ ⟧ₜ) (t t' : hlist denote_t Γ),
@@ -297,8 +301,10 @@ Proof with quick.
   unfold id_sub.
   induction Γ...
   { dependent destruction ctx... }
-  { dependent destruction ctx.
+  { dependent destruction ctx...
     apply denote_ctx_eq...
+    rewrite denote_sub_tl_simpl.
+    unfold denote_sub. fold @denote_sub. simpl.
   (* { destruct ctx... }
   { (* TODO: Issue doing induction on elements in product list *)
     dependent destruction ctx...
