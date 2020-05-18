@@ -295,6 +295,17 @@ Lemma denote_sub_tl_simpl :
     ⟦ tl_sub sb ⟧ₛ ctx = htl (⟦ sb ⟧ₛ ctx).
 Proof. quick. Qed.
 
+Lemma denote_sub_id_ctx' : forall Γ,
+  ⟦ @id_sub Γ ⟧ₛ = Datatypes.id.
+Proof with quick.
+  induction Γ...
+  { extensionality ctx. dependent destruction ctx... }
+  { unfold id_sub in *. extensionality ctx.
+    (* unfold Datatypes.id. dependent destruction ctx.
+    apply denote_ctx_eq...  *)
+    admit. }
+Admitted.
+
 Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦ Γ ⟧ₜₓ),
   ⟦ id_sub ⟧ₛ ctx = ctx.
 Proof with quick.

@@ -142,6 +142,8 @@ Definition ren_c Γ n :
   ren (map (Dt n) Γ) (map (Dt_c n) Γ).
 Proof with quick.
   unfold ren. intros τ v.
+  dependent induction v.
+  dependent destruction τ.
 Admitted.
 
 Equations? ren_c Γ n :
