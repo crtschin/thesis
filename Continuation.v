@@ -18,6 +18,7 @@ From AD Require vect.
 From Equations Require Import Equations.
 From AD Require Import Tactics.
 From AD Require Import Simply.
+From AD Require Direct.
 
 Local Open Scope program_scope.
 Local Open Scope type_scope.

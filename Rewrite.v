@@ -4,7 +4,7 @@ Require Import Logic.FunctionalExtensionality.
 Require Import Strings.String.
 Require Import Relations.
 Require Import Logic.JMeq.
-Require Import Vector.
+Require Vector.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
@@ -49,24 +49,23 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | RW_Second : forall Γ τ σ (t1: tm Γ τ) (t2: tm Γ σ),
     second _ (tuple _ t1 t2) ~> t2
   (* Loop Fusion *)
-  | RW_BuildGet : forall Γ τ n (i : Fin.t n) (f : Fin.t n -> tm Γ τ),
+  | RW_LpFusion : forall Γ τ n (i : Fin.t n) (f : Fin.t n -> tm Γ τ),
     get Γ i (build Γ τ n f) ~> f i
   (* Loop Fission *)
-  | RW_IFoldTuple :
-    forall Γ τ σ ti
-      (tf1 : tm Γ (ℕ → τ → τ)) (tf2 : tm Γ (ℕ → σ → σ))
+  | RW_LpFission : forall Γ τ σ ti
+      (tf0 : tm Γ (ℕ → τ → τ)) (tf1 : tm Γ (ℕ → σ → σ))
       (z0 : tm Γ τ) (z1 : tm Γ σ),
     ifold (abs Γ (τ × σ → τ × σ) ℕ (abs (ℕ::Γ) (τ × σ) (τ × σ) (
       (tuple ((τ×σ)::ℕ::Γ)
         (app _ _ _
-          (app _ _ _ (shift (shift tf1))
+          (app _ _ _ (shift (shift tf0))
             (var _ _ (Pop _ _ _ (Top _ _))))
           (first _ (var _ _ (Top _ _))))
         (app _ _ _
-          (app _ _ _ (shift (shift tf2))
+          (app _ _ _ (shift (shift tf1))
             (var _ _ (Pop _ _ _ (Top _ _))))
           (second _ (var _ _ (Top _ _))))))))
-      ti (tuple _ z0 z1) ~> tuple _ (ifold tf1 ti z0) (ifold tf2 ti z1)
+      ti (tuple _ z0 z1) ~> tuple _ (ifold tf0 ti z0) (ifold tf1 ti z1)
   (* Lets *)
   | RW_LetDesugar : forall Γ τ σ (t1: tm (σ::Γ) τ) (t2: tm Γ σ),
     app _ _ _ (abs _ _ _ t1) t2 ~> letin t2 t1
@@ -78,7 +77,7 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     (e0: tm Γ τ) (e1: tm (τ::Γ) σ),
     letin e0 (shift (letin e0 e1)) ~>
       letin e0 (letin (var _ _ (Top _ _)) (shift e1))
-  (* Ring addition *)
+  (* Ring operations *)
   | RW_add : forall Γ (t1 t1' t2 t2' : tm Γ ℝ),
     t1 ~> t1' ->
     t2 ~> t2' ->
@@ -97,6 +96,8 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     t1 ~> rval Γ (-r) ->
     t2 ~> rval Γ r ->
     add Γ t1 t2 ~> rval Γ 0
+  | RW_mul_add : forall Γ (t t1 t2: tm Γ ℝ),
+    add Γ (mul Γ t t1) (mul Γ t t2) ~> mul Γ t (add Γ t1 t2)
 where "t ~> s" := (rwrt t s).
 
 Lemma shift2_snd :
@@ -152,4 +153,5 @@ Proof with quick.
   { apply Rplus_opp_r. }
   { rewrite Rplus_comm.
     apply Rplus_opp_r. }
+  { rewrite Rmult_plus_distr_l... }
 Qed.

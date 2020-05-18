@@ -9,6 +9,7 @@ Require Import Lists.List.
 Require Import Logic.FunctionalExtensionality.
 Require Import Logic.JMeq.
 Require Import Reals.
+Require Import micromega.Lia.
 Require Vectors.Fin.
 Import ListNotations.
 
@@ -205,11 +206,9 @@ Proof with quick.
     simpl in *. intros.
     (* Specialize IH to give evidence that
       subterms are derivable/give derivative *)
-    pose proof (IHt1 sb Dsb H) as IHt1.
-    pose proof (IHt2 sb Dsb H) as IHt2.
-    simp S in IHt1, IHt2.
-    destruct IHt1 as [Heq1 Heq1'].
-    destruct IHt2 as [Heq2 Heq2'].
+    pose proof (IHt1 sb Dsb H) as [Heq1 Heq1'].
+    pose proof (IHt2 sb Dsb H) as [Heq2 Heq2'].
+    clear IHt1 IHt2.
     (* Prove addition of subterms is derivable
       and give derivative value *)
     simp S.
@@ -231,6 +230,27 @@ Proof with quick.
       rewrite_c H'.
       (* Derivative is addition of derivative of subterms *)
       rewrite Derive_plus... } }
+  { (* Mul
+      Same as addition *)
+    intros H.
+    pose proof (IHt1 sb Dsb H) as [IHex1 IHdiv1].
+    pose proof (IHt2 sb Dsb H) as [IHex2 IHdiv2].
+    clear IHt1 IHt2.
+    simp S. split...
+    { apply (ex_derive_mult _ _ _ (IHex1 x) (IHex2 x)). }
+    { extensionality x.
+      simp Dtm denote_tm.
+      rewrite (equal_f IHdiv1); clear IHdiv1.
+      rewrite (equal_f IHdiv2); clear IHdiv2...
+      apply injective_projections...
+      { eassert (H': (fun r : R => ⟦ mul Γ t1 t2 ⟧ₜₘ (sb r)) = _).
+        { extensionality r. now simp denote_tm. }
+        rewrite_c H'.
+        rewrite Derive_mult...
+        eassert (H':
+          Derive (fun x0 : R => ⟦ t1 ⟧ₜₘ (sb x0)) x * ⟦ t2 ⟧ₜₘ (sb x) = _) by now rewrite Rmult_comm.
+        rewrite_c H'.
+        rewrite Rplus_comm... } } }
   { (* Nsucc *)
     intros H. simp S.
     pose proof (IHt sb Dsb H) as IHt.
