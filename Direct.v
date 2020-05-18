@@ -44,7 +44,13 @@ S Nat f g :=
   f = g /\ (exists n, f = fun _ => n);
     (* (f = fun _ => 0 \/ (exists n, f = fun _ => Datatypes.S n)) *)
 (* For composed constructs, the relation needs to be preserved by the
-    underlying subcomponents
+    underlying subcomponents.
+
+    Carefull consideration needs to be taken w.r.t. which variables
+    are universally or existentially quantified. The general idea
+    being that the subterms need to be 'given' as witnesses or
+    instances for the complete term to be constructed, hence the
+    variables denotating these subterms are defined existentially.
 *)
 S (Array n τ) f g :=
   forall i,
@@ -112,12 +118,22 @@ Lemma S_eq : forall τ f1 f2 g1 g2,
 Proof. intros; rewrites. Qed.
 
 (*
-  Plain words:
-    Given a context Γ for which t is well-typed (Γ ⊢ t : τ) and every typing
-    assignment in the context is in the relation S, applying the substitutions
-    to the term t is also in the relation S.
+  This is the generalization of the fundamental property of the
+  logical relation given also referred to as the substitution lemma.
+
+  Considering we are working in the denotational domain and omit
+  syntactic constructions as much as possible, we formulate
+  substitutions as context supplying function in both the original
+  and macro contexts, resp
+    `R -> ⟦ Γ ⟧ₜₓ`
+    `R -> ⟦ Dctx Γ ⟧ₜₓ`
+  The idea is then to build up these denotated substitutions using
+  the `instantiation` relation above which intuitively ensures that
+  any term being supplied by the function for the context, which
+  would have the denotation `R -> ⟦ τ ⟧ₜ` for some type τ, is also
+  valid w.r.t. the logical relation.
 *)
-Lemma fundamental :
+Lemma S_subst :
   forall Γ τ,
   forall (t : tm Γ τ),
   forall (sb : R -> ⟦ Γ ⟧ₜₓ),
@@ -314,9 +330,9 @@ Proof with quick.
       simp S in IHt1.
       eapply IHt1. clear IHt2S' IHt2case.
       induction n... } }
-  { (* Tuples *)
+  { (* Tuples
+        Give denotational instances of subterms using IHs *)
     intros... simp S.
-    (* Give instances using IHs *)
     pose proof (IHt1 sb Dsb H) as IHt1.
     pose proof (IHt2 sb Dsb H) as IHt2.
     exists (⟦ t1 ⟧ₜₘ ∘ sb );
@@ -325,19 +341,22 @@ Proof with quick.
       exists (⟦ Dtm t2 ⟧ₜₘ ∘ Dsb).
     unfold compose.
     exists IHt1; exists IHt2... }
-  { (* Projection 1 *)
+  { (* Projection 1
+        Simply deconstruct the denotation of the tuple and use the
+        correct subterm to find the first projection *)
     intros. simp Dtm.
     specialize IHt with sb Dsb.
     simp S in IHt; pose proof (IHt H) as H'; clear IHt.
-    destruct H' as [f1 [f2 [g1 [g2 [Hs1 [Hs2 [Heq1 Heq2]]]]]]].
+    destruct H' as [f1 [f2 [g1 [g2 [Hs1 [_ [Heq1 Heq2]]]]]]].
     erewrite S_eq; quick; extensionality x...
     { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
     { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
-  { (* Projection 2 *)
+  { (* Projection 2
+        Idem *)
     intros. simp Dtm.
     specialize IHt with sb Dsb.
     simp S in IHt; pose proof (IHt H) as H'; clear IHt.
-    destruct H' as [f1 [f2 [g1 [g2 [Hs1 [Hs2 [Heq1 Heq2]]]]]]].
+    destruct H' as [f1 [f2 [g1 [g2 [_ [Hs2 [Heq1 Heq2]]]]]]].
     erewrite S_eq; quick; extensionality x...
     { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
     { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
@@ -350,6 +369,7 @@ Proof with quick.
     (* Either term denotates to inl or inr *)
     destruct IHt1 as [[g1 [g2 H']]|[g1 [g2 H']]].
     { (* Scrutinee is inl *)
+      clear IHt3.
       destruct H' as [Hs [Heq1 Heq2]].
       erewrite S_eq...
       { extensionality x. eapply equal_f in Heq1.
@@ -357,6 +377,7 @@ Proof with quick.
       { extensionality x. eapply equal_f in Heq2.
         simp denote_tm. now rewrite Heq2. } }
     { (* Scrutinee is inr *)
+      clear IHt2.
       destruct H' as [Hs [Heq1 Heq2]].
       erewrite S_eq...
       { extensionality x. eapply equal_f in Heq1.
@@ -406,23 +427,26 @@ Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop 
       (forall x, ex_derive g x) ->
       differentiable (Datatypes.S n) (fun x => (g x, f x)).
 
-Theorem semantic_correct_R :
-  forall n,
-  forall (f : R -> ⟦ repeat Real n ⟧ₜₓ),
-  forall (t : tm (repeat Real n) Real),
-    differentiable n f ->
-    (⟦ Dtm t ⟧ₜₘ ∘ D n f) =
-      (fun r => (⟦ t ⟧ₜₘ (f r),
-        Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f x)) r)).
+(* The fundamental property of the logical relation given above.
+    Simply states that syntacticly well-typed terms are
+    semantically well-typed (so, in the relation).
+    Note the restriction that the only free variables allowed
+    are of type ℝ, the arguments which the function denotation
+    of the term takes *)
+Lemma fundamental_property :
+  forall τ n,
+  forall (t : tm (repeat ℝ n) τ),
+  forall (f : R -> ⟦ repeat ℝ n ⟧ₜₓ),
+  differentiable n f ->
+  S τ (fun x => ⟦t⟧ₜₘ (f x))
+    (fun x => ⟦Dtm t⟧ₜₘ (D n f x)).
 Proof with quick.
-  intros...
-  eapply S_correct_R.
-  (* Fundamental lemma proves that the ℝ term is in the relation
-      given each of the terms in the context are in the relation. *)
-  eapply fundamental.
-  clear t.
-  (* Prove every term in the context is in the relation
-    by induction on number of real terms in context *)
+  intros. apply S_subst. clear t.
+  (* Need to prove that the typing context is only built out of
+      terms which are valid w.r.t the logical relation.
+      This is true because the context is limited to terms
+      of type ℝ and we only consider differentiable functions
+      enforced by the `differentiable` relation defined above *)
   induction n...
   { (* N = 0
       Prove f : R -> ⟦ repeat Real 0 ⟧ₜₓ is equal to 'const tt'
@@ -440,4 +464,20 @@ Proof with quick.
     dependent destruction H.
     constructor...
     simp S. splits... }
+Qed.
+
+Theorem semantic_correct_R :
+  forall n,
+  forall (f : R -> ⟦ repeat Real n ⟧ₜₓ),
+  forall (t : tm (repeat Real n) Real),
+    differentiable n f ->
+    (⟦ Dtm t ⟧ₜₘ ∘ D n f) =
+      (fun r => (⟦ t ⟧ₜₘ (f r),
+        Derive (fun (x : R) => ⟦ t ⟧ₜₘ (f x)) r)).
+Proof with quick.
+  intros...
+  eapply S_correct_R.
+  (* Fundamental lemma proves that the ℝ term is in the relation
+      given each of the terms in the context are in the relation. *)
+  eapply fundamental_property...
 Qed.
