@@ -5,7 +5,8 @@ Create HintDb ad.
 Ltac quick := simpl in *; intros; (eauto with ad).
 Ltac use H := apply H; clear H.
 Ltac splits := repeat try split.
-Ltac rewrite_c H := rewrite H; clear H.
+Ltac rewrite_c H := try (rewrite H); clear H.
+Ltac apply_c H := try (apply H); clear H.
 Ltac rewrites := (
   intros; simpl;
     repeat (match goal with | [H:context[_=_] |- _] => erewrite H end);

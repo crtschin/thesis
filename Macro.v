@@ -51,12 +51,9 @@ Equations Dtm {Γ τ} : tm Γ τ -> tm (map Dt Γ) (Dt τ) :=
 (* Dtm (Γ:=Γ) (τ:=τ) (build_nil Γ τ) => build_nil _ _; *)
   | build Γ τ n ta => build _ _ _ (Dtm ∘ ta);
   | get Γ ti ta => get _ ti (Dtm ta);
-(*  | ifold Γ τ tf ti ta) => ifold _ _ (Dtm tf) (Dtm ti) (Dtm ta); *)
 (* Nat *)
   | nval Γ n := nval _ n;
   | nsucc _ t := nsucc _ (Dtm t);
-  (* | nval0 _ => nval0 _;
-  | nvalS _ t => nvalS _ (Dtm t); *)
   | nrec _ _ f i d => nrec _ _ (Dtm f) (Dtm i) (Dtm d);
 (* Reals *)
   | rval Γ r := tuple _ (rval _ r) (rval _ 0);
@@ -66,6 +63,16 @@ Equations Dtm {Γ τ} : tm Γ τ -> tm (map Dt Γ) (Dt τ) :=
       tuple _
         (add _ (first _ d1) (first _ d2))
         (add _ (second _ d1) (second _ d2))
+  }
+};
+  | (mul Γ t1 t2) with Dtm t1 := {
+    | d1 with Dtm t2 := {
+      | d2 :=
+      tuple _
+        (mul _ (first _ d1) (first _ d2))
+        (add _
+          (mul _ (first _ d1) (second _ d2))
+          (mul _ (first _ d2) (second _ d1)))
   }
 };
 (* Products *)

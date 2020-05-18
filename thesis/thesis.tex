@@ -438,7 +438,7 @@ Noteworthy is the case for function types, which indicates that an application s
 If one were to attempt the proof of strong normalization without using logical relations, they would get stuck in the cases dealing with function types.
 More specifically when reducing an application, the induction hypothesis is not strong enough to prove that substituting the argument into the body of the abstraction also results in a terminating term.
 The proof given in the paper this thesis is based on, is a logical relations proof on the denotation semantics using diffeological spaces as its domains\cite{huot2020correctness}.
-A similar, independent proof of correctness was given by Barthe, et. al.\cite{barthe2020versatility} using a syntactic relation.
+A similar, independent proof of correctness was given by Barthe, et. al.\cite{barthe2020versatility} using a syntactic relation on the operational semantics.
 
 \begin{listing}
   \begin{minted}{coq}
@@ -487,10 +487,13 @@ breadth: topic -> language
     - sums and products
     - arrays and primitive recursion
 }
-\section{Simply Typed Lambda Calculus}
-\section{Adding Sums and Products}
-\section{Arrays and Primitive Recursion}
+\section{Formalizing AD}
+\subsection{Simply Typed Lambda Calculus}
+\subsection{Adding Sums and Products}
+\subsection{Arrays and Primitive Recursion}
 \section{Optimization}
+\subsection{Program Transformations}
+\subsection{Continuation-based reverse-mode AD}
 \section{Discussion}
   \subsection{Problems}
   \subsection{Future Work}

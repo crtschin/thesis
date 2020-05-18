@@ -74,35 +74,7 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | ST_GetBuild : forall Γ τ n i (f : Fin.t n -> tm Γ τ),
     get Γ i (build Γ τ n f) --> f i
 
-  (* | ST_Fold1 : forall Γ τ tf i (t t' : tm Γ τ),
-    t --> t' ->
-    ifold Γ τ tf i t --> ifold Γ τ tf i t'
-  | ST_Fold2 : forall Γ τ tf i i' (t : tm Γ τ),
-    value t ->
-    i --> i' ->
-    ifold Γ τ tf i t --> ifold Γ τ tf i' t
-  | ST_Fold3 : forall Γ τ tf tf' i  (t : tm Γ τ),
-    value t ->
-    value i ->
-    tf --> tf' ->
-    ifold Γ τ tf i t --> ifold Γ τ tf' i t
-
-  | ST_FoldN0 : forall Γ τ tf (t : tm Γ τ),
-    value t ->
-    value tf ->
-    ifold Γ τ tf (nval _ 0) t --> t
-  | ST_FoldNS : forall Γ τ n tf (t : tm Γ τ),
-    value t ->
-    value tf ->
-    ifold Γ τ tf (nval _ (S n)) t -->
-      ifold Γ τ tf (nval _ n)
-        (* (abs _ _ _ f) *)
-        (app _ _ _ (app _ _ _ tf (nval _ n)) t) *)
-
   (* Nat *)
-  (* | ST_NvalS : forall Γ (t t' : tm Γ ℕ),
-    t --> t' ->
-    nvalS Γ t --> nvalS Γ t' *)
   | ST_NSucc : forall Γ (t t' : tm Γ ℕ),
     t --> t' ->
     nsucc Γ t --> nsucc Γ t'
@@ -131,11 +103,6 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     value tf ->
     nrec Γ τ tf (nval _ (S n)) t -->
       app _ _ _ tf (nrec Γ τ tf (nval _ n) t)
-      (* nrec Γ τ
-        tf
-        (nval _ n)
-        (app _ _ _ (app _ _ _ tf (nval _ n)) t) *)
-      (* (app _ _ _ (app _ _ _ tf (nval _ n)) (nrec Γ τ tf (nval _ n) t)) *)
 
   (* Add *)
   | ST_Add : forall Γ v1 v2,
@@ -147,6 +114,17 @@ Inductive step : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     value v1 ->
       t2 --> t2' ->
       (add Γ v1 t2) --> (add Γ v1 t2')
+
+  (* Mul *)
+  | ST_Mul : forall Γ v1 v2,
+      (mul Γ (rval Γ v1) (rval Γ v2)) --> rval Γ (Rdefinitions.Rmult v1 v2)
+  | ST_Mul1 : forall Γ t1 t1' t2,
+      t1 --> t1' ->
+      (mul Γ t1 t2) --> (mul Γ t1' t2)
+  | ST_Mul2 : forall Γ v1 t2 t2',
+    value v1 ->
+      t2 --> t2' ->
+      (mul Γ v1 t2) --> (mul Γ v1 t2')
 
   (* Pairs *)
   | ST_Tuple1 : forall Γ τ σ t1 t1' t2,
@@ -483,6 +461,23 @@ Lemma multistep_Add : forall Γ r1 r2,
   (add Γ (rval Γ r1) (rval Γ r2)) -->* (rval Γ (Rdefinitions.Rplus r1 r2)).
 Proof with quick. intros. repeat econstructor. Qed.
 
+Lemma multistep_Mul1 : forall Γ (t t' : tm Γ Real) (t1 : tm Γ Real),
+  (t -->* t') -> (mul Γ t t1) -->* (mul Γ t' t1).
+Proof with quick.
+  intros. induction H; econstructor. apply ST_Mul1... assumption.
+Qed.
+
+Lemma multistep_Mul2 : forall Γ (t t' : tm Γ Real) (v : tm Γ Real),
+  value v -> (t -->* t') -> (mul Γ v t) -->* (mul Γ v t').
+Proof with quick.
+  intros. induction H0; econstructor. apply ST_Mul2... assumption.
+Qed.
+
+Lemma multistep_Mul : forall Γ r1 r2,
+  value (rval Γ r1) -> value (rval Γ r2) ->
+  (mul Γ (rval Γ r1) (rval Γ r2)) -->* (rval Γ (Rdefinitions.Rmult r1 r2)).
+Proof with quick. intros. repeat econstructor. Qed.
+
 Lemma multistep_Tuple1 : forall Γ τ σ (t t' : tm Γ τ) (t1 : tm Γ σ),
   (t -->* t') -> (tuple Γ t t1) -->* (tuple Γ t' t1).
 Proof with quick.
@@ -686,11 +681,8 @@ Proof with quick.
     simp Rel. apply value_halts... }
   { (* Add *)
     intros sb H.
-    intros.
     pose proof (IHt1 sb H) as P1; clear IHt1.
     pose proof (IHt2 sb H) as P2; clear IHt2.
-    pose proof P1 as P1'; pose proof P2 as P2'.
-    simp Rel in P1'; simp Rel in P2'.
     inversion P1 as [t1' [Hst1 Hv1]].
     inversion P2 as [t2' [Hst2 Hv2]].
     pose proof (multistep_preserves_R _ _ P1 Hst1).
@@ -702,16 +694,32 @@ Proof with quick.
       { eapply multistep_Add2... } }
     dependent destruction Hv1.
     dependent destruction Hv2.
-    pose proof (multistep_Add Γ0 r r0 v_real v_real).
     eapply multistep_preserves_R'.
     2: eassumption.
     eapply multistep_preserves_R'.
-    2: eassumption.
+    2: apply multistep_Add...
     simp Rel.
     unfold halts in *.
     exists (rval Γ0 (Rdefinitions.RbaseSymbolsImpl.Rplus r r0)).
     splits...
     econstructor. }
+  { (* Mul *)
+    intros sb H.
+    pose proof (IHt1 sb H) as IHt1.
+    pose proof (IHt2 sb H) as IHt2.
+    inversion IHt1 as [t1' [Hst1 Hv1]].
+    inversion IHt2 as [t2' [Hst2 Hv2]].
+    dependent destruction Hv1.
+    dependent destruction Hv2.
+    eapply multistep_preserves_R'.
+  2:{ eapply multi_trans.
+      eapply multistep_Mul1...
+      eapply multi_trans.
+      eapply multistep_Mul2...
+      eapply multistep_Mul... }
+    simp Rel. unfold halts.
+    exists (rval Γ0 (Rdefinitions.RbaseSymbolsImpl.Rmult r r0)).
+    splits... constructor. }
   { (* NSucc *)
     intros sb H.
     pose proof (IHt sb H) as IHt.

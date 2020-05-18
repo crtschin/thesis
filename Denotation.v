@@ -118,6 +118,7 @@ denote_tm (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti ta) ctx :=
 (* Reals *)
 denote_tm (Γ:=Γ) (τ:=τ) (rval Γ r) ctx := r;
 denote_tm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx;
+denote_tm (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx * ⟦t2⟧ₜₘ ctx;
 (* Products *)
 denote_tm (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) ctx := (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx);
 denote_tm (Γ:=Γ) (τ:=τ) (first Γ t) ctx := fst (⟦t⟧ₜₘ ctx);

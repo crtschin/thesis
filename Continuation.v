@@ -18,6 +18,7 @@ From AD Require vect.
 From Equations Require Import Equations.
 From AD Require Import Tactics.
 From AD Require Import Simply.
+From AD Require Direct.
 
 Local Open Scope program_scope.
 Local Open Scope type_scope.
@@ -146,10 +147,8 @@ Admitted.
 Equations? ren_c Γ n :
   ren (map (Dt n) Γ) (map (Dt_c n) Γ) :=
 ren_c nil n τ v with v := { };
-ren_c (τ::Γ) n τ v with v := {
-  | Top Γ τ => _;
-  | Pop Γ τ σ x => _
-}.
+ren_c (τ::Γ) n τ v := _.
+Abort.
 
 Definition ren_c' Γ n :
   ren (map (Dt_c n) Γ) (map (Dt n) Γ).
@@ -157,18 +156,25 @@ Proof with quick.
   unfold ren.
 Admitted.
 
-(*
-Lemma ren_ren' : forall Γ n m v,
-  ren_c n m Γ (ren_c' n m Γ v) = v.
+Equations? ren_c' Γ n :
+  ren (map (Dt_c n) Γ) (map (Dt n) Γ) :=
+ren_c' nil n τ v with v := { };
+ren_c' (τ::Γ) n τ v := _.
+Abort.
+
+Lemma ren_ren' :
+  forall Γ (τ : ty) (n : nat) (v : τ ∈ map (Dt_c n) Γ),
+    ren_c Γ n τ (ren_c' Γ n τ v) = v.
 Proof with quick.
   intros.
 Admitted.
 
-Lemma ren'_ren : forall Γ n m v,
-  ren_c' n m Γ (ren_c n m Γ v) = v.
+Lemma ren'_ren :
+  forall Γ (τ : ty) (n : nat) (v : τ ∈ map (Dt n) Γ),
+    ren_c' Γ n τ (ren_c Γ n τ v) = v.
 Proof with quick.
   intros.
-Admitted. *)
+Admitted.
 
 (*
 Lemma rename_ren'_ren :
@@ -188,7 +194,8 @@ Admitted. *)
 Equations lam {Γ n} τ
   (t : tm (map (Dt n) Γ) (Dt n τ))
   : tm (map (Dt_c n) Γ) (Dt_c n τ) := {
-lam ℝ t := tuple _ (first _ (rename (ren_c Γ n) t))
+lam ℝ t := tuple _
+  (first _ (rename (ren_c Γ n) t))
   (abs _ _ Real ((shift (σ:=Real) (second _ (rename (ren_c Γ n) t)))));
 lam (τ1 × τ2) t
   := tuple _ (lam τ1 (first _ t)) (lam τ2 (second _ t));
@@ -200,8 +207,8 @@ lam (Array m τ) t := build _ _ m (fun i => lam _ (get _ i t)) }
 where ev {Γ n} τ (t : tm (map (Dt_c n) Γ) (Dt_c n τ))
   : tm (map (Dt n) Γ) (Dt n τ) :=
 ev ℝ t := tuple _
-    (first _ (rename (ren_c' Γ n) t))
-    (app _ _ _ (second _ (rename (ren_c' Γ n) t)) (rval _ 1));
+  (first _ (rename (ren_c' Γ n) t))
+  (app _ _ _ (second _ (rename (ren_c' Γ n) t)) (rval _ 1));
 ev (τ1 × τ2) t
   := tuple _ (ev τ1 (first _ t)) (ev τ2 (second _ t));
 ev (τ1 → τ2) t
@@ -243,5 +250,8 @@ Proof with quick.
     unfold shift... simp denote_tm.
     rewrite <- app_ren_ren.
     rewrite <- denote_ren_commutes. admit. }
+  { unfold compose.
+    simp lam.
+    simp ev. admit. }
   all: admit.
 Admitted.

@@ -47,7 +47,6 @@ Inductive Var {T : Type} : list T -> T -> Type :=
   | Pop : forall Γ τ σ, Var Γ τ -> Var (σ::Γ) τ
 .
 Derive Signature for Var.
-
 Notation "x ∈ Γ" := (Var Γ x) (at level 75).
 
 Inductive tm (Γ : Ctx) : ty -> Type :=
@@ -70,6 +69,7 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   (* Reals *)
   | rval : forall (r : R), tm Γ ℝ
   | add : tm Γ ℝ -> tm Γ ℝ -> tm Γ ℝ
+  | mul : tm Γ ℝ -> tm Γ ℝ -> tm Γ ℝ
 
   (* Nat *)
   | nsucc : tm Γ ℕ -> tm Γ ℕ
@@ -198,18 +198,16 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   (* Arrays *)
   | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
   | get _ ti ta => get _ ti (rename r ta)
-  (* | ifold _ _ tf ti ta => ifold _ _ (rename r tf) (rename r ti) (rename r ta) *)
 
   (* Nat *)
   | nval _ n => nval _ n
   | nsucc _ t => nsucc _ (rename r t)
-  (* | nval0 _ => nval0 _ *)
-  (* | nvalS _ n => nvalS _ n *)
   | nrec _ _ f i d => nrec _ _ (rename r f) (rename r i) (rename r d)
 
   (* Reals *)
   | rval _ r => rval _ r
   | add _ t1 t2 => add _ (rename r t1) (rename r t2)
+  | mul _ t1 t2 => mul _ (rename r t1) (rename r t2)
 
   (* Products *)
   | tuple _ t1 t2 => tuple _ (rename r t1) (rename r t2)
@@ -250,14 +248,13 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   (* Nat *)
   | nval _ n => nval _ n
   | nsucc _ t => nsucc _ (substitute s t)
-  (* | nval0 _ => nval0 _ *)
-  (* | nvalS _ t => nvalS _ (substitute s t) *)
-  | nrec _ _ f i d => nrec _ _ (substitute s f) (substitute s i) (substitute s d)
-
+  | nrec _ _ f i d =>
+    nrec _ _ (substitute s f) (substitute s i) (substitute s d)
 
   (* Reals *)
   | rval _ r => rval _ r
   | add _ t1 t2 => add _ (substitute s t1) (substitute s t2)
+  | mul _ t1 t2 => mul _ (substitute s t1) (substitute s t2)
 
   (* Products *)
   | tuple _ t1 t2 => tuple  _ (substitute s t1) (substitute s t2)
