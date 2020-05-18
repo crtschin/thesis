@@ -48,6 +48,25 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     first _ (tuple _ t1 t2) ~> t1
   | RW_Second : forall Γ τ σ (t1: tm Γ τ) (t2: tm Γ σ),
     second _ (tuple _ t1 t2) ~> t2
+  (* Loop Fusion *)
+  | RW_BuildGet : forall Γ τ n (i : Fin.t n) (f : Fin.t n -> tm Γ τ),
+    get Γ i (build Γ τ n f) ~> f i
+  (* Loop Fission *)
+  | RW_IFoldTuple :
+    forall Γ τ σ ti
+      (tf1 : tm Γ (ℕ → τ → τ)) (tf2 : tm Γ (ℕ → σ → σ))
+      (z0 : tm Γ τ) (z1 : tm Γ σ),
+    ifold (abs Γ (τ × σ → τ × σ) ℕ (abs (ℕ::Γ) (τ × σ) (τ × σ) (
+      (tuple ((τ×σ)::ℕ::Γ)
+        (app _ _ _
+          (app _ _ _ (shift (shift tf1))
+            (var _ _ (Pop _ _ _ (Top _ _))))
+          (first _ (var _ _ (Top _ _))))
+        (app _ _ _
+          (app _ _ _ (shift (shift tf2))
+            (var _ _ (Pop _ _ _ (Top _ _))))
+          (second _ (var _ _ (Top _ _))))))))
+      ti (tuple _ z0 z1) ~> tuple _ (ifold tf1 ti z0) (ifold tf2 ti z1)
   (* Lets *)
   | RW_LetDesugar : forall Γ τ σ (t1: tm (σ::Γ) τ) (t2: tm Γ σ),
     app _ _ _ (abs _ _ _ t1) t2 ~> letin t2 t1
@@ -55,6 +74,10 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     (e0: tm Γ τ) (e1: tm (τ::Γ) σ) (e2: tm (σ::Γ) ρ),
       letin (letin e0 e1) e2 ~>
         letin e0 (letin e1 (shift2 e2))
+  | RW_LetDupl : forall Γ τ σ
+    (e0: tm Γ τ) (e1: tm (τ::Γ) σ),
+    letin e0 (shift (letin e0 e1)) ~>
+      letin e0 (letin (var _ _ (Top _ _)) (shift e1))
   (* Ring addition *)
   | RW_add : forall Γ (t1 t1' t2 t2' : tm Γ ℝ),
     t1 ~> t1' ->
@@ -108,9 +131,21 @@ Proof with quick.
     try solve [extensionality ctx; simp denote_tm; rewrites; trivial]...
   { apply soundness... }
   all: extensionality ctx; simp denote_tm; rewrites.
+  { unfold compose. induction i...
+    { induction n... }
+    { unfold shave_fin. rewrite IHi... } }
+  { unfold ifold. simp denote_tm.
+    induction (⟦ ti ⟧ₜₘ ctx)...
+    rewrite_c IHd...
+    rewrite 3 denote_shift...
+    simp denote_tm...
+    rewrite 4 denote_shift... }
   { unfold letin.
     simp denote_tm.
     erewrite <- shift2_snd... }
+  { unfold letin.
+    simp denote_tm.
+    erewrite 2 denote_shift... }
   { apply Rplus_0_l. }
   { rewrite Rplus_comm.
     apply Rplus_0_l. }
