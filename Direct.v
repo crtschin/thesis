@@ -42,6 +42,7 @@ S Nat f g :=
       any related functions will also be constant.
   *)
   f = g /\ (exists n, f = fun _ => n);
+    (* (f = fun _ => 0 \/ (exists n, f = fun _ => Datatypes.S n)) *)
 (* For composed constructs, the relation needs to be preserved by the
     underlying subcomponents
 *)
