@@ -45,6 +45,14 @@ Fixpoint denote_t τ : Set :=
   end
 where "⟦ τ ⟧ₜ" := (denote_t τ).
 
+(* Given a substitution from Γ to Γ', one is able to transform
+    a heterogeneous list of type Γ' to Γ.
+
+    Intuitively:
+    A substitution 'uses up' types in the context by swapping
+    it out for the appropriate terms, so we add the denotations
+    of those same terms to the heterogeneous list Γ' to get Γ.
+*)
 Definition denote_ctx (Γ : Ctx) := hlist denote_t Γ.
 Notation "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
 Derive Signature for hlist.
@@ -145,7 +153,7 @@ denote_env (env_cons t G') with denote_env G' => {
 }.
 Notation "⟦ s ⟧ₑ" := (denote_env s).
 
-Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
+Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> ⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ :=
   match Γ with
   | [] => fun s ctx => HNil
   | h :: t => fun s ctx =>
@@ -153,7 +161,7 @@ Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
   end.
 Notation "⟦ s ⟧ₛ" := (denote_sub s).
 
-Fixpoint denote_ren {Γ Γ'}: ren Γ Γ' -> denote_ctx Γ' -> denote_ctx Γ :=
+Fixpoint denote_ren {Γ Γ'}: ren Γ Γ' -> ⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ :=
   match Γ with
   | [] => fun r ctx => HNil
   | τ :: t => fun r ctx =>
@@ -306,6 +314,13 @@ Proof with quick.
     admit. }
 Admitted.
 
+Lemma denote_sub_id_lifted : forall Γ τ (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ ⟧ₜₓ),
+  ⟦ substitute_lifted id_sub ⟧ₛ (denote_ctx_cons x ctx) = denote_ctx_cons x ctx.
+Proof with quick.
+  intros. unfold id_sub.
+  simp substitute_lifted.
+Admitted.
+
 Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦ Γ ⟧ₜₓ),
   ⟦ id_sub ⟧ₛ ctx = ctx.
 Proof with quick.
@@ -315,14 +330,6 @@ Proof with quick.
   { dependent destruction ctx... }
   { dependent destruction ctx...
     apply denote_ctx_eq...
-    rewrite denote_sub_tl_simpl.
-    unfold denote_sub. fold @denote_sub. simpl.
-  (* { destruct ctx... }
-  { (* TODO: Issue doing induction on elements in product list *)
-    dependent destruction ctx...
-    eapply injective_projections...
-    rewrite denote_sub_tl_simpl.
-    unfold denote_sub. *)
     admit. }
 Admitted.
 

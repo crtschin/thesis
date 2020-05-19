@@ -43,7 +43,7 @@ S Nat f g :=
       any related functions will also be constant.
   *)
   f = g /\ (exists n, f = fun _ => n);
-    (* (f = fun _ => 0 \/ (exists n, f = fun _ => Datatypes.S n)) *)
+
 (* For composed constructs, the relation needs to be preserved by the
     underlying subcomponents.
 
@@ -96,7 +96,7 @@ Inductive instantiation : forall Γ,
         instantiation (τ::Γ)
           (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: Dsb r)).
 
-Lemma derivative_id :
+Example derivative_id :
   Derive (⟦ real_id ⟧ₜₘ HNil) = fun _ => 1.
 Proof with quick.
   extensionality r.

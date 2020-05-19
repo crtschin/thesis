@@ -97,7 +97,7 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     t1 ~> rval Γ (-r) ->
     t2 ~> rval Γ r ->
     add Γ t1 t2 ~> rval Γ 0
-  | RW_mul_add : forall Γ (t t1 t2: tm Γ ℝ),
+  | RW_mul_distr : forall Γ (t t1 t2: tm Γ ℝ),
     add Γ (mul Γ t t1) (mul Γ t t2) ~> mul Γ t (add Γ t1 t2)
 where "t ~> s" := (rwrt t s).
 
