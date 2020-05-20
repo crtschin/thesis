@@ -308,11 +308,9 @@ Lemma denote_sub_id_ren : forall Γ Γ' (ctx : ⟦ Γ' ⟧ₜₓ) (r : ren Γ Γ
 Proof with quick.
   intros Γ Γ' ctx r.
   unfold compose_sub_ren.
-  unfold id_sub.
-  induction Γ... unfold hd_sub. simp denote_tm.
+  induction Γ...
   unfold tl_sub.
-  erewrite IHΓ.
-  unfold tl_ren...
+  erewrite IHΓ...
 Qed.
 
 Lemma denote_sub_id_ctx : forall Γ ctx,
@@ -322,7 +320,7 @@ Proof with quick.
   assert (id_sub = compose_sub_ren (@id_sub Γ) id_ren)...
   rewrite_c H.
   rewrite denote_sub_id_ren.
-  unfold id_ren. rewrite denote_ren_id...
+  rewrite denote_ren_id...
 Qed.
 
 Lemma denote_sub_tl_cons :
