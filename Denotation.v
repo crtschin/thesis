@@ -303,35 +303,27 @@ Lemma denote_sub_tl_simpl :
     ⟦ tl_sub sb ⟧ₛ ctx = htl (⟦ sb ⟧ₛ ctx).
 Proof. quick. Qed.
 
-Lemma denote_sub_id_ctx' : forall Γ,
-  ⟦ @id_sub Γ ⟧ₛ = Datatypes.id.
+Lemma denote_sub_id_ren : forall Γ Γ' (ctx : ⟦ Γ' ⟧ₜₓ) (r : ren Γ Γ'),
+  ⟦ compose_sub_ren id_sub r ⟧ₛ ctx = ⟦ r ⟧ᵣ ctx.
 Proof with quick.
-  induction Γ...
-  { extensionality ctx. dependent destruction ctx... }
-  { unfold id_sub in *. extensionality ctx.
-    (* unfold Datatypes.id. dependent destruction ctx.
-    apply denote_ctx_eq...  *)
-    admit. }
-Admitted.
-
-Lemma denote_sub_id_lifted : forall Γ τ (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ ⟧ₜₓ),
-  ⟦ substitute_lifted id_sub ⟧ₛ (denote_ctx_cons x ctx) = denote_ctx_cons x ctx.
-Proof with quick.
-  intros. unfold id_sub.
-  simp substitute_lifted.
-Admitted.
-
-Lemma denote_sub_id_ctx : forall Γ (ctx : ⟦ Γ ⟧ₜₓ),
-  ⟦ id_sub ⟧ₛ ctx = ctx.
-Proof with quick.
-  intros Γ ctx.
+  intros Γ Γ' ctx r.
+  unfold compose_sub_ren.
   unfold id_sub.
-  induction Γ...
-  { dependent destruction ctx... }
-  { dependent destruction ctx...
-    apply denote_ctx_eq...
-    admit. }
-Admitted.
+  induction Γ... unfold hd_sub. simp denote_tm.
+  unfold tl_sub.
+  erewrite IHΓ.
+  unfold tl_ren...
+Qed.
+
+Lemma denote_sub_id_ctx : forall Γ ctx,
+  ⟦ @id_sub Γ ⟧ₛ ctx = ctx.
+Proof with quick.
+  intros.
+  assert (id_sub = compose_sub_ren (@id_sub Γ) id_ren)...
+  rewrite_c H.
+  rewrite denote_sub_id_ren.
+  unfold id_ren. rewrite denote_ren_id...
+Qed.
 
 Lemma denote_sub_tl_cons :
   forall Γ Γ' τ (t : tm Γ' τ) ctx (sb : sub Γ Γ'),

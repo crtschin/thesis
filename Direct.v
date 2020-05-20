@@ -108,6 +108,16 @@ Proof with quick.
   apply Derive_id.
 Qed.
 
+(* Derivative of (y + x * x) *)
+Example derivative_square_plus :
+  ⟦ Dtm square_plus ⟧ₜₘ
+    (@HCons ty denote_t (Dt ℝ) [Dt ℝ] (7, 1)
+      (@HCons ty denote_t (Dt ℝ) [] (13, 0)
+        HNil)) = (13 + 7 * 7, 0 + (7 * 1 + 7 * 1)).
+Proof with quick.
+  simp Dtm...
+Qed.
+
 (* Very useful helper definitions for rewriting the relations,
     as the denotations we're working on are functions *)
 Lemma inst_eq : forall Γ f1 f2 g1 g2,

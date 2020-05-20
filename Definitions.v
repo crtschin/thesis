@@ -118,11 +118,16 @@ Definition ex_const :=
       (var [Real;Real] Real (Top [Real] Real))).
 
 Definition ex_plus :=
-  abs [] (Real → Real) Real
-    (abs [Real] Real Real
-      (add [Real;Real]
-        (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
-          (var [Real;Real] Real (Top [Real] Real)))).
+  (add [Real;Real]
+    (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
+      (var [Real;Real] Real (Top [Real] Real))).
+
+Definition square_plus :=
+  (add [Real;Real]
+    (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
+      (mul _
+        (var [Real;Real] Real (Top [Real] Real))
+        (var [Real;Real] Real (Top [Real] Real)))).
 
 Definition neuron :=
   abs [] (Real → Real → Real) Real
