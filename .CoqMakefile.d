@@ -4,9 +4,9 @@ Adequacy.vos Adequacy.vok Adequacy.required_vos: Adequacy.v
 Base.vo Base.glob Base.v.beautified Base.required_vo: Base.v 
 Base.vio: Base.v 
 Base.vos Base.vok Base.required_vos: Base.v 
-Continuation.vo Continuation.glob Continuation.v.beautified Continuation.required_vo: Continuation.v vect.vo Tactics.vo Simply.vo Direct.vo
-Continuation.vio: Continuation.v vect.vio Tactics.vio Simply.vio Direct.vio
-Continuation.vos Continuation.vok Continuation.required_vos: Continuation.v vect.vos Tactics.vos Simply.vos Direct.vos
+Continuation.vo Continuation.glob Continuation.v.beautified Continuation.required_vo: Continuation.v vect.vo Tactics.vo DepList.vo Simply.vo Direct.vo
+Continuation.vio: Continuation.v vect.vio Tactics.vio DepList.vio Simply.vio Direct.vio
+Continuation.vos Continuation.vok Continuation.required_vos: Continuation.v vect.vos Tactics.vos DepList.vos Simply.vos Direct.vos
 coquelicotComplements.vo coquelicotComplements.glob coquelicotComplements.v.beautified coquelicotComplements.required_vo: coquelicotComplements.v 
 coquelicotComplements.vio: coquelicotComplements.v 
 coquelicotComplements.vos coquelicotComplements.vok coquelicotComplements.required_vos: coquelicotComplements.v 
@@ -37,9 +37,9 @@ Normalization.vos Normalization.vok Normalization.required_vos: Normalization.v 
 Rewrite.vo Rewrite.glob Rewrite.v.beautified Rewrite.required_vo: Rewrite.v DepList.vo Tactics.vo Definitions.vo Normalization.vo Macro.vo Denotation.vo
 Rewrite.vio: Rewrite.v DepList.vio Tactics.vio Definitions.vio Normalization.vio Macro.vio Denotation.vio
 Rewrite.vos Rewrite.vok Rewrite.required_vos: Rewrite.v DepList.vos Tactics.vos Definitions.vos Normalization.vos Macro.vos Denotation.vos
-Simply.vo Simply.glob Simply.v.beautified Simply.required_vo: Simply.v Tactics.vo
-Simply.vio: Simply.v Tactics.vio
-Simply.vos Simply.vok Simply.required_vos: Simply.v Tactics.vos
+Simply.vo Simply.glob Simply.v.beautified Simply.required_vo: Simply.v Tactics.vo DepList.vo
+Simply.vio: Simply.v Tactics.vio DepList.vio
+Simply.vos Simply.vok Simply.required_vos: Simply.v Tactics.vos DepList.vos
 Tactics.vo Tactics.glob Tactics.v.beautified Tactics.required_vo: Tactics.v 
 Tactics.vio: Tactics.v 
 Tactics.vos Tactics.vok Tactics.required_vos: Tactics.v 

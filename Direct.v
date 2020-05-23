@@ -97,22 +97,26 @@ Inductive instantiation : forall Γ,
           (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: Dsb r)).
 
 Example derivative_id :
-  Derive (⟦ real_id ⟧ₜₘ HNil) = fun _ => 1.
+  (⟦ Dtm real_id ⟧ₜₘ HNil) (3, 1) = (3, 1).
 Proof with quick.
-  extensionality r.
-  simp denote_tm.
-  eassert (⟦ real_id ⟧ₜₘ HNil = id).
-  { unfold real_id. simp denote_tm.
-    extensionality x. simp denote_tm... }
-  rewrites. clear H.
-  apply Derive_id.
+  unfold real_id.
+  simp Dtm...
+Qed.
+
+Example derivative_plus :
+  ⟦ Dtm ex_plus ⟧ₜₘ
+    (@denote_ctx_cons [Dt ℝ] (Dt ℝ) (7, 1)
+      (@denote_ctx_cons [] (Dt ℝ) (13, 0)
+        HNil)) = (13 + 7, 0 + 1).
+Proof with quick.
+  simp Dtm...
 Qed.
 
 (* Derivative of (y + x * x) *)
 Example derivative_square_plus :
   ⟦ Dtm square_plus ⟧ₜₘ
-    (@HCons ty denote_t (Dt ℝ) [Dt ℝ] (7, 1)
-      (@HCons ty denote_t (Dt ℝ) [] (13, 0)
+    (@denote_ctx_cons [Dt ℝ] (Dt ℝ) (7, 1)
+      (@denote_ctx_cons [] (Dt ℝ) (13, 0)
         HNil)) = (13 + 7 * 7, 0 + (7 * 1 + 7 * 1)).
 Proof with quick.
   simp Dtm...

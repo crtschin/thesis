@@ -255,4 +255,15 @@ Section hmap.
   Qed.
 End hmap.
 
-Arguments hmap [A B1 B2] f [ls] hl.
+Fixpoint henumerate' {A} {B1 B2 : A -> Type}
+  (f : forall x, nat -> B1 x -> B2 x) (n : nat)
+  {ls : list A} (hl : hlist B1 ls) : hlist B2 ls :=
+  match hl with
+  | HNil => HNil
+  | HCons a l x hl' => f a n x ::: henumerate' f (S n) hl'
+  end.
+
+Fixpoint henumerate {A} {B1 B2 : A -> Type}
+  (f : forall x, nat -> B1 x -> B2 x)
+  {ls : list A} (hl : hlist B1 ls) : hlist B2 ls :=
+  henumerate' f 0 hl.

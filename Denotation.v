@@ -25,8 +25,8 @@ Local Open Scope program_scope.
 
 (* Notations:
   ⟦ τ ⟧ₜ := denote_t τ, Currently piggybacks off of Coq's types.
-  ⟦ Γ ⟧ₜₓ := denote_ctx Γ, A product list of types ensured to exist
-                          in the context Γ.
+  ⟦ Γ ⟧ₜₓ := denote_ctx Γ, A heterogeneous list of types ensured to exist
+                          in the context Γ w.r.t. denote_t.
   ⟦ v ⟧ₜₓ := denote_v v, A projection of the product list denoted by the typing
                           context relevant to the variable referenced by v
   ⟦ t ⟧ₜₘ := denote_tm t, Gives a function f of t such that it has the correct
@@ -58,7 +58,7 @@ Notation "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
 Derive Signature for hlist.
 Definition denote_ctx_hd {Γ : Ctx} (l : hlist denote_t Γ):= hhd l.
 Definition denote_ctx_tl {Γ : Ctx} (l : hlist denote_t Γ):= htl l.
-Definition denote_ctx_cons {Γ τ} (t : ⟦ τ ⟧ₜ)
+Definition denote_ctx_cons {Γ τ} t
   (l : hlist denote_t Γ):= @HCons ty denote_t τ Γ t l.
 
 Lemma denote_ctx_eq :
@@ -70,21 +70,6 @@ Equations denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
 denote_v (Top Γ τ) (HCons h t) := h;
 denote_v (Pop Γ τ σ v) (HCons h t) := denote_v v t.
 Notation "⟦ v ⟧ᵥ" := (denote_v v).
-
-(* Reserved Notation "⟦ Γ ⟧ₜₓ".
-Fixpoint denote_ctx (Γ : Ctx) : Type :=
-  match Γ with
-  | [] => unit
-  | h :: t => ⟦h⟧ₜ * ⟦t⟧ₜₓ
-  end
-where "⟦ Γ ⟧ₜₓ" := (denote_ctx Γ).
-
-Fixpoint denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ  :=
-  match v with
-  | Top Γ' τ' => fun gamma => fst gamma
-  | Pop Γ' τ' σ x => fun gamma => denote_v x (snd gamma)
-  end.
-Notation "⟦ v ⟧ᵥ" := (denote_v v). *)
 
 Fixpoint vector_nth {s : Set} {n}
   (i : Fin.t n) : vector s n -> s :=
@@ -172,7 +157,6 @@ Notation "⟦ r ⟧ᵣ" := (denote_ren r).
 (* Lemmas for renaming and substitution in the denotated context.
   Many from Strongly Typed Terms in Coq by Nick Becton, et al.
 *)
-
 Lemma denote_ren_elim : forall Γ Γ' τ
   (r : ren Γ Γ') (x : ⟦ τ ⟧ₜ) (ctx : ⟦ Γ' ⟧ₜₓ),
   denote_ren r ctx = denote_ren (tl_ren (rename_lifted r)) (x ::: ctx).
@@ -221,8 +205,8 @@ Lemma denote_ren_id : forall Γ,
   denote_ren (@id_ren Γ) = Datatypes.id.
 Proof with quick.
   intros. extensionality x.
-  dependent induction Γ... dependent destruction x...
-  dependent destruction x...
+  dependent induction Γ;
+    dependent destruction x...
   apply denote_ctx_eq...
   unfold tl_ren, id_ren in *...
   rewrite denote_ren_shift...
