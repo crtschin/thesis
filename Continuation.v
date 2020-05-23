@@ -257,11 +257,11 @@ Equations Dtm_ctx' n m (ctx : ⟦repeat ℝ n⟧ₜₓ) (ctx2 : ⟦repeat (Array
 Dtm_ctx' 0 m ctx ctx' := HNil;
 Dtm_ctx' (S n) m (HCons x hl) (HCons x' hl') :=
   @HCons ty denote_t (Dt m ℝ)
-  (map (Dt m) (repeat ℝ n))
+    (map (Dt m) (repeat ℝ n))
   (x, x') (Dtm_ctx' n m hl hl').
 
-Equations Dtm_ctx {n} (ctx : ⟦repeat ℝ n⟧ₜₓ) : ⟦map (Dt n) (repeat ℝ n)⟧ₜₓ :=
-Dtm_ctx ctx := Dtm_ctx' n n ctx (one_hots 0 n n).
+Equations Dtm_ctx {n m} (ctx : ⟦repeat ℝ n⟧ₜₓ) : ⟦map (Dt m) (repeat ℝ n)⟧ₜₓ :=
+Dtm_ctx ctx := Dtm_ctx' n m ctx (one_hots 0 m n).
 
 Equations vector_one_hot_c' (j i n : nat) : R -> vector R n  :=
 vector_one_hot_c' j i 0 r := Vnil;
@@ -286,9 +286,9 @@ Dtm_ctx_c' (S n) m (HCons x hl) (HCons x' hl') :=
   (map (Dt_c m) (repeat ℝ n))
   (x, x') (Dtm_ctx_c' n m hl hl').
 
-Equations Dtm_ctx_c {n} (ctx : ⟦repeat ℝ n⟧ₜₓ)
-  : ⟦map (Dt_c n) (repeat ℝ n)⟧ₜₓ :=
-Dtm_ctx_c ctx := Dtm_ctx_c' n n ctx (one_hots_c 0 n n).
+Equations Dtm_ctx_c {n m} (ctx : ⟦repeat ℝ n⟧ₜₓ)
+  : ⟦map (Dt_c m) (repeat ℝ n)⟧ₜₓ :=
+Dtm_ctx_c ctx := Dtm_ctx_c' n m ctx (one_hots_c 0 m n).
 
 (*
   Logical relations proof between the denotations given by the
@@ -299,9 +299,29 @@ Equations S n τ :
   (R -> ⟦ Dt n τ ⟧ₜ) -> (R -> ⟦ Dt_c n τ ⟧ₜ) -> Prop :=
 S n ℝ f g :=
   (fun r => (snd (f r))) = fun r => (snd (g r)) 1;
-S n (Array m τ) f g := True;
-S n (τ × σ) f g := True;
-S n (τ → σ) f g := True.
+S n (Array m τ) f g := forall i,
+  exists f1 g1,
+    S n τ f1 g1 /\
+    (fun r => vector_nth i (f r)) = f1 /\
+    (fun r => vector_nth i (g r)) = g1;
+S n (σ × ρ) f g :=
+  exists f1 f2 g1 g2,
+  exists (s1 : S n σ f1 f2) (s2 : S n ρ g1 g2),
+    (f = fun r => (f1 r, g1 r)) /\
+    (g = fun r => (f2 r, g2 r));
+S n (σ → ρ) f g :=
+  forall (g1 : R -> ⟦ Dt n σ ⟧ₜ)
+    (g2 : R -> ⟦ Dt_c n σ ⟧ₜ) (sσ : S n σ g1 g2),
+    S n ρ (fun x => f x (g1 x))
+      (fun x => g x (g2 x)).
+
+(* Definition pad_Dt n τ (t : ⟦ Dt n τ ⟧ₜ)
+  : ⟦ Dt (Datatypes.S n) τ ⟧ₜ.
+Admitted.
+
+Definition pad_Dt_c n τ (t : ⟦ Dt_c n τ ⟧ₜ)
+  : ⟦ Dt_c (Datatypes.S n) τ ⟧ₜ.
+Admitted.
 
 (* Equations? pad_Dt n τ (t : ⟦ Dt n τ ⟧ₜ)
   : ⟦ Dt (Datatypes.S n) τ ⟧ₜ :=
@@ -310,26 +330,41 @@ pad_Dt n (Array m τ) t := Vmap (pad_Dt n τ) t;
 pad_Dt n (τ × σ) (t1, t2) := (pad_Dt n τ t1, pad_Dt n σ t2);
 pad_Dt n (τ → σ) t := _. *)
 
-Equations? pad_Dtm_ctx n Γ (ctx : ⟦ Dctx n Γ ⟧ₜₓ)
+Equations pad_Dtm_ctx n Γ (ctx : ⟦ Dctx n Γ ⟧ₜₓ)
   : ⟦ Dctx (Datatypes.S n) Γ ⟧ₜₓ :=
 pad_Dtm_ctx n nil ctx := ctx;
-pad_Dtm_ctx n (t::l) (HCons h hl) := _ ::: pad_Dtm_ctx n l hl.
+pad_Dtm_ctx n (τ::l) (HCons h hl) := pad_Dt n τ h ::: pad_Dtm_ctx n l hl.
+
+Equations pad_Dtm_ctx_c n Γ (ctx : ⟦ Dctx_c n Γ ⟧ₜₓ)
+  : ⟦ Dctx_c (Datatypes.S n) Γ ⟧ₜₓ :=
+pad_Dtm_ctx_c n nil ctx := ctx;
+pad_Dtm_ctx_c n (τ::l) (HCons h hl) :=
+  pad_Dt_c n τ h ::: pad_Dtm_ctx_c n l hl.
+
+Equations Dtm_cons n Γ τ (x : ⟦ Dt n τ ⟧ₜ) (xs : ⟦ Dctx n Γ ⟧ₜₓ) :
+  ⟦Dctx n (τ::Γ)⟧ₜₓ :=
+Dtm_cons n Γ τ x xs := x ::: xs.
+
+Equations Dtm_cons_c n Γ τ (x : ⟦ Dt_c n τ ⟧ₜ) (xs : ⟦ Dctx_c n Γ ⟧ₜₓ) :
+  ⟦Dctx_c n (τ::Γ)⟧ₜₓ :=
+Dtm_cons_c n Γ τ x xs := x ::: xs. *)
 
 (* Instantiation here keeps track of how many function arguments
     there are/partial derivs are to be calculated. *)
 Inductive instantiation : forall n Γ,
     (R -> ⟦ Dctx n Γ ⟧ₜₓ) -> (R -> ⟦ Dctx_c n Γ ⟧ₜₓ) -> Prop :=
-  | inst_empty :
-      instantiation 0 [] (Basics.const HNil) (Basics.const HNil)
-  | inst_args :
-      forall n Γ τ,
+  | inst_empty : forall n,
+      instantiation n [] (Basics.const HNil) (Basics.const HNil)
+  (* | inst_args :
+      forall n Γ,
       forall g1 g2,
       forall (sb: R -> ⟦ Dctx n Γ ⟧ₜₓ),
       forall (sb_c: R -> ⟦ Dctx_c n Γ ⟧ₜₓ),
         instantiation n Γ sb sb_c ->
-        S (Datatypes.S n) ℝ g1 g2 ->
+        S n ℝ g1 g2 ->
         instantiation (Datatypes.S n) (ℝ::Γ)
-          (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: sb_c r))
+          (fun r => pad_Dtm_ctx n (ℝ::Γ) (Dtm_cons n Γ ℝ (g1 r) (sb r)))
+          (fun r => pad_Dtm_ctx_c n (ℝ::Γ) (Dtm_cons_c n Γ ℝ (g2 r) (sb_c r))) *)
   | inst_cons :
       forall n Γ τ,
       forall g1 g2,
@@ -359,21 +394,137 @@ Lemma S_subst :
   S n τ (fun x => ⟦Dtm n t⟧ₜₘ (sb x))
     (fun x => ⟦Dtm_c n t⟧ₜₘ (sb_c x)).
 Proof with quick.
+  dependent induction t...
+  { (* Var *)
+    simp Dtm Dtm_c.
+    dependent induction v; quick;
+      dependent destruction H...
+    { pose proof (IHv sb0 sb_c0 H) as IHv.
+      erewrite S_eq.
+      apply IHv.
+    all: extensionality x; simp denote_tm... } }
+  { (* App *)
+    simp Dtm Dtm_c.
+    pose proof (IHt1 sb sb_c H) as IHt1.
+    pose proof (IHt2 sb sb_c H) as IHt2.
+    simp S in IHt1.
+    erewrite S_eq.
+    apply IHt1...
+  all: extensionality x; simp denote_tm... }
+  { (* App *)
+    intros. simp S Dtm Dtm_c...
+    specialize IHt with
+      (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: sb_c r))...
+    eapply IHt. constructor; assumption. }
+  { (* Build *)
+    intros. simp S...
+    induction n0.
+    { inversion i. }
+    { pose proof (IHn0 (shave_fin t)) as IHn0.
+      simp Dtm denote_tm in *...
+      dependent destruction i...
+      clear IHn0.
+      exists (fun r =>
+        ⟦ Dtm n (t (nat_to_fin n0)) ⟧ₜₘ (sb r)).
+      exists (fun r =>
+        ⟦ Dtm_c n (t (nat_to_fin n0)) ⟧ₜₘ (sb_c r))... } }
+  { (* Get
+        Proven by logical relation where (τ:=Array n τ) *)
+    pose proof (IHt sb sb_c H) as IHt. simp S in *.
+    specialize IHt with t.
+    destruct IHt as [f1 [g1 [Hs1 [Heq1 Heq2]]]]; subst.
+    erewrite S_eq... }
+  { (* Const *)
+    simp S.
+    extensionality x.
+    simp Dtm Dtm_c. simp denote_tm...
+    simp denote_tm.
+    unfold compose.
+    eassert (H': (fun (i : Fin.t n) =>
+      ⟦ rval (map (Dt n) Γ) 0 ⟧ₜₘ) = const (const 0)).
+    { extensionality i. extensionality ctx. simp denote_tm... }
+    rewrite_c H'.
+    eassert ((fun x0 : Fin.t n =>
+      ⟦ const (rval (ℝ :: map (Dt_c n) Γ) 0) x0 ⟧ₜₘ) = const (const 0)).
+    { extensionality i. extensionality ctx. unfold const. simp denote_tm... }
+    rewrite_c H0.
+    admit. }
+  { simp Dtm Dtm_c.
+    pose proof (IHt1 sb sb_c H) as IHt1.
+    pose proof (IHt2 sb sb_c H) as IHt2.
+    simp S in *.
+    extensionality r.
+    simp denote_tm; unfold vector_add, vector_map2...
+    simp denote_tm; unfold compose...
+    admit. }
+  { simp Dtm Dtm_c.
+    pose proof (IHt1 sb sb_c H) as IHt1.
+    pose proof (IHt2 sb sb_c H) as IHt2.
+    simp S in *.
+    extensionality r.
+    simp denote_tm; unfold vector_add, vector_map2...
+    simp denote_tm; unfold compose...
+    induction n...
+    apply Vcons_eq. splits...
+    { simp denote_tm; unfold vector_add, vector_map...
+      simp denote_tm; unfold compose...
+      repeat simp denote_tm.
+      admit. }
+    { unfold shave_fin.
+      admit. } }
+  { (* Products *)
+    simp Dtm Dtm_c.
+    pose proof (IHt1 sb sb_c H) as IHt1.
+    pose proof (IHt2 sb sb_c H) as IHt2.
+    simp S.
+    exists (fun x : R => ⟦ Dtm n t1 ⟧ₜₘ (sb x));
+      exists (fun x : R => ⟦ Dtm_c n t1 ⟧ₜₘ (sb_c x)).
+    exists (fun x : R => ⟦ Dtm n t2 ⟧ₜₘ (sb x));
+      exists (fun x : R => ⟦ Dtm_c n t2 ⟧ₜₘ (sb_c x)).
+    exists IHt1; exists IHt2.
+    split... }
+  { (* Projection 1 *)
+    simp Dtm Dtm_c.
+    pose proof (IHt sb sb_c H) as IHt.
+    simp S in IHt.
+    destruct IHt as [f1 [f2 [g1 [g2 [S1 [S2 [Heq1 Heq2]]]]]]].
+    erewrite S_eq; quick; extensionality x...
+    { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
+    { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
+  { (* Projection 2 *)
+    simp Dtm Dtm_c.
+    pose proof (IHt sb sb_c H) as IHt.
+    simp S in IHt.
+    destruct IHt as [f1 [f2 [g1 [g2 [S1 [S2 [Heq1 Heq2]]]]]]].
+    erewrite S_eq; quick; extensionality x...
+    { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
+    { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
 Admitted.
 
 Lemma fundamental_property :
-  forall τ n,
-  forall (t : tm (repeat ℝ n) τ),
-  forall (f : R -> ⟦ repeat ℝ n ⟧ₜₓ),
-  S n τ (fun x => ⟦Dtm n t⟧ₜₘ (Dtm_ctx (f x)))
-    (fun x => ⟦Dtm_c n t⟧ₜₘ (Dtm_ctx_c (f x))).
+  forall τ n m,
+  forall (t : tm (repeat ℝ m) τ),
+  forall (f : R -> ⟦ repeat ℝ m ⟧ₜₓ),
+  S n τ (fun x => ⟦Dtm n t⟧ₜₘ (@Dtm_ctx m n (f x)))
+    (fun x => ⟦Dtm_c n t⟧ₜₘ (@Dtm_ctx_c m n (f x))).
 Proof with quick.
   intros.
   apply S_subst.
-  induction n...
-  { constructor. }
-  { constructor. }
-Qed.
+  clear t.
+  induction m...
+  { erewrite inst_eq.
+  2,3: extensionality x; remember (f x);
+      dependent destruction d;
+      simp Dtm_ctx Dtm_ctx_c Dtm_ctx' Dtm_ctx_c';
+      reflexivity.
+    eassert (H: (fun _ : R => HNil) = const HNil)...
+    rewrite_c H.
+    constructor. }
+  { erewrite inst_eq.
+    constructor...
+  2:{ admit. }
+    all: admit. }
+Admitted.
 
 Lemma S_correctness_R :
   forall n
