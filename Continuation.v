@@ -385,6 +385,12 @@ Lemma S_eq : forall n τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S n τ f1 f2 = S n τ g1 g2.
 Proof. intros; rewrites. Qed.
 
+Lemma denote_array_eq :
+  forall Γ τ n f1 f1' (ctx : ⟦ Γ ⟧ₜₓ) (ctx' : ⟦ Γ ⟧ₜₓ),
+    f1 = f1' -> ctx = ctx' ->
+    denote_array (τ:=τ) n f1 ctx = denote_array (τ:=τ) n f1' ctx'.
+Proof. intros; rewrites. Qed.
+
 Lemma S_subst :
   forall Γ τ n,
   forall (t : tm Γ τ),
@@ -448,25 +454,56 @@ Proof with quick.
       ⟦ const (rval (ℝ :: map (Dt_c n) Γ) 0) x0 ⟧ₜₘ) = const (const 0)).
     { extensionality i. extensionality ctx. unfold const. simp denote_tm... }
     rewrite_c H0.
+    (* induction n...
+    apply Vcons_eq. split... *)
     admit. }
-  { simp Dtm Dtm_c.
+  { (* Add *)
+    simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as IHt1.
     pose proof (IHt2 sb sb_c H) as IHt2.
     simp S in *.
     extensionality r.
     simp denote_tm; unfold vector_add, vector_map2...
     simp denote_tm; unfold compose...
-    admit. }
-  { simp Dtm Dtm_c.
+    erewrite denote_array_eq...
+    erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
+  2:{ extensionality i. extensionality ctx. simp denote_tm.
+      rewrite 2 denote_shift. simp denote_tm.
+      reflexivity. }
+  2:{ extensionality i. extensionality ctx. simp denote_tm.
+      reflexivity. }
+    eapply equal_f in IHt1.
+    eapply equal_f in IHt2.
+    induction n...
+    eapply Vcons_eq. split...
+    { rewrite <- IHt1. rewrite <- IHt2... }
+    { unfold shave_fin...
+      simp denote_v.
+      admit. } }
+  { (* Mul *)
+    simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as IHt1.
     pose proof (IHt2 sb sb_c H) as IHt2.
     simp S in *.
     extensionality r.
     simp denote_tm; unfold vector_add, vector_map2...
     simp denote_tm; unfold compose...
+    erewrite denote_array_eq...
+    erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
+  2:{ extensionality i. extensionality ctx.
+      simp denote_tm. rewrite 4 denote_shift.
+      simp denote_tm. reflexivity. }
+  2:{ extensionality i. extensionality ctx.
+      simp denote_tm. unfold vector_map.
+      simp denote_tm. unfold compose.
+      reflexivity. }
     induction n...
     apply Vcons_eq. splits...
     { simp denote_tm; unfold vector_add, vector_map...
+      unfold shave_fin.
+      eapply equal_f in IHt1.
+      eapply equal_f in IHt2.
+      erewrite Vcons_eq.
       simp denote_tm; unfold compose...
       repeat simp denote_tm.
       admit. }
@@ -522,7 +559,6 @@ Proof with quick.
     constructor. }
   { erewrite inst_eq.
     constructor...
-  2:{ admit. }
     all: admit. }
 Admitted.
 
