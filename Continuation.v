@@ -564,8 +564,6 @@ Proof with quick.
         rewrites. simp denote_v.
         admit. }
       { admit. } } }
-    { unfold shave_fin.
-      admit. } }
   { (* Products *)
     simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as IHt1.
@@ -662,7 +660,8 @@ Lemma S_correctness_R :
     (fun r => (snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c (ctx r)))) 1).
 Proof with quick.
   intros.
-  simp S in *.
+  simp S in *. destruct H as [Heq1 Heq2].
+  apply Heq2.
 Qed.
 
 Lemma correctness :
