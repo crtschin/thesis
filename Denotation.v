@@ -131,12 +131,12 @@ denote_array 0 f ctx := Vnil;
 denote_array (S n) f ctx := Vcons (f (nat_to_fin n) ctx)
   ((denote_array n (shave_fin f)) ctx).
 
+Reserved Notation "⟦ s ⟧ₑ".
 Equations denote_env {Γ} (G : Env Γ): ⟦ Γ ⟧ₜₓ :=
 denote_env env_nil => HNil;
 denote_env (env_cons t G') with denote_env G' => {
-  denote_env (env_cons t G') X => ⟦ t ⟧ₜₘ X ::: X
-}.
-Notation "⟦ s ⟧ₑ" := (denote_env s).
+  denote_env (env_cons t G') X => ⟦ t ⟧ₜₘ X ::: X }
+where "⟦ s ⟧ₑ" := (denote_env s).
 
 Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> ⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ :=
   match Γ with
@@ -221,12 +221,13 @@ Proof with eauto.
   dependent destruction ctx.
   specialize H with Γ Γ σ (fun t x => x) d ctx.
   unfold tl_ren in H.
+  symmetry in H.
   assert (H':
+    (fun (ρ : ty) (x0 : ρ ∈ Γ) => Pop Γ ρ σ x0) =
     (fun (σ0 : ty) (x : σ0 ∈ Γ) =>
-       rename_lifted (fun (t : ty) (x0 : t ∈ Γ) => x0) σ0 (Pop Γ σ0 σ x)) =
-    (fun (ρ : ty) (x0 : ρ ∈ Γ) => Pop Γ ρ σ x0)).
-  { apply functional_extensionality_dep... }
-  rewrite <- H'. rewrite <- H.
+       rename_lifted (fun (t : ty) (x0 : t ∈ Γ) => x0) σ0 (Pop Γ σ0 σ x))
+    ) by (extensionality x; quick).
+  rewrite_c H'. rewrite_c H.
   fold (@id_ren Γ). rewrite denote_ren_commutes.
   rewrite app_ren_id...
 Qed.
@@ -301,7 +302,7 @@ Lemma denote_sub_id_ctx : forall Γ ctx,
   ⟦ @id_sub Γ ⟧ₛ ctx = ctx.
 Proof with quick.
   intros.
-  assert (id_sub = compose_sub_ren (@id_sub Γ) id_ren)...
+  assert (H: id_sub = compose_sub_ren (@id_sub Γ) id_ren)...
   rewrite_c H.
   rewrite denote_sub_id_ren.
   rewrite denote_ren_id...

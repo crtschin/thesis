@@ -188,7 +188,7 @@ Proof with quick.
     intros. simp S Dtm...
     specialize IHt with
       (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: Dsb r))...
-    eapply IHt. constructor; assumption. }
+    eapply IHt. constructor... }
   { (* Build *)
     intros. simp S...
     induction n.
@@ -219,6 +219,8 @@ Proof with quick.
     destruct IHt as [f1 [g1 [Hs1 [Heq1 Heq2]]]]; subst.
     erewrite S_eq... }
   { (* Const *)
+    (* For ℝ cases, prove that there exists a derivative and give
+        that derivative *)
     intros. simp S.
     (* Setup rewrite rule using 'denotation of (rval r) = const r' *)
     assert (H': forall r,
@@ -235,11 +237,11 @@ Proof with quick.
       unfold const.
       rewrite Derive_const... } }
   { (* Add *)
-    simpl in *. intros.
+    intros.
     (* Specialize IH to give evidence that
       subterms are derivable/give derivative *)
-    pose proof (IHt1 sb Dsb H) as [Heq1 Heq1'].
-    pose proof (IHt2 sb Dsb H) as [Heq2 Heq2'].
+    destruct (IHt1 sb Dsb H) as [Heq1 Heq1'].
+    destruct (IHt2 sb Dsb H) as [Heq2 Heq2'].
     clear IHt1 IHt2.
     (* Prove addition of subterms is derivable
       and give derivative value *)
@@ -254,19 +256,14 @@ Proof with quick.
       simp denote_tm.
       apply injective_projections;
         rewrite_c Heq1'; rewrite_c Heq2'...
-      (* Rewrite using definition of denote_tm *)
-      assert
-        (H': (fun x : R => ⟦ add Γ t1 t2 ⟧ₜₘ (sb x)) =
-          fun x : R => ⟦ t1 ⟧ₜₘ (sb x) + ⟦ t2 ⟧ₜₘ (sb x))
-        by (extensionality r; now simp denote_tm).
-      rewrite_c H'.
       (* Derivative is addition of derivative of subterms *)
-      rewrite Derive_plus... } }
+      symmetry.
+      apply (Derive_plus _ _ x (Heq1 x) (Heq2 x)). } }
   { (* Mul
       Same as addition *)
     intros H.
-    pose proof (IHt1 sb Dsb H) as [IHex1 IHdiv1].
-    pose proof (IHt2 sb Dsb H) as [IHex2 IHdiv2].
+    destruct (IHt1 sb Dsb H) as [IHex1 IHdiv1].
+    destruct (IHt2 sb Dsb H) as [IHex2 IHdiv2].
     clear IHt1 IHt2.
     simp S. split...
     { apply (ex_derive_mult _ _ _ (IHex1 x) (IHex2 x)). }
@@ -283,20 +280,22 @@ Proof with quick.
           Derive (fun x0 : R => ⟦ t1 ⟧ₜₘ (sb x0)) x * ⟦ t2 ⟧ₜₘ (sb x) = _) by now rewrite Rmult_comm.
         rewrite_c H'.
         rewrite Rplus_comm... } } }
-  { (* Nsucc *)
+  { (* Nsucc
+        Terms with type ℕ don't carry a derivative, so prove
+        `t` and `Dtm t` are equal and they denotate to some
+        constant function which gives n. *)
     intros H. simp S.
     pose proof (IHt sb Dsb H) as IHt.
     simp S in IHt. destruct IHt as [IHeq IHex].
     split.
-    { extensionality x. simp Dtm denote_tm.
+    { (* `t = Dtm t` proven by IH *)
+      extensionality x. simp Dtm denote_tm.
       pose proof (equal_f IHeq)... }
-    { destruct IHex as [n IHex].
-      destruct n.
-      { exists 1%nat. extensionality x.
-        simp denote_tm. rewrite (equal_f IHex)... }
-      { exists (Datatypes.S (Datatypes.S n)).
-        extensionality r. simp denote_tm.
-        rewrite (equal_f IHex)... } } }
+    { (* Give the denotation of these terms. *)
+      destruct IHex as [n IHex].
+      exists (Datatypes.S n).
+      extensionality x. simp denote_tm.
+      rewrite (equal_f IHex)... } }
   { (* Nval *)
     intros H. simp S. splits.
     exists n. extensionality x. simp denote_tm... }
@@ -364,8 +363,8 @@ Proof with quick.
     simp S in IHt; pose proof (IHt H) as H'; clear IHt.
     destruct H' as [f1 [f2 [g1 [g2 [Hs1 [_ [Heq1 Heq2]]]]]]].
     erewrite S_eq; quick; extensionality x...
-    { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
-    { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
+    { simp denote_tm. erewrite (equal_f Heq1)... }
+    { simp denote_tm. erewrite (equal_f Heq2)... } }
   { (* Projection 2
         Idem *)
     intros. simp Dtm.
@@ -373,14 +372,14 @@ Proof with quick.
     simp S in IHt; pose proof (IHt H) as H'; clear IHt.
     destruct H' as [f1 [f2 [g1 [g2 [_ [Hs2 [Heq1 Heq2]]]]]]].
     erewrite S_eq; quick; extensionality x...
-    { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
-    { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
+    { simp denote_tm. erewrite (equal_f Heq1)... }
+    { simp denote_tm. erewrite (equal_f Heq2)... } }
   { (* Case *)
     intros.
     pose proof (IHt1 sb Dsb H) as IHt1.
     pose proof (IHt2 sb Dsb H) as IHt2.
     pose proof (IHt3 sb Dsb H) as IHt3.
-    simp S in *. simpl. simp Dtm. simpl.
+    simp S in *. simp Dtm.
     (* Either term denotates to inl or inr *)
     destruct IHt1 as [[g1 [g2 H']]|[g1 [g2 H']]].
     { (* Scrutinee is inl *)

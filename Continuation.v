@@ -503,9 +503,9 @@ Proof with quick.
       unfold shave_fin.
       eapply equal_f in IHt1.
       eapply equal_f in IHt2.
-      erewrite Vcons_eq.
+      (* erewrite Vcons_eq.
       simp denote_tm; unfold compose...
-      repeat simp denote_tm.
+      repeat simp denote_tm. *)
       admit. }
     { unfold shave_fin.
       admit. } }
