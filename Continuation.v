@@ -492,14 +492,24 @@ Proof with quick.
         ⟦ const (rval (ℝ :: map (Dt_c n) Γ) 0) x0 ⟧ₜₘ) = const (const 0)).
       { extensionality i. extensionality ctx. unfold const. simp denote_tm... }
       rewrite_c H'.
-      induction n...
-      apply Vcons_eq. split...
-      (* unfold shave_fin, const in *. *)
-      admit. } }
+      induction Γ...
+      { remember (sb x). dependent destruction d.
+        remember (sb_c x). dependent destruction d.
+        unfold const.
+        induction n... unfold shave_fin.
+        apply Vcons_eq. splits. apply IHn.
+        dependent destruction H. constructor. }
+      { remember (sb x). dependent destruction d.
+        remember (sb_c x). dependent destruction d0.
+        dependent destruction n...
+        apply Vcons_eq. split...
+        dependent destruction H.
+        admit. } } }
   { (* Add *)
     simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as [IHeq1 IHeq1'].
     pose proof (IHt2 sb sb_c H) as [IHeq2 IHeq2'].
+    clear IHt1 IHt2.
     simp S in *. split; extensionality r;
       eapply equal_f in IHeq1; eapply equal_f in IHeq2;
       eapply equal_f in IHeq1'; eapply equal_f in IHeq2'.
@@ -518,7 +528,6 @@ Proof with quick.
       eapply Vcons_eq. split...
       { rewrites... }
       { unfold shave_fin...
-        simp denote_v.
         admit. } } }
   { (* Mul *)
     simp Dtm Dtm_c.
