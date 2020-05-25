@@ -28,13 +28,13 @@ Inductive ty : Type :=
   | Array : nat -> ty -> ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
-  (* | Sum  : ty -> ty -> ty *)
+  | Sum  : ty -> ty -> ty
 .
 
 Notation "'ℝ'" := (Real).
 (* Notation "'ℕ'" := (Nat). *)
 Notation "A × B" := (Prod A B) (left associativity, at level 89).
-(* Notation "A <+> B" := (Sum A B) (left associativity, at level 89). *)
+Notation "A <+> B" := (Sum A B) (left associativity, at level 89).
 Notation "A → B" := (Arrow A B) (right associativity, at level 90).
 
 (*
@@ -93,12 +93,12 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | second : forall {τ σ}, tm Γ (τ × σ) -> tm Γ σ
 
   (* Sums *)
-  (* | case : forall {τ σ ρ}, tm Γ (τ <+> σ) ->
+  | case : forall {τ σ ρ}, tm Γ (τ <+> σ) ->
     tm Γ (τ → ρ) ->
     tm Γ (σ → ρ) ->
     tm Γ ρ
-  | inl : forall τ σ, tm Γ τ -> tm Γ (τ <+> σ)
-  | inr : forall τ σ, tm Γ σ -> tm Γ (τ <+> σ) *)
+  | inl : forall {τ σ}, tm Γ τ -> tm Γ (τ <+> σ)
+  | inr : forall {τ σ}, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
 Inductive Env : Ctx -> Type :=
@@ -227,12 +227,12 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | second _ _ p => second _ (rename r p)
 
   (* Sums *)
-  (* | case _ e c1 c2 =>
+  | case _ _ _ e c1 c2 =>
       case _ (rename r e)
         (rename r c1)
         (rename r c2)
-  | inl _ _ _ e => inl _ _ _ (rename r e)
-  | inr _ _ _ e => inr _ _ _ (rename r e) *)
+  | inl _ _ e => inl _ (rename r e)
+  | inr _ _ e => inr _ (rename r e)
   end.
 
 Definition shift {Γ τ σ} : tm Γ τ -> tm (σ::Γ) τ
@@ -270,12 +270,12 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | second _ _ p => second _ (substitute s p)
 
   (* Sums *)
-  (* | case _ e c1 c2 =>
+  | case _ _ _ e c1 c2 =>
       case _ (substitute s e)
         (substitute s c1)
         (substitute s c2)
-  | inl _ _ _ e => inl _ _ _ (substitute s e)
-  | inr _ _ _ e => inr _ _ _ (substitute s e) *)
+  | inl _ _ e => inl _ (substitute s e)
+  | inr _ _ e => inr _ (substitute s e)
   end.
 
 (*
@@ -457,7 +457,7 @@ Fixpoint denote_t τ : Set :=
   | Array n τ => vector ⟦ τ ⟧ₜ n
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
-  (* | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ *)
+  | τ1 <+> τ2 => ⟦τ1⟧ₜ + ⟦τ2⟧ₜ
   end
 where "⟦ τ ⟧ₜ" := (denote_t τ).
 
@@ -532,14 +532,14 @@ denote_tm (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx * ⟦t2⟧�
 (* Products *)
 denote_tm (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) ctx := (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx);
 denote_tm (Γ:=Γ) (τ:=τ) (first Γ t) ctx := fst (⟦t⟧ₜₘ ctx);
-denote_tm (Γ:=Γ) (τ:=τ) (second Γ t) ctx := snd (⟦t⟧ₜₘ ctx) }
+denote_tm (Γ:=Γ) (τ:=τ) (second Γ t) ctx := snd (⟦t⟧ₜₘ ctx);
 (* Sums *)
-(* denote_tm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) ctx with ⟦e⟧ₜₘ ctx := {
+denote_tm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) ctx with ⟦e⟧ₜₘ ctx := {
   denote_tm (case Γ e c1 c2) ctx (Datatypes.inl x) := (⟦c1⟧ₜₘ ctx) x;
   denote_tm (case Γ e c1 c2) ctx (Datatypes.inr x) := (⟦c2⟧ₜₘ ctx) x
 };
-denote_tm (Γ:=Γ) (τ:=τ) (inl Γ τ σ e) ctx := Datatypes.inl (⟦e⟧ₜₘ ctx);
-denote_tm (Γ:=Γ) (τ:=τ) (inr Γ σ τ e) ctx := Datatypes.inr (⟦e⟧ₜₘ ctx) } *)
+denote_tm (Γ:=Γ) (τ:=τ) (inl Γ e) ctx := Datatypes.inl (⟦e⟧ₜₘ ctx);
+denote_tm (Γ:=Γ) (τ:=τ) (inr Γ e) ctx := Datatypes.inr (⟦e⟧ₜₘ ctx) }
 where "⟦ t ⟧ₜₘ" := (denote_tm t)
 (* Helper for arrays *)
 where denote_array {Γ τ} n (f : Fin.t n -> ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ)
@@ -601,6 +601,9 @@ Proof with quick.
     induction n... rewrites.
     apply Vcons_eq.
     splits... }
+  { simp denote_tm. rewrite IHt1.
+    destruct (⟦ rename r t1 ⟧ₜₘ ctx);
+      quick; rewrites. }
 Qed.
 
 Lemma denote_ren_shift : forall Γ Γ' τ (r:ren Γ Γ'),
@@ -673,6 +676,9 @@ Proof with quick.
     unfold compose.
     induction n... rewrites.
     apply Vcons_eq... }
+  { simp denote_tm.
+    destruct (⟦ substitute s t1 ⟧ₜₘ ctx);
+      quick; rewrites. }
 Qed.
 
 Lemma denote_sub_id : forall Γ τ (t : tm Γ τ) (ctx : ⟦ Γ ⟧ₜₓ),
