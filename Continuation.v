@@ -645,6 +645,10 @@ Proof with quick.
     rewrite_c H.
     constructor. }
   { erewrite inst_eq.
+    instantiate (2:=fun x => @Dtm_ctx (Datatypes.S m) n
+      (HCons (hhd (f x)) (htl (f x))))...
+    instantiate (1:=fun x => @Dtm_ctx_c (Datatypes.S m) n
+      (HCons (hhd (f x)) (htl (f x))))...
     constructor...
     all: admit. }
 Admitted.

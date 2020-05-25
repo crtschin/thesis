@@ -25,8 +25,16 @@ Equations shift_var {Γ : list ty} {τ σ ρ : ty}
 shift_var (Top Γ τ) := Top (ρ::Γ) τ;
 shift_var (Pop Γ τ σ v) := Pop (ρ::Γ) τ σ (Pop Γ τ ρ v).
 
+Equations swap_var {Γ : list ty} {τ σ ρ : ty}
+  : τ ∈ ρ :: σ :: Γ -> τ ∈ σ :: ρ :: Γ :=
+swap_var (Top Γ τ) := Pop _ _ _ (Top _ _);
+swap_var (Pop Γ τ σ v) := shift_var v.
+
 Definition shift2 {Γ τ σ ρ} (t : tm (σ::Γ) τ) : tm (σ::ρ::Γ) τ
   := substitute (fun τ x => var (σ::ρ::Γ) τ (shift_var x)) t.
+
+Definition swap {Γ τ σ ρ} (t : tm (ρ::σ::Γ) τ) : tm (σ::ρ::Γ) τ
+  := substitute (fun τ x => var (σ::ρ::Γ) τ (swap_var x)) t.
 
 Reserved Notation "t ~> s" (at level 30).
 Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
@@ -78,6 +86,10 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     (e0: tm Γ τ) (e1: tm (τ::Γ) σ),
     letin e0 (shift (letin e0 e1)) ~>
       letin e0 (letin (var _ _ (Top _ _)) (shift e1))
+  | RW_LetDisj : forall Γ τ σ ρ
+    (e0: tm Γ τ) (e1: tm Γ σ) (e2 : tm (τ::σ::Γ) ρ),
+    letin e0 (letin (shift e1) (swap e2)) ~>
+      letin e1 (letin (shift e0) e2)
   (* Ring operations *)
   | RW_add : forall Γ (t1 t1' t2 t2' : tm Γ ℝ),
     t1 ~> t1' ->
@@ -101,26 +113,42 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     add Γ (mul Γ t t1) (mul Γ t t2) ~> mul Γ t (add Γ t1 t2)
 where "t ~> s" := (rwrt t s).
 
-Lemma shift2_snd :
+Lemma denote_shift2 :
   forall Γ τ σ ρ (t : tm (σ::Γ) τ) (x : ⟦ σ ⟧ₜ) (y : ⟦ ρ ⟧ₜ) (ctx : ⟦ Γ ⟧ₜₓ),
   ⟦ t ⟧ₜₘ (x ::: ctx) = ⟦ shift2 t ⟧ₜₘ (x ::: y ::: ctx).
 Proof with quick.
   intros.
   unfold shift2.
-  rewrite <- denote_sub_commutes.
-  simpl.
-  unfold hd_sub. simp shift_var. simp denote_tm...
-  unfold tl_sub.
+  rewrite <- denote_sub_commutes...
+  unfold hd_sub, tl_sub. simp shift_var denote_tm...
   assert (H:
-    (fun φ (x : φ ∈ Γ) =>
-      var (σ :: ρ :: Γ) φ (shift_var (Pop Γ φ σ x))) =
-    tl_sub (tl_sub (fun φ (x : φ ∈ σ :: ρ :: Γ) =>
-      var (σ :: ρ :: Γ) φ x))).
+    (fun φ x => var (σ::ρ::Γ) φ (shift_var (Pop Γ φ σ x))) =
+      tl_sub (tl_sub (id_sub (Γ:=σ::ρ::Γ)))).
   { extensionality φ. extensionality v. now simp shift_var. }
   rewrite_c H.
-  assert (H: (fun (σ0 : ty) (x0 : σ0 ∈ σ :: ρ :: Γ) => var (σ :: ρ :: Γ) σ0 x0)
-    = id_sub (Γ:=σ::ρ::Γ))...
-  rewrite_c H.
+  rewrite 2 denote_sub_tl_simpl.
+  rewrite denote_sub_id_ctx...
+Qed.
+
+Lemma denote_swap :
+  forall Γ τ σ ρ ctx
+    (e0: tm Γ τ) (e1: tm Γ σ) (e2 : tm (τ::σ::Γ) ρ),
+  ⟦ swap e2 ⟧ₜₘ
+    (⟦ shift e1 ⟧ₜₘ (⟦ e0 ⟧ₜₘ ctx ::: ctx) ::: ⟦ e0 ⟧ₜₘ ctx ::: ctx) =
+  ⟦ e2 ⟧ₜₘ
+    (⟦ shift e0 ⟧ₜₘ (⟦ e1 ⟧ₜₘ ctx ::: ctx) ::: ⟦ e1 ⟧ₜₘ ctx ::: ctx).
+Proof with quick.
+  intros. unfold swap.
+  rewrite <- denote_sub_commutes...
+  rewrite 2 denote_shift...
+  unfold hd_sub, tl_sub.
+  simp denote_tm swap_var shift_var...
+  eassert (H': (fun ρ x =>
+    var _ ρ (swap_var (Pop (σ :: Γ) ρ τ (Pop Γ ρ σ x))))
+      = tl_sub (tl_sub id_sub)).
+  { extensionality φ. extensionality v.
+    now simp swap_var shift_var. }
+  rewrite_c H'.
   rewrite 2 denote_sub_tl_simpl.
   rewrite denote_sub_id_ctx...
 Qed.
@@ -144,10 +172,13 @@ Proof with quick.
     rewrite 4 denote_shift... }
   { unfold letin.
     simp denote_tm.
-    erewrite <- shift2_snd... }
+    erewrite <- denote_shift2... }
   { unfold letin.
     simp denote_tm.
     erewrite 2 denote_shift... }
+  { unfold letin.
+    simp denote_tm.
+    rewrite denote_swap... }
   { apply Rplus_0_l. }
   { rewrite Rplus_comm.
     apply Rplus_0_l. }
