@@ -283,6 +283,7 @@ Proof with quick.
   simp Dtm...
 Qed.
 
+(* y + (x * x) *)
 Example derivative_example_dtm_c :
   (⟦ Dtm_c 2 square_plus ⟧ₜₘ
     (@Dtm_ctx_c 2 2
@@ -323,8 +324,13 @@ Qed.
 
 Equations S n τ :
   (R -> ⟦ Dt n τ ⟧ₜ) -> (R -> ⟦ Dt_c n τ ⟧ₜ) -> Prop :=
-S n ℝ f g :=
-  ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
+(* S n ℝ f g with n := {
+  | 0%nat => ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
+      (fun r => (snd (f r))) = fun r => (snd (g r)) 1;
+  | Datatypes.S n' => ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
+      (fun r => (snd (f r))) = fun r => (snd (g r)) 1
+}; *)
+S n ℝ f g := ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
   (fun r => (snd (f r))) = fun r => (snd (g r)) 1;
 S n (Array m τ) f g := forall i,
   exists f1 g1,
@@ -351,21 +357,47 @@ S n (σ <+> ρ) f g :=
       f = Datatypes.inr ∘ g1 /\
       g = Datatypes.inr ∘ g2).
 
-
-(* Definition pad_Dt n τ (t : ⟦ Dt n τ ⟧ₜ)
-  : ⟦ Dt (Datatypes.S n) τ ⟧ₜ.
-Admitted.
-
-Definition pad_Dt_c n τ (t : ⟦ Dt_c n τ ⟧ₜ)
-  : ⟦ Dt_c (Datatypes.S n) τ ⟧ₜ.
-Admitted.
-
-(* Equations? pad_Dt n τ (t : ⟦ Dt n τ ⟧ₜ)
-  : ⟦ Dt (Datatypes.S n) τ ⟧ₜ :=
+Equations pad_Dt n τ (t : ⟦ Dt n τ ⟧ₜ)
+  : ⟦ Dt (Datatypes.S n) τ ⟧ₜ := {
 pad_Dt n ℝ (r, rs) := (r, Vcons 0 rs);
 pad_Dt n (Array m τ) t := Vmap (pad_Dt n τ) t;
 pad_Dt n (τ × σ) (t1, t2) := (pad_Dt n τ t1, pad_Dt n σ t2);
-pad_Dt n (τ → σ) t := _. *)
+pad_Dt n (τ <+> σ) t with t := {
+  | Datatypes.inl t' => Datatypes.inl (pad_Dt n τ t');
+  | Datatypes.inr t' => Datatypes.inr (pad_Dt n σ t')
+};
+pad_Dt n (τ → σ) t := fun t' => pad_Dt n σ (t (unpad_Dt n τ t')) }
+with unpad_Dt n τ (t : ⟦ Dt (Datatypes.S n) τ ⟧ₜ)
+  : ⟦ Dt n τ ⟧ₜ :=
+unpad_Dt n ℝ (r, rs) := (r, Vtail rs);
+unpad_Dt n (Array m τ) t := Vmap (unpad_Dt n τ) t;
+unpad_Dt n (τ × σ) (t1, t2) := (unpad_Dt n τ t1, unpad_Dt n σ t2);
+unpad_Dt n (τ <+> σ) t with t := {
+  | Datatypes.inl t' => Datatypes.inl (unpad_Dt n τ t');
+  | Datatypes.inr t' => Datatypes.inr (unpad_Dt n σ t')
+};
+unpad_Dt n (τ → σ) t := fun t' => unpad_Dt n σ (t (pad_Dt n τ t')).
+
+Equations pad_Dt_c n τ (t : ⟦ Dt_c n τ ⟧ₜ)
+  : ⟦ Dt_c (Datatypes.S n) τ ⟧ₜ := {
+pad_Dt_c n ℝ (r, rs) := (r, fun x => Vcons 0 (rs x));
+pad_Dt_c n (Array m τ) t := Vmap (pad_Dt_c n τ) t;
+pad_Dt_c n (τ × σ) (t1, t2) := (pad_Dt_c n τ t1, pad_Dt_c n σ t2);
+pad_Dt_c n (τ <+> σ) t with t := {
+  | Datatypes.inl t' => Datatypes.inl (pad_Dt_c n τ t');
+  | Datatypes.inr t' => Datatypes.inr (pad_Dt_c n σ t')
+};
+pad_Dt_c n (τ → σ) t := fun t' => pad_Dt_c n σ (t (unpad_Dt_c n τ t')) }
+with unpad_Dt_c n τ (t : ⟦ Dt_c (Datatypes.S n) τ ⟧ₜ)
+  : ⟦ Dt_c n τ ⟧ₜ :=
+unpad_Dt_c n ℝ (r, rs) := (r, fun x => Vtail (rs x));
+unpad_Dt_c n (Array m τ) t := Vmap (unpad_Dt_c n τ) t;
+unpad_Dt_c n (τ × σ) (t1, t2) := (unpad_Dt_c n τ t1, unpad_Dt_c n σ t2);
+unpad_Dt_c n (τ <+> σ) t with t := {
+  | Datatypes.inl t' => Datatypes.inl (unpad_Dt_c n τ t');
+  | Datatypes.inr t' => Datatypes.inr (unpad_Dt_c n σ t')
+};
+unpad_Dt_c n (τ → σ) t := fun t' => unpad_Dt_c n σ (t (pad_Dt_c n τ t')).
 
 Equations pad_Dtm_ctx n Γ (ctx : ⟦ Dctx n Γ ⟧ₜₓ)
   : ⟦ Dctx (Datatypes.S n) Γ ⟧ₜₓ :=
@@ -378,13 +410,24 @@ pad_Dtm_ctx_c n nil ctx := ctx;
 pad_Dtm_ctx_c n (τ::l) (HCons h hl) :=
   pad_Dt_c n τ h ::: pad_Dtm_ctx_c n l hl.
 
+Equations unpad_Dtm_ctx n Γ (ctx : ⟦ Dctx (Datatypes.S n) Γ ⟧ₜₓ)
+  : ⟦ Dctx n Γ ⟧ₜₓ :=
+unpad_Dtm_ctx n nil ctx := ctx;
+unpad_Dtm_ctx n (τ::l) (HCons h hl) := unpad_Dt n τ h ::: unpad_Dtm_ctx n l hl.
+
+Equations unpad_Dtm_ctx_c n Γ (ctx : ⟦ Dctx_c (Datatypes.S n) Γ ⟧ₜₓ)
+  : ⟦ Dctx_c n Γ ⟧ₜₓ :=
+unpad_Dtm_ctx_c n nil ctx := ctx;
+unpad_Dtm_ctx_c n (τ::l) (HCons h hl) :=
+  unpad_Dt_c n τ h ::: unpad_Dtm_ctx_c n l hl.
+
 Equations Dtm_cons n Γ τ (x : ⟦ Dt n τ ⟧ₜ) (xs : ⟦ Dctx n Γ ⟧ₜₓ) :
   ⟦Dctx n (τ::Γ)⟧ₜₓ :=
 Dtm_cons n Γ τ x xs := x ::: xs.
 
 Equations Dtm_cons_c n Γ τ (x : ⟦ Dt_c n τ ⟧ₜ) (xs : ⟦ Dctx_c n Γ ⟧ₜₓ) :
   ⟦Dctx_c n (τ::Γ)⟧ₜₓ :=
-Dtm_cons_c n Γ τ x xs := x ::: xs. *)
+Dtm_cons_c n Γ τ x xs := x ::: xs.
 
 (* Instantiation here keeps track of how many function arguments
     there are/partial derivs are to be calculated. *)
@@ -392,16 +435,6 @@ Inductive instantiation : forall n Γ,
     (R -> ⟦ Dctx n Γ ⟧ₜₓ) -> (R -> ⟦ Dctx_c n Γ ⟧ₜₓ) -> Prop :=
   | inst_empty : forall n,
       instantiation n [] (Basics.const HNil) (Basics.const HNil)
-  (* | inst_args :
-      forall n Γ,
-      forall g1 g2,
-      forall (sb: R -> ⟦ Dctx n Γ ⟧ₜₓ),
-      forall (sb_c: R -> ⟦ Dctx_c n Γ ⟧ₜₓ),
-        instantiation n Γ sb sb_c ->
-        S n ℝ g1 g2 ->
-        instantiation (Datatypes.S n) (ℝ::Γ)
-          (fun r => pad_Dtm_ctx n (ℝ::Γ) (Dtm_cons n Γ ℝ (g1 r) (sb r)))
-          (fun r => pad_Dtm_ctx_c n (ℝ::Γ) (Dtm_cons_c n Γ ℝ (g2 r) (sb_c r))) *)
   | inst_cons :
       forall n Γ τ,
       forall g1 g2,
@@ -427,6 +460,12 @@ Lemma denote_array_eq :
     f1 = f1' -> ctx = ctx' ->
     denote_array (τ:=τ) n f1 ctx = denote_array (τ:=τ) n f1' ctx'.
 Proof. intros; rewrites. Qed.
+
+Lemma Vcons_eq' : forall A n (t t': A) (tl tl': vector A n),
+  Vcons t tl = Vcons t' tl' -> t = t' /\ tl = tl'.
+Proof with quick.
+  intros. split; dependent destruction H...
+Qed.
 
 Lemma S_subst :
   forall Γ τ n,
@@ -479,32 +518,50 @@ Proof with quick.
     erewrite S_eq... }
   { (* Const *)
     simp S. split;
-      extensionality x.
-    { simp Dtm Dtm_c. simp denote_tm... }
-    { simp Dtm Dtm_c. simp denote_tm...
+      extensionality x; simp Dtm Dtm_c; simp denote_tm...
+    { clear r. simp denote_tm.
       unfold compose.
+      unfold const.
       eassert (H': (fun (i : Fin.t n) =>
         ⟦ rval (map (Dt n) Γ) 0 ⟧ₜₘ) = const (const 0)).
       { extensionality i. extensionality ctx. simp denote_tm... }
-      rewrite_c H'.
-      simp denote_tm. unfold compose.
-      eassert (H': (fun x0 : Fin.t n =>
-        ⟦ const (rval (ℝ :: map (Dt_c n) Γ) 0) x0 ⟧ₜₘ) = const (const 0)).
+      rewrite_c H'. unfold compose.
+      eassert (H': (fun _ : Fin.t n =>
+        ⟦ rval (ℝ :: map (Dt_c n) Γ) 0 ⟧ₜₘ) = const (const 0)).
       { extensionality i. extensionality ctx. unfold const. simp denote_tm... }
       rewrite_c H'.
-      induction Γ...
-      { remember (sb x). dependent destruction d.
+      induction n...
+      (* { remember (sb x). dependent destruction d.
         remember (sb_c x). dependent destruction d.
         unfold const.
         induction n... unfold shave_fin.
         apply Vcons_eq. splits. apply IHn.
-        dependent destruction H. constructor. }
-      { remember (sb x). dependent destruction d.
+        dependent destruction H. constructor. } *)
+      { apply Vcons_eq. split...
+        unfold shave_fin, const.
+        eassert (H': (fun (_ : Fin.t n) (_ : ⟦ ℝ ::
+          map (Dt_c (Datatypes.S n)) Γ ⟧ₜₓ) => 0) = const (const 0)).
+        { extensionality i. extensionality ctx... }
+        rewrite_c H'.
+        eassert (H': (fun (_ : Fin.t n) (_ : ⟦
+          map (Dt (Datatypes.S n)) Γ ⟧ₜₓ) => 0) = const (const 0)).
+        { extensionality i. extensionality ctx... }
+        rewrite_c H'.
+        pose proof (IHn
+          (unpad_Dtm_ctx n Γ ∘ sb) (unpad_Dtm_ctx_c n Γ ∘ sb_c)) as IHn.
+        (* apply IHn.
+        fold const. *)
+
+        (* remember (sb x). dependent destruction d.
         remember (sb_c x). dependent destruction d0.
         dependent destruction n...
-        apply Vcons_eq. split...
-        dependent destruction H.
-        admit. } } }
+        pose proof (IHΓ (denote_ctx_tl ∘ sb) (denote_ctx_tl ∘ sb_c)) as H'.
+        unfold compose in H'.
+        rewrite <- Heqd in H'.
+        rewrite <- Heqd0 in H'...
+        apply Vcons_eq' in H'. destruct H' as [Heq1 Heq2].
+        apply Vcons_eq. split... *)
+        all: admit. } } }
   { (* Add *)
     simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as [IHeq1 IHeq1'].
@@ -512,9 +569,10 @@ Proof with quick.
     clear IHt1 IHt2.
     simp S in *. split; extensionality r;
       eapply equal_f in IHeq1; eapply equal_f in IHeq2;
-      eapply equal_f in IHeq1'; eapply equal_f in IHeq2'.
-    { simp denote_tm. rewrites. }
-    { simp denote_tm; unfold vector_add, vector_map2...
+      eapply equal_f in IHeq1'; eapply equal_f in IHeq2';
+      simp denote_tm...
+    { rewrites. }
+    { unfold vector_add, vector_map2...
       simp denote_tm; unfold compose...
       erewrite denote_array_eq...
       erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
@@ -658,7 +716,7 @@ Proof with quick.
       (HCons (hhd (f x)) (htl (f x))))...
     instantiate (1:=fun x => @Dtm_ctx_c (Datatypes.S m) n
       (HCons (hhd (f x)) (htl (f x))))...
-    constructor...
+    (* constructor... *)
     all: admit. }
 Admitted.
 
@@ -670,7 +728,7 @@ Lemma S_correctness_R :
     (⟦ Dtm n t ⟧ₜₘ ∘ Dtm_ctx ∘ ctx)
     (⟦ Dtm_c n t ⟧ₜₘ ∘ Dtm_ctx_c ∘ ctx) ->
   (fun r => snd (⟦ Dtm n t ⟧ₜₘ (Dtm_ctx (ctx r)))) =
-    (fun r => (snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c (ctx r)))) 1).
+    fun r => (snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c (ctx r)))) 1.
 Proof with quick.
   intros.
   simp S in *. destruct H as [Heq1 Heq2].
@@ -681,7 +739,7 @@ Lemma correctness :
   forall n
     (t : tm (repeat ℝ n) ℝ) (ctx : ⟦ repeat ℝ n ⟧ₜₓ),
   snd (⟦ Dtm n t ⟧ₜₘ (Dtm_ctx ctx)) =
-    (snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c ctx))) 1.
+    snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c ctx)) 1.
 Proof with quick.
   intros.
   pose proof (S_correctness_R n t (const ctx)) as H.

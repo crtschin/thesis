@@ -223,9 +223,9 @@ Proof with eauto.
   unfold tl_ren in H.
   symmetry in H.
   assert (H':
-    (fun (ρ : ty) (x0 : ρ ∈ Γ) => Pop Γ ρ σ x0) =
-    (fun (σ0 : ty) (x : σ0 ∈ Γ) =>
-       rename_lifted (fun (t : ty) (x0 : t ∈ Γ) => x0) σ0 (Pop Γ σ0 σ x))
+    (fun (ρ : ty) (x : ρ ∈ Γ) => Pop Γ ρ σ x) =
+    (fun (τ : ty) (x : τ ∈ Γ) =>
+       rename_lifted (fun (t : ty) (v : t ∈ Γ) => v) τ (Pop Γ τ σ x))
     ) by (extensionality x; quick).
   rewrite_c H'. rewrite_c H.
   fold (@id_ren Γ). rewrite denote_ren_commutes.
