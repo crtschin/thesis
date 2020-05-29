@@ -7,12 +7,14 @@
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{fancyhdr}
+\usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{microtype}
 \usepackage[draft=false,cache]{minted}
 \setlength{\marginparwidth}{3cm}
 \usepackage[obeyFinal]{todonotes}
 \usepackage{libertine}
+\usepackage{dsfont}
 % \usepackage{libertinust1math}
 \usepackage{amsmath}
 \usepackage[justification=centering]{caption}
@@ -72,6 +74,7 @@
 \newcommand{\comment}[1]{}
 
 \def\Vakar{V\'{a}k\'{a}r}
+\def\D{\overrightarrow{\mathcal{D}}}
 \def\<#1>{\csname keyword@@#1\endcsname}
 \begingroup
 \makeatletter
@@ -80,6 +83,10 @@
 \def\keyword@style#1{\textbf{#1}}
 \do{Coq}
 \do{Agda}
+\def\keyword@style#1{\mathds{#1}}
+\do{R}
+\def\keyword@style#1{\mathcal{#1}}
+\do{D}
 \def\keyword@style#1{\texttt{#1}}
 \do{bottom}
 \do{Equations}
@@ -94,7 +101,15 @@
 \do{sb}
 \do{Dsb}
 \do{Reals}
-\do{R}
+\do{var}
+\do{abs}
+\do{app}
+\do{tuple}
+\do{first}
+\do{second}
+\do{rval}
+\do{add}
+\do{mul}
 \endgroup
 
 \begin{document}
@@ -191,18 +206,12 @@ They proved, using a denotational model of diffeological spaces, that their forw
 With this thesis we will aim for the following goals:
 \begin{itemize}
   \item Formalize the proofs of both the forward mode and continuation-based automatic differentiation algorithms specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
-  % \item Formulate the proofs such that it facilitates further extensions.
-  % \item Extend the proof to polymorphic types.
-  % \item Adapt the proof to a small imperative language.
   \item Prove that well-known compile-time optimizations such as the partial evaluation, are correct with respect to the semantics of automatic differentiation.
   \item Extend the proof with the array types and compile-time optimization rules by Shaikhha, et. al.\cite{Shaikha2019}.
-  % \item (TODO: UNLIKELY) Extend the original proof with iteration and possibly recursion.
-  % \item (TODO: MAYBE) Extend the original proof with inductive types.
-  % \item (TODO: MAYBE) Extend the original proof with polymorphism.
-  % \item (TODO: MAYBE) Adapt the proof to a small imperative language.
-  % \item (TODO: LIKELY) Prove that well-known optimizations such as the partial evaluation, are correct with respect to automatic differentiation.
-  % \item (TODO: LIKELY) Prove the correctness of the continuation-based automatic differentiation algorithm.
 \end{itemize}
+
+% TODO: Add references
+Chapter 2 includes a background section explaining many of the topics and techniques used in this thesis. The formalization of forward-mode automatic differentiation is given in Chapter 3, starting from a base simply-typed lambda calculus extended with product types and incrementally adding new types and language constructs. Chapters 4 and 5 give formalizations of optimization avenues using respectively program transformations and continuation-based reverse-mode automatic differentiation.
 
 As a notational convention, we will use specialized notation in the definitions themselves. Coq normally requires that pretty printed notations be defined separately from the definitions they reference. The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.
 
@@ -452,7 +461,149 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
 \end{listing}
 
 \section{Formalizing Forward-Mode AD}
+  We will work out the formalization of automatic differentiation using a source code translating macro in the following sections.
+  We start from a base simply-typed lambda calculus extended with product types and incrementally add both sum and array types.
+
   \subsection{Simply Typed Lambda Calculus}
+  % Talk about simply typed lambda calculus,
+  % Something about Λ_δ^{+, *, R}
+  % Give examples of functions
+  % talk about denotations and
+  As mentioned in background section \ref{sec:language_repr}, we will make use of De-Bruijn indices in a intrinsic representation to formulate our language.
+  Our base language consists of the typed lambda calculus with products and real numbers as ground type, $\Lambda_{\delta}^{\times, \rightarrow, R}$.
+  As operations on the real numbers we include both addition and multiplication which are also the functions in $\delta$.
+
+  Both the language constructs and the typing rules for this language are standard for a simply typed lambda calculus, as shown in \ref{fig:base_infer}.
+  As expected we include variables, applications and abstractions in the \<var>, \<app> and \<abs> constructors.
+  Product types are added to the language in the form of binary projections, \<first> and \<second> to fetch respectively the first and second components of \<tuple>s.
+  For real numbers, \<rval> is used to introduce constants and \<add> and \<mul> will be used to respectively encode addition and multiplication.
+
+  \begin{figure}
+    \begin{mathpar}
+      \inferrule*[Right=\textsc{TVar}]
+        {elem\ n\ \Gamma = \tau}
+        {\Gamma \vdash var\ n : \tau} \and
+      \inferrule*[Right=\textsc{TAbs}]
+        {(\sigma, \Gamma) \vdash t : \tau}
+        {\Gamma \vdash abs\ t : \sigma \rightarrow \tau} \\ \and
+      \inferrule*[Right=\textsc{TApp}]
+        {\Gamma \vdash t1 : \sigma \rightarrow \tau \\
+          \Gamma \vdash t2 : \sigma}
+        {\Gamma \vdash app\ t1\ t2 : \tau} \\ \and
+      \inferrule*[Right=\textsc{TTuple}]
+        {\Gamma \vdash t1 : \tau \\
+          \Gamma \vdash t2 : \sigma}
+        {\Gamma \vdash tuple\ t1\ t2 : \tau \times \sigma} \\ \and
+      \inferrule*[Right=\textsc{TFst}]
+        {\Gamma \vdash t : \tau \times \sigma}
+        {\Gamma \vdash first\ t : \tau} \and
+      \inferrule*[Right=\textsc{TSnd}]
+        {\Gamma \vdash t : \tau \times \sigma}
+        {\Gamma \vdash second\ t : \sigma} \\ \and
+      \inferrule*[Right=\textsc{TRval}]
+        {r \in \<R>}
+        {\Gamma \vdash rval\ r : R} \\ \and
+      \inferrule*[Right=\textsc{TAdd}]
+        {\Gamma \vdash r1 : R \\
+          \Gamma \vdash r2 : R \\ }
+        {\Gamma \vdash add\ r1\ r2 : R} \and
+      \inferrule*[Right=\textsc{TMull}]
+        {\Gamma \vdash r1 : R \\
+        \Gamma \vdash r2 : R \\ }
+      {\Gamma \vdash mul\ r1\ r2 : R} \and
+    \end{mathpar}
+    \caption{Type-inferrence rules for $\Lambda_{\delta}^{\times, \rightarrow, R}$}
+    \label{fig:base_infer}
+  \end{figure}
+
+  % How we translated this into the well-typed intrinsic representation
+  These can be translated into Coq definitions in a straigtforward manner, with each case keeping track of both how the typing context and types change.
+  In the \<var> case we need some way to determine what type the variable is referencing.
+  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using numbers accompanied with a proof, we make use of an inductively defined type evidence to type our variables as shown in \ref{lst:strong_stlc}.
+  The cases for \<app> and \<abs> are as expected, where variables in the body of abstraction are able to reference their respective arguments.
+
+  In the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they make use of n-ary products accompanied with pattern matching expressions. We opted to implement binary projection products, as they are conceptually simpler while still retaining much of the same functionality expected with product types.
+
+  \begin{listing}
+    \begin{minted}{coq}
+  Definition Ctx : Type := list ty.
+
+  Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
+    (* Base STLC *)
+    | var : ~forall \tau,
+      \tau ∈ \Gamma \rightarrow tm \Gamma \tau~
+    | app : ~forall \tau \sigma,
+      tm \Gamma (\sigma \Rightarrow \tau) \rightarrow
+      tm \Gamma \sigma \rightarrow
+      tm \Gamma \tau~
+    | abs : ~forall \tau \sigma,
+      tm (\sigma::\Gamma) \tau \rightarrow tm \Gamma (\sigma \Rightarrow \tau)~
+
+    (* Operations on real numbers *)
+    | const : ~R \rightarrow tm \Gamma Real~
+    | add : ~tm \Gamma Real \rightarrow tm \Gamma Real \rightarrow tm \Gamma Real~
+    | mul : ~tm \Gamma Real \rightarrow tm \Gamma Real \rightarrow tm \Gamma Real~
+
+    (* Binary projection products *)
+    | tuple : ~forall {\tau \sigma},
+      tm \Gamma \tau \rightarrow
+      tm \Gamma \sigma \rightarrow
+      tm \Gamma (\tau \times \sigma)~
+    | first : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \tau~
+    | second : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \sigma~
+    \end{minted}
+    \caption{\<Coq> definition of the base lambda calculus}
+    \label{lst:stlc_base}
+  \end{listing}
+
+  We use the same inductively defined macro on types and terms to implement forward-mode automatic differentiation as used by many previous authors\cite{huot2020correctness}\cite{barthe2020versatility}\cite{Shaikha2019}.
+  The forward-mode macro $\D$ keeps track of both primal and tangent traces using tuples as respectively the first and second subcomponents.
+  In most cases, the macro simply preserves the structure of the language.
+  In the cases for real numbers such as addition and multiplication, the appropriate implementation corresponding to the derivative of the operation needs to be given.
+
+  \begin{align*}
+    \D(\<R>) &= \<R> \times \<R>
+      & \D(n) &= (n, 0) \\
+    \D(\tau \times \sigma) &= \D(\tau) \times \D(\sigma)
+      & \D(n + m) &= (n + m, n' + m') \\
+    \D(\tau \rightarrow \sigma) &= \D(\tau) \rightarrow \D(\sigma)
+      & \D(n * m) &= (n * m, n' * m + m' * n)
+    \label{eqn:macro_base}
+  \end{align*}
+
+  This is implemented by destructing recursive calls to $\<D>$ to access the syntactic counterparts of the primal and tangent denotations.
+  The \<Coq> implementation requires seperate definitions for types, typing contexts and terms, as shown in \ref{lst:macro_base}.
+  Note that applying the macro to a variable does nothing as we already apply the macro to the typing context, so variable implicitly reference macro-applied values.
+
+  \begin{listing}
+    \begin{minted}{coq}
+    \end{minted}
+    \caption{Forward-mode macro on the base simply-typed lambda calculus.}
+    \label{lst:macro_base}
+  \end{listing}
+
+  Due to restricting our language to be total and excluding notions of partiality such as non-termination, it suffices to give our language a set-theoretic denotational semantics.
+  We use \<Coq>'s types as our denotations as shown in \ref{lst:denotation_base}. The types of our language map to their respective counterparts in \<Coq>'s \<Type> sort.
+  We denotate our typing contexts, lists of types, as heterogeneous lists of the corresponding denotations.
+  The specific implementation of heterogeneous lists used, correspond to the one given by Adam Chlipala\cite{ChlipalaCPDT}.
+  When working through giving the constructs in our language the proper denotations, most of the cases are straigtforward.
+  Notable is the case for variables, where we made use of an inductively defined evidence to type our terms.
+  As denotations, these evidences wil correspond to lookups into our heterogeneous lists.
+
+  \begin{listing}
+    \begin{minted}{coq}
+    \end{minted}
+    \caption{Denotatonal semantics for the base simply-typed lambda calculus.}
+    \label{lst:denotation_base}
+  \end{listing}
+
+  % In the section denotation
+  % Explain expressiveness of base language
+  % Work out examples
+  As mentioned by by Barthe, et. al.\cite{barthe2020versatility}, this same small calculus is expressive enough to encode the higher-order polynomial functions restricted to the addition and multiplication operators.
+  As an example we will work out defining a few small functions.
+  Using the well-typed intrinsic representation enables us to choose between two possible type signatures.
+
   \subsection{Adding Sums and Primitive Recursion}
   \subsection{Arrays}
 \section{Optimization}
@@ -463,6 +614,10 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
   \subsection{Future Work}
 \section{Conclusion}
 
+\appendix
+\section{Language Definitions}
+\section{Forward-Mode Macro}
+\section{Denotations}
 \printbibliography
 \makeatother
 \end{document}
