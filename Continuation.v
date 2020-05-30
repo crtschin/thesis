@@ -467,6 +467,28 @@ Proof with quick.
   intros. split; dependent destruction H...
 Qed.
 
+Lemma denote_array_eq_correct :
+  forall Γ n (ctx : ⟦ Dctx n Γ ⟧ₜₓ) (ctx_c : ⟦ Dctx_c n Γ ⟧ₜₓ),
+  @denote_array (Dctx n Γ) ℝ n (const (const 0)) ctx =
+    @denote_array (ℝ::Dctx_c n Γ) ℝ n (const (const 0))
+      (@denote_ctx_cons (Dctx_c n Γ) ℝ 1 ctx_c).
+Proof with quick.
+  intros.
+  induction n...
+  - apply Vcons_eq. split...
+    unfold shave_fin;
+      unfold denote_ctx_cons in *;
+      unfold const.
+    assert (H': (fun (_ : Fin.t n) (_ : ⟦ Dctx (Datatypes.S n) Γ ⟧ₜₓ) => 0)
+      = const (const 0))...
+    rewrite_c H'.
+    assert (H': (fun (_ : Fin.t n) (_ : ⟦ ℝ :: Dctx_c (Datatypes.S n) Γ ⟧ₜₓ)
+      => 0) = const (const 0))...
+    rewrite_c H'.
+    pose proof (IHn
+      (unpad_Dtm_ctx n Γ ctx) (unpad_Dtm_ctx_c n Γ ctx_c)).
+Admitted.
+
 Lemma S_subst :
   forall Γ τ n,
   forall (t : tm Γ τ),
@@ -530,38 +552,7 @@ Proof with quick.
         ⟦ rval (ℝ :: map (Dt_c n) Γ) 0 ⟧ₜₘ) = const (const 0)).
       { extensionality i. extensionality ctx. unfold const. simp denote_tm... }
       rewrite_c H'.
-      induction n...
-      (* { remember (sb x). dependent destruction d.
-        remember (sb_c x). dependent destruction d.
-        unfold const.
-        induction n... unfold shave_fin.
-        apply Vcons_eq. splits. apply IHn.
-        dependent destruction H. constructor. } *)
-      { apply Vcons_eq. split...
-        unfold shave_fin, const.
-        eassert (H': (fun (_ : Fin.t n) (_ : ⟦ ℝ ::
-          map (Dt_c (Datatypes.S n)) Γ ⟧ₜₓ) => 0) = const (const 0)).
-        { extensionality i. extensionality ctx... }
-        rewrite_c H'.
-        eassert (H': (fun (_ : Fin.t n) (_ : ⟦
-          map (Dt (Datatypes.S n)) Γ ⟧ₜₓ) => 0) = const (const 0)).
-        { extensionality i. extensionality ctx... }
-        rewrite_c H'.
-        pose proof (IHn
-          (unpad_Dtm_ctx n Γ ∘ sb) (unpad_Dtm_ctx_c n Γ ∘ sb_c)) as IHn.
-        (* apply IHn.
-        fold const. *)
-
-        (* remember (sb x). dependent destruction d.
-        remember (sb_c x). dependent destruction d0.
-        dependent destruction n...
-        pose proof (IHΓ (denote_ctx_tl ∘ sb) (denote_ctx_tl ∘ sb_c)) as H'.
-        unfold compose in H'.
-        rewrite <- Heqd in H'.
-        rewrite <- Heqd0 in H'...
-        apply Vcons_eq' in H'. destruct H' as [Heq1 Heq2].
-        apply Vcons_eq. split... *)
-        all: admit. } } }
+      apply denote_array_eq_correct. } }
   { (* Add *)
     simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as [IHeq1 IHeq1'].
@@ -582,11 +573,7 @@ Proof with quick.
     2:{ extensionality i. extensionality ctx. simp denote_tm.
         reflexivity. }
       rewrites.
-      induction n...
-      eapply Vcons_eq. split...
-      { rewrites... }
-      { unfold shave_fin...
-        admit. } } }
+      admit. } }
   { (* Mul *)
     simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as [IHeq1 IHeq1'].
@@ -612,25 +599,7 @@ Proof with quick.
       simp denote_tm. unfold vector_map.
       simp denote_tm. unfold compose.
       reflexivity. }
-      induction n...
-      apply Vcons_eq. splits...
-      { unfold shave_fin. simp denote_tm...
-        eassert (H':
-          (fun i : Fin.t n =>
-            ⟦ mul (map (Dt (Datatypes.S n)) Γ)
-              (first _ (Dtm _ t2)) (get _ (Fin.FS i)
-                (second _ (Dtm _ t1))) ⟧ₜₘ) = _).
-        { extensionality i. extensionality ctx. now simp denote_tm. }
-        rewrite_c H'...
-        eassert (H':
-          (fun i : Fin.t n =>
-            ⟦ mul (map (Dt (Datatypes.S n)) Γ) (first _ (Dtm _ t1))
-              (get _ (Fin.FS i) (second _ (Dtm _ t2))) ⟧ₜₘ) = _).
-        { extensionality i. extensionality ctx. now simp denote_tm. }
-        rewrite_c H'...
-        rewrites. simp denote_v.
-        admit. }
-      { admit. } } }
+      admit. } }
   { (* Products *)
     simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as IHt1.
