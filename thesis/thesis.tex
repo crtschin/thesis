@@ -5,10 +5,9 @@
 \usepackage{array,booktabs,ragged2e}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
+\usepackage{xfrac}
 \usepackage{graphicx}
 \usepackage{fancyhdr}
-\usepackage{amssymb}
-\usepackage{amsthm}
 \usepackage{microtype}
 \usepackage[draft=false,cache]{minted}
 \setlength{\marginparwidth}{3cm}
@@ -16,7 +15,8 @@
 \usepackage{libertine}
 \usepackage{dsfont}
 % \usepackage{libertinust1math}
-\usepackage{amsmath}
+\usepackage{amssymb, amsthm, amsmath}
+\usepackage{thmtools}
 \usepackage[justification=centering]{caption}
 \usepackage{csquotes}
 \usepackage{etoolbox}
@@ -73,8 +73,14 @@
 \renewcommand{\listingscaption}{Code snippet}
 \newcommand{\comment}[1]{}
 
+\declaretheorem{example}
+\declaretheorem{theorem}
+\declaretheorem{lemma}
+\declaretheorem{corrollary}
+
 \def\Vakar{V\'{a}k\'{a}r}
 \def\D{\overrightarrow{\mathcal{D}}}
+\def\lambdaBase{\Lambda_{\delta}^{\times, \rightarrow, \mathds{R}}}
 \def\<#1>{\csname keyword@@#1\endcsname}
 \begingroup
 \makeatletter
@@ -367,7 +373,8 @@ Due to using indices from the context as variables, some lifting boilerplate is 
   \caption{Basis of a simply-typed \lambda-calculus using a strongly typed intrinsic formulation.}
   \label{lst:strong_stlc}
 \end{listing}
-\todo{Extend example}
+
+% TODO: Work out how substitutions work
 
 \subsubsection{Dependently-typed programming in Coq}
 
@@ -512,7 +519,7 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
         \Gamma \vdash r2 : R \\ }
       {\Gamma \vdash mul\ r1\ r2 : R} \and
     \end{mathpar}
-    \caption{Type-inferrence rules for $\Lambda_{\delta}^{\times, \rightarrow, R}$}
+    \caption{Type-inferrence rules for $\lambdaBase$}
     \label{fig:base_infer}
   \end{figure}
 
@@ -559,7 +566,7 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
   We use the same inductively defined macro on types and terms to implement forward-mode automatic differentiation as used by many previous authors\cite{huot2020correctness}\cite{barthe2020versatility}\cite{Shaikha2019}.
   The forward-mode macro $\D$ keeps track of both primal and tangent traces using tuples as respectively the first and second subcomponents.
   In most cases, the macro simply preserves the structure of the language.
-  In the cases for real numbers such as addition and multiplication, the appropriate implementation corresponding to the derivative of the operation needs to be given.
+  In the cases for real numbers such as addition and multiplication, the appropriate implementation corresponding to the derivative needs to be given.
 
   \begin{align*}
     \D(\<R>) &= \<R> \times \<R>
@@ -582,9 +589,10 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
     \label{lst:macro_base}
   \end{listing}
 
-  Due to restricting our language to be total and excluding notions of partiality such as non-termination, it suffices to give our language a set-theoretic denotational semantics.
+  Due to restricting our language to be total and excluding constructs related to partiality such as general recursion and iteration, it suffices to give our language a set-theoretic denotational semantics.
   We use \<Coq>'s types as our denotations as shown in \ref{lst:denotation_base}. The types of our language map to their respective counterparts in \<Coq>'s \<Type> sort.
-  We denotate our typing contexts, lists of types, as heterogeneous lists of the corresponding denotations.
+
+  We denotate our typing contexts, lists of types, as heterogeneous lists containing the corresponding denotations.
   The specific implementation of heterogeneous lists used, correspond to the one given by Adam Chlipala\cite{ChlipalaCPDT}.
   When working through giving the constructs in our language the proper denotations, most of the cases are straigtforward.
   Notable is the case for variables, where we made use of an inductively defined evidence to type our terms.
@@ -600,9 +608,53 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
   % In the section denotation
   % Explain expressiveness of base language
   % Work out examples
-  As mentioned by by Barthe, et. al.\cite{barthe2020versatility}, this same small calculus is expressive enough to encode the higher-order polynomial functions restricted to the addition and multiplication operators.
-  As an example we will work out defining a few small functions.
-  Using the well-typed intrinsic representation enables us to choose between two possible type signatures.
+  As mentioned by by Barthe, et. al.\cite{barthe2020versatility}, this small calculus, $\lambdaBase$, accompanied with a very simple denotational semantics is expressive enough to encode all higher-order polynomial functions containing the addition and multiplication operators.
+
+  \begin{example}[Square]
+    $abs\ (mul\ (var\ Top)\ (var\ Top))$ denotates to the square function $\lambda x. x * x$.
+    \begin{proof}
+      This follows from the definition of our denotation functions.
+      \begin{align*}
+        \llbracket abs\ &(mul\ (var\ Top)\ (var\ Top)) \rrbracket\ [] \\
+          &\equiv \lambda x.
+            \llbracket mul\ (var\ Top)\ (var\ Top) \rrbracket\ [x] \\
+          &\equiv \lambda x.
+            \llbracket var\ Top \rrbracket\ [x] *
+              \llbracket var\ Top \rrbracket\ [x] \\
+          &\equiv \lambda x. x * x \qedhere
+      \end{align*}
+    \end{proof}
+  \end{example}
+
+  % TODO: give reasonable examples
+
+  As we work with denotations, smooth functions $f : \<R>^n -> \<R>$ can be interpreted as the denotations of a corresponding syntactic term $x_1, \dots, x_n \vdash t : R$.
+  Intuitively, the free variables in the term $t$ denote the usages of the parameters of the function and as such are restricted to terms of type $R$.
+  Note that while both the arguents and result type of $t$ are restricted to $R$, $t$ itself can contain higher order types.
+
+  Although Barthe, et. al.\cite{barthe2020versatility} gave a syntactic proof of correctness of the macro, our proof follows the more denotational nature of the proof given by Huot, Staton and \Vakar{}\cite{huot2020correctness}.
+  We state correctness as the denotation of a macro-applied term will give a pair of both the original function the term represents along with its corresponding derivative.
+
+  \begin{theorem}[Macro correctness]
+    For any term $x_1 : R, ..., x_n : R \vdash t : R$, $\D(t)$ gives the dual number representation of $\llbracket t \rrbracket$.
+  \end{theorem}
+
+  \begin{proof}
+    We prove this using a type-indexed logical relation between denotations of both terms and their macro-applied variants, so for any type $\tau$, $S_\tau$ is the relation between functions $R \rightarrow \llbracket \tau \rrbracket$ and $R \rightarrow \llbracket \D(\tau) \rrbracket$. Intuitively, the relation will encapsulate idea that derivability is preserved over higher-order types.
+
+    \[S_\tau(f, g) =
+      \left\{
+        \begin{array}{ll}
+          g = \lambda x. (f(x), \frac{\partial f}{\partial x}(x))
+            & : \tau = R \\
+          \{  \} & : \tau = \sigma \rightarrow \rho \\
+          \{  \} & : \tau = \sigma \times \rho
+        \end{array}
+      \right.
+    \]
+  \end{proof}
+
+
 
   \subsection{Adding Sums and Primitive Recursion}
   \subsection{Arrays}

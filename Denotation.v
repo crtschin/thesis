@@ -11,6 +11,7 @@ Require Import Coq.Program.Basics.
 Require Import Coquelicot.Derive.
 Require Import Coquelicot.Continuity.
 Require Import Coquelicot.Hierarchy.
+Require Import Equations.CoreTactics.
 Require Import Equations.Equations.
 Import EqNotations.
 
@@ -94,7 +95,7 @@ Fixpoint iterate {A} (n : nat) (f : A -> A) (a : A) :=
   end.
 
 Reserved Notation "⟦ t ⟧ₜₘ".
-Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ by struct t := {
+Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ := {
 (* STLC *)
 denote_tm (Γ:=Γ) (τ:=τ) (var Γ τ v) ctx := denote_v v ctx;
 denote_tm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) ctx := (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx);
@@ -126,7 +127,7 @@ denote_tm (Γ:=Γ) (τ:=τ) (inr Γ σ τ e) ctx := Datatypes.inr (⟦e⟧ₜₘ
 where "⟦ t ⟧ₜₘ" := (denote_tm t)
 (* Helper for arrays *)
 where denote_array {Γ τ} n (f : Fin.t n -> ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ)
-  : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ by struct n :=
+  : ⟦Γ⟧ₜₓ -> ⟦Array n τ⟧ₜ  :=
 denote_array 0 f ctx := Vnil;
 denote_array (S n) f ctx := Vcons (f (nat_to_fin n) ctx)
   ((denote_array n (shave_fin f)) ctx).
@@ -315,4 +316,12 @@ Proof with quick.
   intros.
   unfold id_sub.
   now rewrite tl_cons_sub.
+Qed.
+
+Example denote_square :
+  ⟦ ex_square ⟧ₜₘ HNil = (fun x => x * x).
+Proof with quick.
+  extensionality x. unfold ex_square.
+  simp denote_tm.
+  reflexivity.
 Qed.

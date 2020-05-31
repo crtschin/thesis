@@ -35,8 +35,7 @@ S Real f g :=
       derivative
   *)
   (forall (x : R), ex_derive f x) /\
-  (fun r => g r) =
-    (fun r => (f r, Derive f r));
+    g = (fun r => (f r, Derive f r));
 S Nat f g :=
   (* When (τ := ℕ), we do not need to keep track of the derivative,
       as the tangent space at each related point is 0-dimensional and
@@ -97,28 +96,29 @@ Inductive instantiation : forall Γ,
           (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: Dsb r)).
 
 Example derivative_id :
-  (⟦ Dtm real_id ⟧ₜₘ HNil) (3, 1) = (3, 1).
+  (⟦ Dtm ex_id_real ⟧ₜₘ HNil) (3, 1) = (3, 1).
 Proof with quick.
-  unfold real_id.
+  unfold ex_id_real.
   simp Dtm...
 Qed.
 
+Check (⟦ Dtm ex_plus ⟧ₜₘ HNil).
+Compute (⟦ Dt (ℝ → ℝ → ℝ) ⟧ₜ).
+
+
 Example derivative_plus :
-  ⟦ Dtm ex_plus ⟧ₜₘ
-    (@denote_ctx_cons [Dt ℝ] (Dt ℝ) (7, 1)
-      (@denote_ctx_cons [] (Dt ℝ) (13, 0)
-        HNil)) = (13 + 7, 0 + 1).
+  ⟦ Dtm ex_plus ⟧ₜₘ HNil (7, 1) (13, 0) = (7 + 13, 1 + 0).
 Proof with quick.
+  unfold ex_plus.
   simp Dtm...
 Qed.
 
 (* Derivative of (y + x * x) *)
 Example derivative_square_plus :
-  ⟦ Dtm square_plus ⟧ₜₘ
-    (@denote_ctx_cons [Dt ℝ] (Dt ℝ) (7, 1)
-      (@denote_ctx_cons [] (Dt ℝ) (13, 0)
-        HNil)) = (13 + 7 * 7, 0 + (7 * 1 + 7 * 1)).
+  ⟦ Dtm ex_square_plus ⟧ₜₘ HNil (7, 1) (13, 0)
+    = (7 + 13 * 13, 1 + (13 * 0 + 13 * 0)).
 Proof with quick.
+  unfold ex_square_plus.
   simp Dtm...
 Qed.
 
@@ -435,6 +435,9 @@ D (Datatypes.S n) f r :=
     ((denote_ctx_hd ∘ f) r, Derive (denote_ctx_hd ∘ f) r)
     (D n (denote_ctx_tl ∘ f) r).
 
+(*  Helper inductive definition asserting that every parameter supplied to the
+      typing context is derivable.
+*)
 Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop :=
   | differentiable_0 : differentiable 0 (fun _ => HNil)
   | differentiable_Sn :
@@ -481,9 +484,12 @@ Proof with quick.
       remember (f r) as e. dependent destruction e.
       now apply denote_ctx_eq. }
   2:{ simp D. reflexivity. }
-    dependent destruction H.
-    constructor...
-    simp S. splits... }
+    constructor.
+    { apply IHn. dependent destruction H. simpl. apply H. }
+    { unfold compose.
+      simp S. split.
+      { dependent destruction H... }
+      { reflexivity. } } }
 Qed.
 
 Theorem semantic_correct_R :
