@@ -41,6 +41,7 @@ Inductive comb {Γ : Ctx} : ty -> Type :=
     comb ((A → B) × A → B)
   | lam : forall {A B},
     comb (B → A → B × A)
+
   | plus :
     comb (ℝ × ℝ → ℝ)
   | rval : R -> comb ℝ
@@ -55,30 +56,16 @@ Inductive comb {Γ : Ctx} : ty -> Type :=
     comb (A → B) -> comb (B → C) -> comb (A → C)
   | bimap : forall {A B C D},
     comb (A → B) -> comb (C → D) -> comb (A × C → B × D)
-
-  | tuple : forall {A B},
-    comb A -> comb B -> comb (A × B)
-  | fst' : forall {A B},
-    comb (A × B) -> comb A
-  | snd' : forall {A B},
-    comb (A × B) -> comb B
-
-  | abs : forall {τ σ},
-    @comb (σ::Γ) τ -> comb (σ → τ)
-  | var : forall {τ},
-    τ ∈ Γ -> comb τ
-  | app : forall {τ σ},
-    comb (σ → τ) -> comb σ -> comb τ
 .
 
-Notation "A ;; B" := (seq A B) (at level 40).
+Notation "A ;; B" := (seq A B) (at level 40, left associativity).
 Notation "<| A , B |>" := (diag ;; bimap A B) (at level 40).
 
-Equations Ot {Γ : Ctx} (τ : ty): @comb Γ τ :=
-  | ℝ => rval 0;
-  | Unit => unit;
-  | σ × ρ => tuple (Ot σ) (Ot ρ);
-  | σ → ρ => cnst (Ot ρ).
+Equations Ot {Γ : Ctx} (τ : ty): @comb Γ (Unit → τ) :=
+  | ℝ => cnst (rval 0);
+  | Unit => neg;
+  | σ × ρ => <| (Ot σ), (Ot ρ) |>;
+  | σ → ρ => curry (first ;; (Ot ρ)).
 
 Equations plust {Γ : Ctx} (τ : ty): @comb Γ (τ × τ → τ) :=
   | ℝ => plus;
