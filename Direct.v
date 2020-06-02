@@ -164,13 +164,17 @@ Proof with quick.
     induction v; dependent destruction H.
     { (* v := Top, we already know that the relation is preserved by
           every term in the context. *)
+      erewrite S_eq.
+    2,3: extensionality x.
+    2,3: simp Dtm denote_tm...
+    2,3: simp denote_v...
       assumption. }
     { (* v := Pop, proven by the induction hypothesis obtained from
           the variable. *)
       simp Dtm.
       erewrite S_eq. eapply IHv...
       all: extensionality x.
-      all: simp Dtm denote_tm; simpl.
+      all: simp Dtm denote_tm...
       all: simp denote_v.
       all: reflexivity. } }
   { (* App *)
@@ -270,6 +274,11 @@ Proof with quick.
     destruct (IHt1 sb Dsb H) as [IHex1 IHdiv1].
     destruct (IHt2 sb Dsb H) as [IHex2 IHdiv2].
     clear IHt1 IHt2.
+    erewrite S_eq.
+  2,3: extensionality x.
+  2,3: simp Dtm...
+  2,3: simp denote_tm.
+  2,3: reflexivity.
     simp S. split...
     { apply (ex_derive_mult _ _ _ (IHex1 x) (IHex2 x)). }
     { extensionality x.
@@ -351,7 +360,13 @@ Proof with quick.
       induction n... } }
   { (* Tuples
         Give denotational instances of subterms using IHs *)
-    intros... simp S.
+    intros...
+    erewrite S_eq.
+  2,3: extensionality x.
+  2,3: simp Dtm.
+  2,3: simp denote_tm.
+  2,3: reflexivity.
+    simp S.
     pose proof (IHt1 sb Dsb H) as IHt1.
     pose proof (IHt2 sb Dsb H) as IHt2.
     exists (⟦ t1 ⟧ₜₘ ∘ sb );

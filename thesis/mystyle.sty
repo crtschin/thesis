@@ -1,0 +1,64 @@
+\RequirePackage{mathpartir}
+\RequirePackage{stmaryrd}
+\RequirePackage{mathtools}
+\RequirePackage{array,booktabs,ragged2e}
+\RequirePackage[english]{babel}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage{xfrac}
+\RequirePackage{enumitem}
+\RequirePackage{graphicx}
+\RequirePackage{fancyhdr}
+\RequirePackage{microtype}
+\RequirePackage{glossaries}
+% TODO: Setup symbol list
+\RequirePackage[draft=false,cache]{minted}
+\setlength{\marginparwidth}{3cm}
+\RequirePackage{libertine}
+\RequirePackage{dsfont}
+% \RequirePackage{libertinust1math}
+\RequirePackage{amssymb, amsthm, amsmath}
+\RequirePackage{thmtools}
+\RequirePackage[justification=centering]{caption}
+\RequirePackage{csquotes}
+\RequirePackage{etoolbox}
+\RequirePackage{showkeys}
+\RequirePackage[
+  backend=biber,
+  bibstyle=ieee,
+  citestyle=ieee,
+  sorting=ynt,
+  hyperref=true,
+  backref=true
+]{biblatex}
+% \RequirePackage[hidelinks]{hyperref}
+\RequirePackage[hidelinks]{hyperref}
+\RequirePackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]
+\setmonofont{Inconsolata}[Scale=MatchLowercase]
+\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}
+\renewcommand{\figurename}{Listing}
+\setminted[coq]{escapeinside=~~,mathescape}
+\newcommand{\br}[1]{\langle #1 \rangle}
+\def\Yields{\Downarrow}
+\newcommand{\makefootnotelist}[1]{%
+    \parbox{0.8\textwidth} {%
+        \footnotesize{%
+            \renewcommand*{\do}[1]{##1\\}%
+            \dolistcsloop{#1}}}}%
+\newcommand{\fancyfootnote}[1]{%
+    \footnotemark{}%
+    \def\listname{footlist\thepage}%
+    \def\n{$^{\the\numexpr\value{footnote}}$}
+    \ifcsdef{\listname}%
+        {\listcseadd{\listname}{\n\ #1}}%
+        {\csedef{\listname}{}%
+        \listcseadd{\listname}{\n\ #1}}%
+    \fancypagestyle{fancyfootnote}{%
+        \fancyfoot[L]{\makefootnotelist{\listname}}%
+        \fancyfoot[C]{}%
+        \fancyfoot[R]{\thepage}%
+    }\thispagestyle{fancyfootnote}}%
+\fancypagestyle{plain}{%
+  \fancyfoot[C]{\thepage}
+}

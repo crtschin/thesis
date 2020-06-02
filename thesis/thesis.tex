@@ -1,194 +1,23 @@
 \documentclass[11pt, final]{article}
-\usepackage{mathpartir}
-\usepackage{stmaryrd}
-\usepackage{mathtools}
-\usepackage{array,booktabs,ragged2e}
-\usepackage[english]{babel}
-\usepackage[utf8]{inputenc}
-\usepackage{xfrac}
-\usepackage{graphicx}
-\usepackage{fancyhdr}
-\usepackage{microtype}
-\usepackage{glossaries}
-% TODO: Setup symbol list
-\usepackage[draft=false,cache]{minted}
-\setlength{\marginparwidth}{3cm}
-\usepackage{libertine}
-\usepackage{dsfont}
-% \usepackage{libertinust1math}
-\usepackage{amssymb, amsthm, amsmath}
-\usepackage{thmtools}
-\usepackage[justification=centering]{caption}
-\usepackage{csquotes}
-\usepackage{etoolbox}
-\usepackage{showkeys}
-\usepackage[
-  backend=biber,
-  bibstyle=ieee,
-  citestyle=ieee,
-  sorting=ynt,
-  hyperref=true,
-  backref=true
-]{biblatex}
-% \usepackage[hidelinks]{hyperref}
-\usepackage[hidelinks]{hyperref}
-\usepackage{fontspec}
-\setmainfont{TeX Gyre Pagella}
-\setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]
-\setmonofont{Inconsolata}[Scale=MatchLowercase]
-\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}
-\renewcommand{\figurename}{Listing}
-\setminted[coq]{escapeinside=~~,mathescape}
-\newcommand{\br}[1]{\langle #1 \rangle}
-\def\Yields{\Downarrow}
-\newcommand{\makefootnotelist}[1]{%
-    \parbox{0.8\textwidth} {%
-        \footnotesize{%
-            \renewcommand*{\do}[1]{##1\\}%
-            \dolistcsloop{#1}}}}%
-\newcommand{\fancyfootnote}[1]{%
-    \footnotemark{}%
-    \def\listname{footlist\thepage}%
-    \def\n{$^{\the\numexpr\value{footnote}}$}
-    \ifcsdef{\listname}%
-        {\listcseadd{\listname}{\n\ #1}}%
-        {\csedef{\listname}{}%
-        \listcseadd{\listname}{\n\ #1}}%
-    \fancypagestyle{fancyfootnote}{%
-        \fancyfoot[L]{\makefootnotelist{\listname}}%
-        \fancyfoot[C]{}%
-        \fancyfoot[R]{\thepage}%
-    }\thispagestyle{fancyfootnote}}%
-\fancypagestyle{plain}{%
-  \fancyfoot[C]{\thepage}
-}
+\usepackage{mystyle}
 
 \addbibresource{./references.bib}
+
+\input{definitions.tex}
+
 \setlength{\headheight}{15pt}
 \pagestyle{fancy}
 \lhead{Utrecht University}
 \rfoot{\thepage}
 \cfoot{ }
-\renewcommand{\headrulewidth}{0.5pt}
-\renewcommand{\footrulewidth}{0.5pt}
-\renewcommand{\listingscaption}{Code snippet}
-\newcommand{\comment}[1]{}
-
-\declaretheorem{definition}
-\declaretheorem{example}
-\declaretheorem{theorem}
-\declaretheorem{lemma}
-\declaretheorem{corrollary}
-
-\def\Vakar{V\'{a}k\'{a}r}
-\def\D{\overrightarrow{\mathcal{D}}}
-\def\lambdaBase{\Lambda_{\delta}^{\times, \rightarrow, \mathds{R}}}
-\def\<#1>{\csname keyword@@#1\endcsname}
-\begingroup
-\makeatletter
-\def\do#1{\expandafter\doaux\expandafter{\keyword@style{#1}}{#1}}
-\def\doaux#1#2{\global\@namedef{keyword@@#2}{#1}}
-\def\keyword@style#1{\textbf{#1}}
-\do{Coq}
-\do{Agda}
-\def\keyword@style#1{\mathds{#1}}
-\do{R}
-\def\keyword@style#1{\mathcal{#1}}
-\do{D}
-\def\keyword@style#1{\texttt{#1}}
-\do{bottom}
-\do{Equations}
-\do{Coquelicot}
-\do{Program}
-\do{Set}
-\do{Prop}
-\do{Type}
-\do{return}
-\do{simpl}
-\do{Either}
-\do{sb}
-\do{Dsb}
-\do{Reals}
-\do{var}
-\do{abs}
-\do{app}
-\do{tuple}
-\do{first}
-\do{second}
-\do{rval}
-\do{add}
-\do{mul}
-\do{Top}
-\do{Pop}
-\endgroup
+\allowdisplaybreaks
 
 \begin{document}
 
-\begin{titlepage}
-\pagenumbering{gobble}
-
-\begin{figure}
-   \begin{minipage}{0.48\textwidth}
-   \begin{flushleft}
-    %  \includegraphics[scale=0.5]{Images/UU_LOGO.png}
-   \end{flushleft}
-   \end{minipage}\hfill
-   \begin{minipage}{0.48\textwidth}
-   \begin{flushright}
-    %  \includegraphics[scale=0.2]{Images/Logo.png}
-   \end{flushright}
-   \end{minipage}
-\end{figure}
-
-\thispagestyle{fancy}
-
-\vspace{1in}
-
-\center
-
-\textsc{\large Master Thesis}
-
-\vspace{0.5in}
-
-\noindent\makebox[\linewidth]{\rule{\linewidth}{1.2pt}}
-\textsc{\textbf{\large Formalized Proof of Automatic Differentiation in \<Coq>}}
-\noindent\makebox[\linewidth]{\rule{\linewidth}{1.2pt}}
-
-\vspace{0.5in}
-
-\begin{minipage}{0.48\textwidth}
-    \begin{flushleft}
-        \textit{Student:} \\
-        Curtis Chin Jen Sem \\
-        % crtschin@gmail.com
-    \end{flushleft}
-\end{minipage}
-\begin{minipage}{0.48\textwidth}
-    \begin{flushright}
-    \textit{Supervisors:} \\
-    Mathijs \Vakar{} \\
-    Wouter Swierstra \\
-    % Email
-    % \end{flushright}
-    % \begin{flushright}
-    % Email
-    \end{flushright}
-\end{minipage}
-
-\vspace{2in}
-
-\textbf{\large Department of Information and Computing Science} \\
-\textit{Last updated: \today}
-
-\end{titlepage}
-
+\input{titlepage.tex}
 \newpage
 
-\begin{abstract}
-  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean quis dapibus lorem. Praesent volutpat feugiat erat. Quisque quis hendrerit lectus, et malesuada nisi. Quisque id elementum lectus. Phasellus sit amet ante ornare, hendrerit orci non, consectetur erat. Phasellus pulvinar orci urna. Donec fringilla fringilla ornare. Sed ut tempus arcu, eget ornare ligula.
-
-  Ut varius pretium pellentesque. Nam sit amet sapien lobortis nisl faucibus tempor. Curabitur non enim venenatis, euismod elit convallis, auctor sapien. Praesent eget urna sed justo luctus malesuada. In scelerisque metus nibh, ullamcorper efficitur eros fermentum non. Phasellus accumsan congue diam, non fringilla lorem fringilla sit amet. Ut molestie feugiat sagittis. Integer in lobortis justo, et euismod augue. Suspendisse nec euismod lectus, at condimentum magna. Pellentesque eu elementum dui.
-\end{abstract}
+\input{abstract.tex}
 \newpage
 
 \pagenumbering{arabic}
@@ -196,33 +25,7 @@
 \tableofcontents
 \newpage
 
-\section{Introduction}
-
-AI and machine learning research has sparked a lot of new interest in recent times. It has been used in fields such as computer vision, natural language processing, and as opponents in various games such as chess and Go.
-In machine learning and more specifically neural network research, researchers set up functions referred to as layers between the input and output data and through an algorithm called back propagation, try to optimize the network such that it learns how to solve the problem implied by the data.
-Back propagation makes heavy use of automatic differentiation, but programming in an environment which allows for automatic differentiation can be limited.
-
-Frameworks such as Tangent\fancyfootnote{https://github.com/google/tangent} or autograd\fancyfootnote{https://github.com/HIPS/autograd} make use of source code transformations and operator overloading, which can restrict which high-level optimizations one is able to apply to generated code. Support for higher-order derivatives is also limited.
-
-Programming language research has a rich history with many well-known both high- and low-level optimization techniques such as partial evaluation and deforestation.
-If instead of a framework, we were to have a programming language that is able to facilitate automatic differentiation, we would be able to apply many of these techniques. Through the use of higher-order functions and type systems, we would also get additional benefits such as code-reusability and correctness.
-
-In this thesis, we will aim to formalize an extendable correctness proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
-Our formalization is based on a recent proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}.
-They proved, using a denotational model of diffeological spaces, that their forward mode emulating macro is correct when applied to a simply-typed lambda calculus with products, co-products and inductive types.
-
-
-With this thesis we will aim for the following goals:
-\begin{itemize}
-  \item Formalize the proofs of both the forward mode and continuation-based automatic differentiation algorithms specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
-  \item Prove that well-known compile-time optimizations such as the partial evaluation, are correct with respect to the semantics of automatic differentiation.
-  \item Extend the proof with the array types and compile-time optimization rules by Shaikhha, et. al.\cite{Shaikha2019}.
-\end{itemize}
-
-% TODO: Add references
-Chapter 2 includes a background section explaining many of the topics and techniques used in this thesis. The formalization of forward-mode automatic differentiation is given in Chapter 3, starting from a base simply-typed lambda calculus extended with product types and incrementally adding new types and language constructs. Chapters 4 and 5 give formalizations of optimization avenues using respectively program transformations and continuation-based reverse-mode automatic differentiation.
-
-As a notational convention, we will use specialized notation in the definitions themselves. Coq normally requires that pretty printed notations be defined separately from the definitions they reference. The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.
+\input{introduction}
 
 \section{Background}
 
@@ -704,21 +507,21 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
   The key in formulating these denotationally lies in what was previously the argument function $f : R \rightarrow R^n$.
   Previously the function was used to indicate the open variables or function arguments.
   If generalized to $\Gamma = x_1 : \tau_1, \dots, x_n : \tau_n$, this same function could be seen as a function which supplies terms foreach open variable $x_1, \dots, x_n$ with their appropriate types.
-  So the argument function now becomes the pair of functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \D(\Gamma) \rrbracket$.
-  Note that the functions $s$ and $s'$ are built out of the denotations of terms such that these same denotations follow the logical relation (\ref{eqn:lr_base}) for our language.
+  So the argument function now becomes the pair of functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$.
+  Note that the functions $s$ and $s_D$ are built out of the denotations of terms such that these same denotations follow the logical relation (\ref{eqn:lr_base}) for our language.
   We phrase this requirement as a definition.
 
   \begin{definition}(Instantiation)
-    Substitutional functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ are inductively instantiated such that they follow
+    Substitutional functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ are inductively instantiated such that they follow
     \begin{equation}
       inst_\Gamma(f, g) =
         \left\{
           \begin{array}{ll}
             f = const([]) \wedge g = const([])
               & : \Gamma = [] \\
-            \forall s, s'.
+            \forall s, s_D.
               & : \Gamma = (\tau :: \Gamma') \\
-              \;\;\;\;inst_{\Gamma'}(s, s') \wedge S_\tau(f, g)
+              \;\;\;\;inst_{\Gamma'}(s, s_D) \wedge S_\tau(f, g)
           \end{array}
         \right.
     \label{eqn:lr_base}
@@ -727,84 +530,122 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
 
   Using this notion of substitution instantiations we can now formulate our substitution lemma.
 
-  \begin{lemma}[Substitution]
-    If for any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s')$ then $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s')$.
+  \begin{lemma}[Substitution]\label{thm:substitution_lemma}
+    If for any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s_D)$ then $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
   \end{lemma}
 
   \begin{proof}
+
     This is proven by induction on the typing derivation of $t$.
-    Unless otherwise specified, the type of $s$ and $s'$ are respectively $R \rightarrow \llbracket \Gamma \rrbracket$ and $R \rightarrow \llbracket \D(\Gamma) \rrbracket$.
+    Unless otherwise specified, the type of $s$ and $s_D$ are respectively $R \rightarrow \llbracket \Gamma \rrbracket$ and $R \rightarrow \llbracket \D(\Gamma) \rrbracket$.
     \begin{enumerate}
       \item (\<var>)
-        Prove: $S_\tau(\llbracket var\ v \rrbracket \circ s, \llbracket \D(var\ v) \rrbracket \circ s)$.
+
+        Prove: $S_\tau(\llbracket var\ v \rrbracket \circ s, \llbracket \D(var\ v) \rrbracket \circ s_D)$.
 
         Proceed by induction on the type evidence $v$.
         \begin{itemize}
           \item(\<Top>) Base case
 
-          Prove: $S_\tau(\llbracket var\ Top \rrbracket \circ s, \llbracket \D(var\ Top) \rrbracket \circ s')$
+          Prove: $S_\tau(\llbracket var\ Top \rrbracket \circ s, \llbracket \D(var\ Top) \rrbracket \circ s_D)$, where $s : R \rightarrow \llbracket \tau :: \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \tau :: \Gamma \rrbracket$
 
           In this case the referenced $\tau$ exists at the top of the list.
           So both $\llbracket var\ Top \rrbracket$ and $\llbracket \D(var\ Top) \rrbracket$ denotate to fetching the top term.
           This is now proven by definition of $inst$, which states that the the term is semantically well-typed.
 
+          \begin{align*}
+            S&_\tau(\llbracket var\ Top \rrbracket \circ s, \llbracket \D(var\ Top) \rrbracket \circ s_D) \\
+            &\Vdash \text{(Definition of $\D$)} \\
+            & S_\tau(\llbracket var\ Top \rrbracket \circ s, \llbracket var\ Top \rrbracket \circ s_D) \\
+            &\Vdash \text{(Definition of $\circ$)} \\
+            & S_\tau(\lambda x. \llbracket var\ Top \rrbracket (s(x)), \lambda x. \llbracket var\ Top \rrbracket (s_D(x))) \\
+            &\Vdash \text{(Definition of $\llbracket\rrbracket$)} \\
+            & S_\tau(\lambda x. lookup\ \llbracket Top \rrbracket (s(x)), \lambda x. lookup\ \llbracket Top \rrbracket (s_D(x))) \\
+            &\Vdash \text{(Rewrite using $s = \lambda x. hd(s(x))::tl(s(x))$)} \\
+            & S_\tau(\lambda x. lookup\ \llbracket Top \rrbracket (hd(s(x))::tl(s(x))), \\
+              & \;\;\; \lambda x. lookup\ \llbracket Top \rrbracket (hd(s_D(x))::tl(s_D(x)))) \\
+            & \Vdash \text{(Simplify with lookup and $\llbracket Top \rrbracket$)} \\
+            & S_\tau(\lambda x. hd(s(x)), \lambda x. hd(s_D(x))) \\
+            & \Vdash \text{(By definition of $inst_{\tau::\Gamma}$)} \\
+          \end{align*} \qed
+
           \item(\<Pop>) Induction step
 
-          Prove: $S_\tau(\llbracket var\ (Pop\ v) \rrbracket \circ s, \llbracket \D(var\ (Pop\ v)) \rrbracket \circ s')$, where $s : R \rightarrow \llbracket \sigma :: \Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \D(\sigma :: \Gamma) \rrbracket$.
+          Prove: $S_\tau(\llbracket var\ (Pop\ v) \rrbracket \circ s, \llbracket \D(var\ (Pop\ v)) \rrbracket \circ s_D)$, where $s : R \rightarrow \llbracket \sigma :: \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\sigma :: \Gamma) \rrbracket$.
 
-          The induction hypothesis states $\forall (f : R \rightarrow \llbracket \Gamma \rrbracket), (g : R \rightarrow \llbracket \D(\Gamma) \rrbracket). S_\tau(\llbracket var\ v \rrbracket \circ f, \llbracket \D(var\ v) \rrbracket \circ g)$
+          Induction hypothesis:
+          \begin{enumerate}\label{eqn:subst_ih_var_Pop}
+            \item $\forall (f : R \rightarrow \llbracket \Gamma \rrbracket), (g : R \rightarrow \llbracket \D(\Gamma) \rrbracket). \\
+            \;\;\;S_\tau(\llbracket var\ v \rrbracket \circ f, \llbracket \D(var\ v) \rrbracket \circ g)$
+          \end{enumerate}
 
           Note that the \<var> term now denotates to ignoring the arbitrary unrelated type $\sigma$ and looking up $v$ in the rest of the list $\Gamma$.
-          So $S_\tau(\llbracket var\ v \rrbracket \circ tl \circ s, \llbracket \D(var\ v) \rrbracket \circ tl \circ s')$, which is proven using the induction hypothesis by respectively instantiating $f$ and $g$ as $tl \circ s$ and $tl \circ s'$. \qed
+          So $S_\tau(\llbracket var\ v \rrbracket \circ tl \circ s, \llbracket \D(var\ v) \rrbracket \circ tl \circ s_D)$, which is proven using the induction hypothesis by respectively instantiating $f$ and $g$ as $tl \circ s$ and $tl \circ s_D$.
+
+          \begin{align*}
+            S&_\tau(\llbracket var\ (Pop\ v) \rrbracket \circ s, \llbracket \D(var\ (Pop\ v)) \rrbracket \circ s_D) \\
+            &\Vdash \text{(Definition of $\D$)} \\
+            & S_\tau(\llbracket var\ (Pop\ v) \rrbracket \circ s, \llbracket var\ (Pop\ v) \rrbracket \circ s_D) \\
+            &\Vdash \text{(Definition of $\circ$)} \\
+            & S_\tau(\lambda x. \llbracket var\ (Pop\ v) \rrbracket (s(x)), \lambda x. \llbracket var\ (Pop\ v) \rrbracket (s_D(x))) \\
+            &\Vdash \text{(Definition of $\llbracket\rrbracket$)} \\
+            & S_\tau(\lambda x. lookup\ \llbracket Pop\ v \rrbracket (s(x)), \lambda x. lookup\ \llbracket Pop\ v \rrbracket (s_D(x))) \\
+            &\Vdash \text{(Rewrite using $s = \lambda x. hd(s(x))::tl(s(x))$)} \\
+            & S_\tau(\lambda x. lookup\ \llbracket Pop\ v \rrbracket (hd(s(x))::tl(s(x))), \\
+              & \;\;\; \lambda x. lookup\ \llbracket Pop\ v \rrbracket (hd(s_D(x))::tl(s_D(x)))) \\
+            & \Vdash \text{(Simplify with lookup and $\llbracket Pop\ v \rrbracket$)} \\
+            & S_\tau(\lambda x. lookup\ \llbracket v \rrbracket (tl(s(x))), \lambda x. lookup\ \llbracket v \rrbracket (tl(s_D(x)))) \\
+            & \Vdash \text{(Use IH. \ref{eqn:subst_ih_var_Pop} with $f = tl(s(x))$ and $g = tl(s_D(x))$)}
+          \end{align*} \qed
         \end{itemize}
       \item (\<app>)
 
-        Prove: $S_\tau(\llbracket app\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(app\ t_1\ t_2) \rrbracket \circ s')$
+        Prove: $S_\tau(\llbracket app\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(app\ t_1\ t_2) \rrbracket \circ s_D)$
 
         Induction hypotheses:
         \begin{enumerate}
-          \item \label{eqn:subst_ih_app1}$S_{\sigma\rightarrow\tau}(\llbracket t_1 \rrbracket \circ s, \llbracket \D(t_1) \rrbracket \circ s')$
-          \item \label{eqn:subst_ih_app2}$S_{\sigma}(\llbracket t_2 \rrbracket \circ s, \llbracket \D(t_2) \rrbracket \circ s')$
+          \item \label{eqn:subst_ih_app1}$S_{\sigma\rightarrow\tau}(\llbracket t_1 \rrbracket \circ s, \llbracket \D(t_1) \rrbracket \circ s_D)$
+          \item \label{eqn:subst_ih_app2}$S_{\sigma}(\llbracket t_2 \rrbracket \circ s, \llbracket \D(t_2) \rrbracket \circ s_D)$
         \end{enumerate}
 
         First it is useful to rewrite the induction hypothesis \ref{eqn:subst_ih_app1} in a more usable format. Rewrite the statement using the definition of $S$ at function types.
 
         \begin{align*}
-          S&_{\sigma\rightarrow\tau}(\llbracket t_1 \rrbracket \circ s, \llbracket \D(t_1) \rrbracket \circ s') \\
+          S&_{\sigma\rightarrow\tau}(\llbracket t_1 \rrbracket \circ s, \llbracket \D(t_1) \rrbracket \circ s_D) \\
             & \Vdash \text{(Definition of \circ)} \\
-            & S_{\sigma\rightarrow\tau}(\lambda x. \llbracket t_1 \rrbracket(s(x)), \lambda x. \llbracket \D(t_1) \rrbracket(s'(x))) \\
+            & S_{\sigma\rightarrow\tau}(\lambda x. \llbracket t_1 \rrbracket(s(x)), \lambda x. \llbracket \D(t_1) \rrbracket(s_D(x))) \\
             & \Vdash \text{(Definition of $S_{\rightarrow}$)} \\
             & \forall f_1, f_2.
               S_{\sigma}(f1, f2) \rightarrow \\
-            &S_\tau(\lambda x. (\llbracket t_1 \rrbracket(s(x)))(f_1(x)), \lambda x. (\llbracket \D(t_1) \rrbracket(s'(x)))(f_2(x)))
+            &S_\tau(\lambda x. (\llbracket t_1 \rrbracket(s(x)))(f_1(x)), \lambda x. (\llbracket \D(t_1) \rrbracket(s_D(x)))(f_2(x)))
         \end{align*}
 
         The case for \<app> is now proven by applying the induction hypothesis \ref{eqn:subst_ih_app1} for the function term using the induction hypothesis \ref{eqn:subst_ih_app2} for the argument term to satify its premise.
 
         \begin{align*}
-          S&_\tau(\llbracket app\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(app\ t_1\ t_2) \rrbracket \circ s') \\
+          S&_\tau(\llbracket app\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(app\ t_1\ t_2) \rrbracket \circ s_D) \\
             &\Vdash \text{(Definition of $\D$)}\\
-            & S_\tau(\llbracket app\ t_1\ t_2 \rrbracket \circ s, \llbracket app\ \D(t_1)\ \D(t_2) \rrbracket \circ s') \\
+            & S_\tau(\llbracket app\ t_1\ t_2 \rrbracket \circ s, \llbracket app\ \D(t_1)\ \D(t_2) \rrbracket \circ s_D) \\
             &\Vdash \text{(Definition of \circ)}\\
-            & S_\tau(\lambda x. \llbracket app\ t_1\ t_2 \rrbracket (s (x)), \lambda x. \llbracket app\ \D(t_1)\ \D(t_2) \rrbracket (s' (x))) \\
+            & S_\tau(\lambda x. \llbracket app\ t_1\ t_2 \rrbracket (s (x)), \lambda x. \llbracket app\ \D(t_1)\ \D(t_2) \rrbracket (s_D (x))) \\
             &\Vdash \text{(Definition of $\llbracket \rrbracket$)}\\
-            & S_\tau(\lambda x. (\llbracket t_1\ \rrbracket(s(x))) (\llbracket t_2 \rrbracket(s(x))),\lambda x. (\llbracket \D(t_1)\ \rrbracket(s'(x))) (\llbracket \D(t_2) \rrbracket(s'(x))) \\
+            & S_\tau(\lambda x. (\llbracket t_1\ \rrbracket(s(x))) (\llbracket t_2 \rrbracket(s(x))),\lambda x. (\llbracket \D(t_1)\ \rrbracket(s_D(x))) (\llbracket \D(t_2) \rrbracket(s_D(x))) \\
             &\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_app1})}\\
-            & S_{\sigma}(\lambda x. \llbracket t_2 \rrbracket (s(x)), \lambda x. \llbracket \D(t_2) \rrbracket \circ (s'(x))) \\
-            &\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_app2})} \\
+            & S_{\sigma}(\lambda x. \llbracket t_2 \rrbracket (s(x)), \lambda x. \llbracket \D(t_2) \rrbracket \circ (s_D(x))) \\
+            &\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_app2})}
         \end{align*} \qed
       \item (\<abs>)
 
-        Prove: $S_{\sigma\rightarrow\tau}(\llbracket abs\ t \rrbracket \circ s, \llbracket \D(abs\ t) \rrbracket \circ s')$
+        Prove: $S_{\sigma\rightarrow\tau}(\llbracket abs\ t \rrbracket \circ s, \llbracket \D(abs\ t) \rrbracket \circ s_D)$
 
         Induction hypothesis:
         \begin{enumerate}
-          \item \label{eqn:subst_ih_abs} $S_\sigma(\llbracket t \rrbracket \circ s, \llbracket \D(t) \rrbracket \circ s')$, where $s : R \rightarrow \llbracket \sigma::\Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \sigma::\Gamma \rrbracket$
+          \item \label{eqn:subst_ih_abs} $S_\sigma(\llbracket t \rrbracket \circ s, \llbracket \D(t) \rrbracket \circ s_D)$, where $s : R \rightarrow \llbracket \sigma::\Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \sigma::\Gamma \rrbracket$
         \end{enumerate}
 
         As is the case for \ref{eqn:subst_ih_app1}, simplify the goal statement using the definition of $S_\rightarrow$. So the proof obligation now becomes.
 
-        Prove: $S_{\tau}(\lambda x. (\llbracket abs\ t \rrbracket (s(x)))(f_1(x)), \lambda x. (\llbracket \D(abs\ t) \rrbracket (s'(x)))(f_2(x)))$
+        Prove: $S_{\tau}(\lambda x. (\llbracket abs\ t \rrbracket (s(x)))(f_1(x)), \lambda x. (\llbracket \D(abs\ t) \rrbracket (s_D(x)))(f_2(x)))$
 
         Assume:
         \begin{enumerate}
@@ -817,26 +658,26 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
         Note that the assumption \ref{eqn:subst_ass_abs3}: $S_\sigma(f_1, f_2)$ ensures that the requirement of $inst_{\sigma::\Gamma}$ in the induction hypothesis \ref{eqn:subst_ih_abs} is satisfied.
 
         \begin{align*}
-          S&_{\tau}(\lambda x. (\llbracket abs\ t \rrbracket (s(x)))(f_1(x)), \lambda x. (\llbracket \D(abs\ t) \rrbracket (s'(x)))(f_2(x))) \\
+          S&_{\tau}(\lambda x. (\llbracket abs\ t \rrbracket (s(x)))(f_1(x)), \lambda x. (\llbracket \D(abs\ t) \rrbracket (s_D(x)))(f_2(x))) \\
             &\Vdash \text{(Definition of $\D$)}\\
-            & S_{\tau}(\lambda x. (\llbracket abs\ t \rrbracket (s(x)))(f_1(x)), \lambda x. (\llbracket abs\ \D(t) \rrbracket (s'(x)))(f_2(x))) \\
+            & S_{\tau}(\lambda x. (\llbracket abs\ t \rrbracket (s(x)))(f_1(x)), \lambda x. (\llbracket abs\ \D(t) \rrbracket (s_D(x)))(f_2(x))) \\
             &\Vdash \text{(Definition of $\llbracket \rrbracket$)}\\
-            & S_{\tau}(\lambda x. (\llbracket t \rrbracket (f_1(x) :: s(x))), \lambda x. (\llbracket \D(t) \rrbracket (f_2(x) :: s'(x)))) \\
+            & S_{\tau}(\lambda x. (\llbracket t \rrbracket (f_1(x) :: s(x))), \lambda x. (\llbracket \D(t) \rrbracket (f_2(x) :: s_D(x)))) \\
             &\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_app1})}
         \end{align*} \qed
 
       \item (\<rval>)
 
-      Prove: $S_{R}(\llbracket rval\ n \rrbracket \circ s, \llbracket \D(rval\ n) \rrbracket \circ s')$
+      Prove: $S_{R}(\llbracket rval\ n \rrbracket \circ s, \llbracket \D(rval\ n) \rrbracket \circ s_D)$
 
-      This is proven by nothing that the corresponding denotations of \<rval> are constant functions, which are both smooth and whose derivatives are equal to $0$.
+      This is proven by noting that the corresponding denotations of \<rval> are constant functions, which are both smooth and whose derivatives are equal to $0$.
 
       \begin{align*}
-        S&_{\tau}(\llbracket rval\ n \rrbracket \circ s, \llbracket \D(rval\ n) \rrbracket \circ s') \\
+        S&_R(\llbracket rval\ n \rrbracket \circ s, \llbracket \D(rval\ n) \rrbracket \circ s_D) \\
         &\Vdash \text{(Definition of $\D$)}\\
-        &S_{\tau}(\llbracket rval\ n \rrbracket \circ s, \llbracket tuple\ (rval\ n)\ (rval\ 0) \rrbracket \circ s') \\
+        &S_R(\llbracket rval\ n \rrbracket \circ s, \llbracket tuple\ (rval\ n)\ (rval\ 0) \rrbracket \circ s_D) \\
         &\Vdash \text{(Definition of $\llbracket\rrbracket$)}\\
-        &S_{\tau}(const\ n, (const\ n, const\ 0)) \\
+        &S_R(const\ n, (const\ n, const\ 0)) \\
         &\Vdash \text{(Definition of $S_R$)}\\
         &smooth\ (const\ n) \wedge
           const\ 0 = \sfrac{\partial{const\ n}}{\partial{x}} \\
@@ -848,9 +689,139 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
         &\;\;\;\Vdash \text{(if $f(x) = n$, then $\sfrac{\partial{f}}{\partial{x}} = 0$)}
       \end{align*} \qed
       \item (\<add>)
+
+      Prove: $S_R(\llbracket add\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(add\ t_1\ t_2) \rrbracket \circ s_D)$
+
+      Induction hypotheses:
+      \begin{enumerate}
+        \item \label{eqn:subst_ih_add1}$S_R(\llbracket t_1 \rrbracket \circ s, \llbracket \D(t_1) \rrbracket \circ s_D)$
+        \item \label{eqn:subst_ih_add2}$S_R(\llbracket t_2 \rrbracket \circ s, \llbracket \D(t_2) \rrbracket \circ s_D)$
+      \end{enumerate}
+
+      The proof proceeds by simplifying the denotations and proving the smoothness and derivative requirements for $S_R$.
+
+      \begin{align*}
+        S&_R(\llbracket add\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(add\ t_1\ t_2) \rrbracket \circ s_D) \\
+        &\Vdash \text{(Definition of $\D$)}\\
+        &S_R(\llbracket add\ t_1\ t_2 \rrbracket \circ s, \llbracket tuple\ \\
+        & \;\;\;(add\ (first\ \D(t_1)) (first\ \D(t_2)))\ \\
+        & \;\;\;(add\ (second \D(t_1)) (second \D(t_2)))) \rrbracket \circ s_D) \\
+        &\Vdash \text{(Definition of $\llbracket\rrbracket$, using} \\
+        & \;\;\;\;\;\;\;\;\; \text{$(d_1, d_1') = \llbracket \D(t_1) \rrbracket s(x)$ and $(d_2, d_2') = \llbracket \D(t_2) \rrbracket s_D(x)$)}\\
+        &S_R(\lambda x. d_1(x) + d_2(x), \lambda x. (d_1(x) + d_2(x), d_1'(x) + d_2'(x))) \\
+        &\Vdash \text{(Definition of $S_R$)}\\
+        & smooth\ (\lambda x. d_1(x) + d_2(x)) \wedge \\
+        & \;\;\; \lambda x. d_1'(x) + d_2'(x) = \sfrac{\partial{(\lambda x. d_1'(x) + d_2'(x))}}{\partial{x}} \\
+        &\Vdash \text{(split goals: goal 1)}\\
+        &\;\;\;smooth\ (\lambda x. d_1(x) + d_2(x)) \\
+        &\;\;\;\Vdash
+          \text{(Addition is smooth, if subterms are smooth)}\\
+        &\;\;\;smooth\ d_1 \wedge smooth\ d_2 \\
+        &\;\;\;\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_add1} for $d_1$ and \ref{eqn:subst_ih_add2} for $d_2$)}\\
+        &\Vdash \text{(split goals: goal 2)}\\
+        &\;\;\;\lambda x. d_1'(x) + d_2'(x) = \sfrac{\partial{(\lambda x. d_1'(x) + d_2'(x))}}{\partial{x}} \\
+        &\;\;\;\Vdash \text{(By definition of taking the derivative of addition)} \\
+        &\;\;\; d_1' = \sfrac{\partial{d_1}}{\partial{x}} \wedge d_2' = \sfrac{\partial{d_2}}{\partial{x}} \\
+        &\;\;\;\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_add1} for $d_1$ and \ref{eqn:subst_ih_add2} for $d_2$)}\\
+      \end{align*} \qed
+
       \item (\<mul>)
+
+      Prove: $S_R(\llbracket mul\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(mul\ t_1\ t_2) \rrbracket \circ s_D)$
+
+      Induction hypotheses:
+      \begin{enumerate}
+        \item \label{eqn:subst_ih_mul1}$S_R(\llbracket t_1 \rrbracket \circ s, \llbracket \D(t_1) \rrbracket \circ s_D)$
+        \item \label{eqn:subst_ih_mul2}$S_R(\llbracket t_2 \rrbracket \circ s, \llbracket \D(t_2) \rrbracket \circ s_D)$
+      \end{enumerate}
+
+      Proof goes through almost identically as for the case for \<add>.
+
+      \begin{align*}
+        S&_R(\llbracket mul\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(mul\ t_1\ t_2) \rrbracket \circ s_D) \\
+        &\Vdash \text{(Definition of $\D$)}\\
+        &S_R(\llbracket mul\ t_1\ t_2 \rrbracket \circ s, \llbracket tuple\ \\
+        & \;\;\;(mul\ (first\ \D(t_1)) (first\ \D(t_2)))\ \\
+        & \;\;\;(add\ \\
+        & \;\;\;\;\;(mul\ (first \D(t_1)) (second \D(t_2))) \\
+        & \;\;\;\;\;(mul\ (first \D(t_2)) (second \D(t_1)))) \rrbracket \circ s_D) \\
+        &\Vdash \text{(Definition of $\llbracket\rrbracket$, using} \\
+        & \;\;\;\;\;\;\;\;\; \text{$(d_1, d_1') = \llbracket \D(t_1) \rrbracket s(x)$ and $(d_2, d_2') = \llbracket \D(t_2) \rrbracket s_D(x)$)}\\
+        &S_R(\lambda x. d_1(x) * d_2(x), \\
+        & \;\;\; \lambda x. (d_1(x) * d_2(x), d_1(x) * d_2'(x) + (d_2(x) * d_1'(x)))) \\
+        &\Vdash \text{(Definition of $S_R$)}\\
+        &smooth\ (\lambda x. d_1(x) * d_2(x)) \wedge \\
+        & \;\;\; \lambda x. d_1(x) * d_2'(x) + d_2(x) * d_1'(x) = \sfrac{\partial{(\lambda x. (d_1(x) * d_2(x))}}{\partial{x}} \\
+        &\Vdash \text{(split goals: goal 1)}\\
+        &\;\;\;smooth\ (\lambda x. d_1(x) * d_2(x)) \\
+        &\;\;\;\Vdash
+          \text{(Multiplication is smooth, if subterms are smooth)}\\
+        &\;\;\;smooth\ d_1 \wedge smooth\ d_2 \\
+        &\;\;\;\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_mul1} for $d_1$ and \ref{eqn:subst_ih_mul2} for $d_2$)}\\
+        &\Vdash \text{(split goals: goal 2)}\\
+        &\;\;\;\lambda x. d_1(x) * d_2'(x) + d_2(x) * d_1'(x) = \sfrac{\partial{(\lambda x. (d_1(x) * d_2(x))}}{\partial{x}} \\
+        &\;\;\;\Vdash \text{(By definition of taking the derivative of multiplications)} \\
+        &\;\;\; d_1' = \sfrac{\partial{d_1}}{\partial{x}} \wedge d_2' = \sfrac{\partial{d_2}}{\partial{x}} \\
+        &\;\;\;\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_mul1} for $d_1$ and \ref{eqn:subst_ih_mul2} for $d_2$)}\\
+      \end{align*} \qed
+
       \item (\<tuple>)
+
+      Prove: $S_(\tau \times \sigma)(\llbracket tuple\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(tuple\ t_1\ t_2) \rrbracket \circ s_D)$
+
+      Induction hypotheses:
+      \begin{enumerate}
+        \item \label{eqn:subst_ih_tuple1}$S_\tau(\llbracket t_1 \rrbracket \circ s, \llbracket \D(t_1) \rrbracket \circ s_D)$
+        \item \label{eqn:subst_ih_tuple2}$S_\sigma(\llbracket t_2 \rrbracket \circ s, \llbracket \D(t_2) \rrbracket \circ s_D)$
+      \end{enumerate}
+
+      A recurring pattern will become apparent in later sections when continuing to prove the substitution lemma \ref{thm:substitution_lemma} for types consisting of other types.
+      In this case, due to the carefull attention spent on the logical relation, only the witnesses of the subterms of the tuple need to be supplied to finish the proof.
+
+      Note that the witnesses of $S_\tau$ and $S_\sigma$ that need to be given here are supplied by the induction hypotheses.
+      While these witnesses are not exactly relevant to finish this proof for \<tuple>, they are needed in the proofs for projections.
+
+      \begin{align*}
+        S&_(\tau \times \sigma)(\llbracket tuple\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(tuple\ t_1\ t_2) \rrbracket \circ s_D) \\
+        & \Vdash \text{(Definition of $\D$)} \\
+        & S_(\tau \times \sigma)(\llbracket tuple\ t_1\ t_2 \rrbracket \circ s, \llbracket tuple\ \D(t_1)\ \D(t_2)) \rrbracket \circ s_D) \\
+        & \Vdash \text{(Definition of $\llbracket\rrbracket$)} \\
+        & S_(\tau \times \sigma)(\lambda x. (\llbracket t_1 \rrbracket(s(x)), \llbracket t_2 \rrbracket(s(x))), \\
+        & \;\;\;\;\;\;\lambda x. (\llbracket \D(t_1) \rrbracket(s'(x)), \llbracket \D(t_2) \rrbracket(s'(x)))) \\
+        & \Vdash \text{(Definition of $S_{\tau\times\sigma}$)} \\
+        & \exists f_1, f_2, g_1, g_2, \\
+            & \;\;\;\;S_\tau(f_1, f_2), S_\sigma(g_1, g_2). \\
+            & \;\;\;\;\lambda x. (\llbracket t_1 \rrbracket(s(x)), \llbracket t_2 \rrbracket(s(x))) = \lambda x. (f_1(x), g_1(x)) \wedge \\
+            & \;\;\;\;\lambda x. (\llbracket \D(t_1) \rrbracket(s'(x)), \llbracket \D(t_2) \rrbracket(s'(x))) = \lambda x. (f_2(x), g_2(x)) \\
+        & \Vdash \text{(Give witnesses: $f_1 := \llbracket t_1 \rrbracket \circ s$, $f_2 := \llbracket t_2 \rrbracket \circ s$,} \\
+        & \;\;\;\;\;\; \text{$g_1 := \llbracket \D(t_1) \rrbracket \circ s'$, $g_2 := \llbracket \D(t_2) \rrbracket \circ s'$)} \\
+        & \exists S_\tau(f_1, f_2), S_\sigma(g_1, g_2). \\
+          & \;\;\;\;\lambda x. (\llbracket t_1 \rrbracket(s(x)), \llbracket t_2 \rrbracket(s(x))) \\
+          & \;\;\;\;\;\;\; = \lambda x. (\llbracket t_1 \rrbracket(s(x)), \llbracket t_2 \rrbracket(s(x))) \wedge \\
+          & \;\;\;\;\lambda x. (\llbracket \D(t_1) \rrbracket(s'(x)), \llbracket \D(t_2) \rrbracket(s'(x))) \\
+          & \;\;\;\;\;\;\; = \lambda x. (\llbracket \D(t_1) \rrbracket(s'(x)), \llbracket \D(t_2) \rrbracket(s'(x))) \\
+        & \Vdash \text{(Give witnesses of $S_\tau$ and $S_\sigma$ using respective IHs \ref{eqn:subst_ih_tuple1} and \ref{eqn:subst_ih_tuple2})} \\
+        & \;\;\;\;\lambda x. (\llbracket t_1 \rrbracket(s(x)), \llbracket t_2 \rrbracket(s(x))) \\
+        & \;\;\;\;\;\;\; = \lambda x. (\llbracket t_1 \rrbracket(s(x)), \llbracket t_2 \rrbracket(s(x))) \wedge \\
+        & \;\;\;\;\lambda x. (\llbracket \D(t_1) \rrbracket(s'(x)), \llbracket \D(t_2) \rrbracket(s'(x))) \\
+        & \;\;\;\;\;\;\; = \lambda x. (\llbracket \D(t_1) \rrbracket(s'(x)), \llbracket \D(t_2) \rrbracket(s'(x))) \\
+        & \Vdash \text{(Reflexivity)} \\
+      \end{align*}\qed
       \item (\<first>)
+
+      Prove: $S_(\tau)(\llbracket first\ t \rrbracket \circ s, \llbracket \D(first\ t) \rrbracket \circ s_D)$
+
+      Induction hypotheses:
+      \begin{enumerate}
+        \item \label{eqn:subst_ih_first}$S_{\tau\times\sigma}(\llbracket t \rrbracket \circ s, \llbracket \D(t) \rrbracket \circ s_D)$
+      \end{enumerate}
+
+      Simplifying the induction hypothesis \ref{eqn:subst_ih_first} using the definition of $S_{\tau\times\sigma}$ gives rise to a number of usefull assumptions:
+
+      \begin{enumerate}
+        \item
+      \end{enumerate}
+
       \item (\<second>)
     \end{enumerate}
   \end{proof}
