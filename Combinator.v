@@ -26,63 +26,66 @@ Derive Signature for Var.
 Notation "x ∈ Γ" := (Var Γ x) (at level 75).
 
 Inductive comb {Γ : Ctx} : ty -> Type :=
-  | id : forall {A},
-    comb (A → A)
-  | neg : forall {A},
-    comb (A → Unit)
-  | unit : comb Unit
-  | diag : forall {A},
-    comb (A → A × A)
-  | first : forall {A B},
-    comb (A × B → A)
-  | second : forall {A B},
-    comb (A × B → B)
-  | ev : forall {A B},
-    comb ((A → B) × A → B)
-  | lam : forall {A B},
-    comb (B → A → B × A)
-
-  | plus :
-    comb (ℝ × ℝ → ℝ)
-  | rval : R -> comb ℝ
-
-  | cnst : forall {A B},
-    comb A -> comb (B → A)
-  | curry : forall {A B C},
-    comb (A × B → C) -> comb (A → B → C)
-  | uncurry : forall {A B C},
-    comb (A → B → C) -> comb (A × B → C)
+(* Category laws *)
+  | id : forall {A}, comb (A → A)
   | seq : forall {A B C},
     comb (A → B) -> comb (B → C) -> comb (A → C)
-  | bimap : forall {A B C D},
-    comb (A → B) -> comb (C → D) -> comb (A × C → B × D)
-.
+
+  (* Monoidal *)
+  | cross : forall {A B C D},
+    comb (A → B) -> comb (C → D) -> comb ((A × C) → (B × D))
+
+  (* Terminal *)
+  | neg : forall {A},
+    comb (A → Unit)
+
+  (* Cartesian *)
+  | exl : forall {A B},
+    comb ((A × B) → A)
+  | exr : forall {A B},
+    comb ((A × B) → B)
+  | dupl : forall {A},
+    comb (A → (A × A))
+
+  (* Closed *)
+  | ev : forall {A B},
+    comb (((A → B) × A) → B)
+  | curry : forall {A B C},
+    comb ((A × B) → C) -> comb (A → (B → C))
+  | uncurry : forall {A B C},
+    comb (A → (B → C)) -> comb ((A × B) → C)
+
+  (* Const *)
+  | cnst : forall {A},
+    comb A -> comb (Unit → A)
+
+  (* Numeric *)
+  | cplus :
+    comb ((ℝ × ℝ) → ℝ)
+  | crval : forall (r : R), comb ℝ.
 
 Notation "A ;; B" := (seq A B) (at level 40, left associativity).
-Notation "<| A , B |>" := (diag ;; bimap A B) (at level 40).
+Notation "<| A , B |>" := (dupl ;; cross A B) (at level 30).
 
 Equations Ot {Γ : Ctx} (τ : ty): @comb Γ (Unit → τ) :=
-  | ℝ => cnst (rval 0);
+  | ℝ => cnst (crval 0);
   | Unit => neg;
   | σ × ρ => <| (Ot σ), (Ot ρ) |>;
-  | σ → ρ => curry (first ;; (Ot ρ)).
+  | σ → ρ => curry (exl ;; (Ot ρ)).
 
 Equations plust {Γ : Ctx} (τ : ty): @comb Γ (τ × τ → τ) :=
-  | ℝ => plus;
+  | ℝ => cplus;
   | Unit => neg;
-  | σ × ρ => abs (tuple
-    (app (plust σ) (tuple
-      (fst' (fst' (var (Top _ _))))
-      (fst' (snd' (var (Top _ _))))))
-    (app (plust ρ) (tuple
-      (snd' (fst' (var (Top _ _))))
-      (snd' (snd' (var (Top _ _)))))));
-  | σ → ρ =>
-    abs (abs (app (plust ρ)
-      (tuple
-        (app (fst' (var (Pop _ _ _ (Top _ _)))) (var (Top _ _)))
-        (app (snd' (var (Pop _ _ _ (Top _ _)))) (var (Top _ _))))
-    )).
+  | σ × ρ =>
+    <|
+      <|exl;;exl, exr;;exl|>;;plust σ,
+      <|exl;;exr, exr;;exr|>;; plust ρ
+    |>;
+  | σ → ρ => curry (
+    <|
+      <|exl ;; exl, exr|> ;; ev,
+      <|exl ;; exr, exr|> ;; ev
+    |> ;; plust ρ).
 
 Fixpoint Dt (τ : ty) : ty * ty :=
   match τ with
@@ -98,28 +101,29 @@ Fixpoint Dt (τ : ty) : ty * ty :=
 Equations? Dtm Γ τ (t : @comb Γ τ)
   : @comb Γ (fst (Dt τ)) :=
 Dtm Γ τ t with t => {
-  | (@id Γ τ) => _;
-  (* | id => _; *)
-  | neg => _;
-  | unit => _;
-  | diag => _;
-  | first => _;
-  | second => _;
-  | ev => _;
-  | lam => _;
-  | plus => _;
-  | rval r => _;
+  | @id Γ τ := _;
+  | @seq Γ τ σ ρ t1 t2 := _;
 
-  | cnst t => _;
-  | curry t => _;
-  | uncurry t => _;
-  | seq f1 f2 => _;
-  | bimap f1 f2 => _;
+  (* Monoidal *)
+  | cross t1 t2 := _;
 
-  | tuple t1 t2 => _;
-  | fst' t => _;
-  | snd' t => _;
-  | abs t => _;
-  | var v => _;
-  | app t1 t2 => _
+  (* Terminal *)
+  | neg := _;
+
+  (* Cartesian *)
+  | exl := _;
+  | exr := _;
+  | dupl := _;
+
+  (* Closed *)
+  | ev := _;
+  | curry t := _;
+  | uncurry t := _;
+
+  (* Const *)
+  | cnst t := _;
+
+  (* Numeric *)
+  | cplus := _;
+  | crval r := _
 }.
