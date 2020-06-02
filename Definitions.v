@@ -117,25 +117,25 @@ Definition ex_const :=
     (abs [Real] (Real) (Real)
       (var [Real;Real] Real (Top [Real] Real))).
 
-Definition ex_plus :=
-  abs _ _ _ (abs _ _ _
-    (add [Real;Real]
-      (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
-        (var [Real;Real] Real (Top [Real] Real)))).
+Definition ex_plus {Γ} :=
+  abs Γ _ _ (abs _ _ _
+    (add _
+      (var _ Real (Pop _ Real Real (Top _ Real)))
+        (var _ Real (Top _ Real)))).
 
-Definition ex_square :=
-  abs _ _ _
+Definition ex_square {Γ} :=
+  abs Γ _ _
     (mul _
-      (var [Real] Real (Top [] Real))
-      (var [Real] Real (Top [] Real))).
+      (var _ Real (Top _ Real))
+      (var _ Real (Top _ Real))).
 
-Definition ex_square_plus :=
-  abs _ _ _ (abs _ _ _
-    (add [Real;Real]
-      (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
-        (mul _
-          (var [Real;Real] Real (Top [Real] Real))
-          (var [Real;Real] Real (Top [Real] Real))))).
+Definition ex_square_plus {Γ} :=
+  abs Γ _ _ (abs _ _ _
+    (app _ _ _
+    ((app _ _ _
+      ex_plus
+      (var _ Real (Pop _ Real Real (Top _ Real)))))
+    (app _ _ _ ex_square (var _ Real (Top _ Real))))).
 
 Definition ex_neuron :=
   abs [] (Real → Real → Real) Real

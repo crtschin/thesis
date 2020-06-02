@@ -102,12 +102,8 @@ Proof with quick.
   simp Dtm...
 Qed.
 
-Check (⟦ Dtm ex_plus ⟧ₜₘ HNil).
-Compute (⟦ Dt (ℝ → ℝ → ℝ) ⟧ₜ).
-
-
 Example derivative_plus :
-  ⟦ Dtm ex_plus ⟧ₜₘ HNil (7, 1) (13, 0) = (7 + 13, 1 + 0).
+  ⟦ Dtm (@ex_plus []) ⟧ₜₘ HNil (7, 1) (13, 0) = (7 + 13, 1 + 0).
 Proof with quick.
   unfold ex_plus.
   simp Dtm...
@@ -115,7 +111,7 @@ Qed.
 
 (* Derivative of (y + x * x) *)
 Example derivative_square_plus :
-  ⟦ Dtm ex_square_plus ⟧ₜₘ HNil (7, 1) (13, 0)
+  ⟦ Dtm (@ex_square_plus []) ⟧ₜₘ HNil (7, 1) (13, 0)
     = (7 + 13 * 13, 1 + (13 * 0 + 13 * 0)).
 Proof with quick.
   unfold ex_square_plus.
@@ -173,7 +169,10 @@ Proof with quick.
           the variable. *)
       simp Dtm.
       erewrite S_eq. eapply IHv...
-      all: extensionality x... } }
+      all: extensionality x.
+      all: simp Dtm denote_tm; simpl.
+      all: simp denote_v.
+      all: reflexivity. } }
   { (* App *)
     intros.
     pose proof (IHt1 sb Dsb H) as IHt1.
@@ -183,11 +182,17 @@ Proof with quick.
     simp S in IHt1.
     erewrite S_eq. eapply IHt1...
     (* The leftover equalities are proven by simple rewriting. *)
-    all: extensionality x; now simp denote_tm Dtm. }
+    all: extensionality x.
+    all: simp Dtm; fold Dt.
+    all: simp denote_tm.
+    all: now simp denote_tm Dtm. }
   { (* Abs *)
-    intros. simp S Dtm...
-    specialize IHt with
-      (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: Dsb r))...
+    intros. simp S...
+    (* specialize IHt with
+      (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: Dsb r))... *)
+    erewrite S_eq.
+  2,3: extensionality x.
+  2,3: simp Dtm denote_tm; reflexivity.
     eapply IHt. constructor... }
   { (* Build *)
     intros. simp S...
