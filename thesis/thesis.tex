@@ -5,18 +5,19 @@
 \usepackage{array,booktabs,ragged2e}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
+\usepackage{xfrac}
 \usepackage{graphicx}
 \usepackage{fancyhdr}
-\usepackage{amssymb}
-\usepackage{amsthm}
 \usepackage{microtype}
+\usepackage{glossaries}
+% TODO: Setup symbol list
 \usepackage[draft=false,cache]{minted}
 \setlength{\marginparwidth}{3cm}
-\usepackage[obeyFinal]{todonotes}
 \usepackage{libertine}
 \usepackage{dsfont}
 % \usepackage{libertinust1math}
-\usepackage{amsmath}
+\usepackage{amssymb, amsthm, amsmath}
+\usepackage{thmtools}
 \usepackage[justification=centering]{caption}
 \usepackage{csquotes}
 \usepackage{etoolbox}
@@ -73,8 +74,15 @@
 \renewcommand{\listingscaption}{Code snippet}
 \newcommand{\comment}[1]{}
 
+\declaretheorem{definition}
+\declaretheorem{example}
+\declaretheorem{theorem}
+\declaretheorem{lemma}
+\declaretheorem{corrollary}
+
 \def\Vakar{V\'{a}k\'{a}r}
 \def\D{\overrightarrow{\mathcal{D}}}
+\def\lambdaBase{\Lambda_{\delta}^{\times, \rightarrow, \mathds{R}}}
 \def\<#1>{\csname keyword@@#1\endcsname}
 \begingroup
 \makeatletter
@@ -110,6 +118,8 @@
 \do{rval}
 \do{add}
 \do{mul}
+\do{Top}
+\do{Pop}
 \endgroup
 
 \begin{document}
@@ -201,7 +211,6 @@ In this thesis, we will aim to formalize an extendable correctness proof of an i
 Our formalization is based on a recent proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}.
 They proved, using a denotational model of diffeological spaces, that their forward mode emulating macro is correct when applied to a simply-typed lambda calculus with products, co-products and inductive types.
 
-\todo{Fill in}
 
 With this thesis we will aim for the following goals:
 \begin{itemize}
@@ -280,7 +289,6 @@ As a part of its type system, \<Coq> contains a set-theoretical model available 
 
 Because we use the real numbers as the ground type in our language, we also needed an encoding of the real numbers in Coq. The library for real numbers in \<Coq> has improved in recent times from one based on a completely axiomatic definition to one involving Cauchy sequences\fancyfootnote{https://coq.inria.fr/library/Coq.Reals.ConstructiveCauchyReals.html}. For the purposes of this thesis, however, we needed differentiability as the denotational result of applying the macro operation. Instead of encoding this by hand, we opted for the more comprehensive library \<Coquelicot>\cite{Boldo2015CoquelicotAU}, which contains many general definitions for differentiating functions.
 
-\todo{Fill in}
 
 \subsection{Coq}
 
@@ -367,7 +375,8 @@ Due to using indices from the context as variables, some lifting boilerplate is 
   \caption{Basis of a simply-typed \lambda-calculus using a strongly typed intrinsic formulation.}
   \label{lst:strong_stlc}
 \end{listing}
-\todo{Extend example}
+
+% TODO: Work out how substitutions work
 
 \subsubsection{Dependently-typed programming in Coq}
 
@@ -427,7 +436,6 @@ Due to the intrinsic typeful representation this paper uses, much of this was in
   \label{lst:dt_ilist_hd_equations}
 \end{listing}
 
-\todo{Fill in}
 
 \subsection{Logical relations}
 
@@ -512,7 +520,7 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
         \Gamma \vdash r2 : R \\ }
       {\Gamma \vdash mul\ r1\ r2 : R} \and
     \end{mathpar}
-    \caption{Type-inferrence rules for $\Lambda_{\delta}^{\times, \rightarrow, R}$}
+    \caption{Type-inferrence rules for $\lambdaBase$}
     \label{fig:base_infer}
   \end{figure}
 
@@ -559,7 +567,7 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
   We use the same inductively defined macro on types and terms to implement forward-mode automatic differentiation as used by many previous authors\cite{huot2020correctness}\cite{barthe2020versatility}\cite{Shaikha2019}.
   The forward-mode macro $\D$ keeps track of both primal and tangent traces using tuples as respectively the first and second subcomponents.
   In most cases, the macro simply preserves the structure of the language.
-  In the cases for real numbers such as addition and multiplication, the appropriate implementation corresponding to the derivative of the operation needs to be given.
+  In the cases for real numbers such as addition and multiplication, the appropriate implementation corresponding to the derivative needs to be given.
 
   \begin{align*}
     \D(\<R>) &= \<R> \times \<R>
@@ -582,13 +590,41 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
     \label{lst:macro_base}
   \end{listing}
 
-  Due to restricting our language to be total and excluding notions of partiality such as non-termination, it suffices to give our language a set-theoretic denotational semantics.
-  We use \<Coq>'s types as our denotations as shown in \ref{lst:denotation_base}. The types of our language map to their respective counterparts in \<Coq>'s \<Type> sort.
-  We denotate our typing contexts, lists of types, as heterogeneous lists of the corresponding denotations.
+  Due to restricting our language to be total and excluding constructs related to partiality such as general recursion and iteration, it suffices to give our language a set-theoretic denotational semantics. Well-typed terms $\Gamma \vdash t : \tau$ will denotate to functions $\llbracket \Gamma \rrbracket \rightarrow \llbracket \tau \rrbracket$.
+
+  \begin{equation}
+    \llbracket t \rrbracket =
+      \left\{
+        \begin{array}{ll}
+          \lambda x. lookup\ \llbracket v \rrbracket\ x
+            & : t = \<var>\ v \\
+          \lambda x. (\llbracket t1 \rrbracket(x)) (\llbracket t2 \rrbracket(x))
+            & : t = \<app>\ t1\ t2 \\
+          \lambda x y. \llbracket t \rrbracket(y :: x)
+            & : t = \<abs>\ t \\
+          const\ n
+            & : t = \<rval>\ n \\
+          \lambda x. \llbracket t1 \rrbracket(x) + \llbracket t2 \rrbracket(x)
+            & : t = \<add>\ t1\ t2 \\
+          \lambda x. \llbracket t1 \rrbracket(x) * \llbracket t2 \rrbracket(x)
+            & : t = \<mul>\ t1\ t2 \\
+          \lambda x. (\llbracket t1 \rrbracket(x), \llbracket t2 \rrbracket(x))
+            & : t = \<tuple>\ t1\ t2 \\
+          \lambda x. let\ (x, y) = \llbracket t \rrbracket(x)\ in\ x
+            & : t = \<first>\ t \\
+          \lambda x. let\ (x, y) = \llbracket t \rrbracket(x)\ in\ y
+            & : t = \<second>\ t \\
+        \end{array}
+      \right.
+  \label{eqn:lr_base}
+  \end{equation}
+
+  For any type $\tau$, simply swap out the syntactic type to its corresponding \<Coq> variant in \<Type>.
+  We denotate our typing contexts $\Gamma$, lists of types, as heterogeneous lists containing their corresponding denotations.
   The specific implementation of heterogeneous lists used, correspond to the one given by Adam Chlipala\cite{ChlipalaCPDT}.
   When working through giving the constructs in our language the proper denotations, most of the cases are straigtforward.
   Notable is the case for variables, where we made use of an inductively defined evidence to type our terms.
-  As denotations, these evidences wil correspond to lookups into our heterogeneous lists.
+  As denotations, these evidences wil correspond to lookups into our heterogeneous lists to their appropriate types.
 
   \begin{listing}
     \begin{minted}{coq}
@@ -600,9 +636,234 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
   % In the section denotation
   % Explain expressiveness of base language
   % Work out examples
-  As mentioned by by Barthe, et. al.\cite{barthe2020versatility}, this same small calculus is expressive enough to encode the higher-order polynomial functions restricted to the addition and multiplication operators.
-  As an example we will work out defining a few small functions.
-  Using the well-typed intrinsic representation enables us to choose between two possible type signatures.
+  As mentioned by by Barthe, et. al.\cite{barthe2020versatility}, this small calculus, $\lambdaBase$, accompanied with a very simple denotational semantics is expressive enough to encode all higher-order polynomial functions containing the addition and multiplication operators.
+
+  \begin{example}[Square]
+    $abs\ (mul\ (var\ Top)\ (var\ Top))$ denotates to the square function $\lambda x. x * x$.
+    \begin{proof}
+      This follows from the definition of our denotation functions.
+      \begin{align*}
+        \llbracket abs\ &(mul\ (var\ Top)\ (var\ Top)) \rrbracket\ [] \\
+          &\equiv \lambda x.
+            \llbracket mul\ (var\ Top)\ (var\ Top) \rrbracket\ [x] \\
+          &\equiv \lambda x.
+            \llbracket var\ Top \rrbracket\ [x] *
+              \llbracket var\ Top \rrbracket\ [x] \\
+          &\equiv \lambda x. x * x \qedhere
+      \end{align*}
+    \end{proof}
+  \end{example}
+
+  % TODO: give reasonable examples
+
+  As we work with denotations, smooth functions $f : \<R>^n -> \<R>$ can be interpreted as the denotations of a corresponding syntactic term $x_1, \dots, x_n \vdash t : R$.
+  The idea here is that the free variables in the term $t$ denote the usages of the parameters of the function and as such are restricted to terms of type $R$.
+  Note that while both the arguents and result type of $t$ are restricted to $R$, $t$ itself can contain higher order types.
+
+  Although Barthe, et. al.\cite{barthe2020versatility} gave a syntactic proof of correctness of the macro, our proof follows the more denotational style of proof given by Huot, Staton and \Vakar{}\cite{huot2020correctness}.
+  We state correctness as the denotation of a macro-applied term will give a pair of both the original function the term represents along with its corresponding derivative.
+
+  The proof of correctness will follow a logical relations argument.Intuitively, the relation will encapsulate idea that derivability is preserved over higher-order types.
+  We define a type-indexed logical relation between denotations of both terms and their macro-applied variants, so for any type $\tau$, $S_\tau$ is the relation between functions $R \rightarrow \llbracket \tau \rrbracket$ and $R \rightarrow \llbracket \D(\tau) \rrbracket$.
+
+  \begin{equation}
+    S_\tau(f, g) =
+      \left\{
+        \begin{array}{ll}
+          smooth\ f \wedge
+            g = \lambda x. (f(x), \frac{\partial f}{\partial x}(x))
+            & : \tau = R \\
+          \exists f_1, f_2, g_1, g_2,
+            & : \tau = \sigma \times \rho \\
+            \;\;\;\;S_\sigma(f_1, f_2), S_\sigma(g_1, g_2). \\
+            \;\;\;\;f = \lambda x. (f_1(x), g_1(x)) \wedge \\
+            \;\;\;\;g = \lambda x. (f_2(x), g_2(x)) \\
+          \forall f_1, f_2.
+            & : \tau = \sigma \rightarrow \rho \\
+            \;\;\;\;S_\sigma(f_1, f_2) \Rightarrow \\
+            \;\;\;\;S_\rho(\lambda x. f(x)(f_1(x)),\lambda x. f(x)(f_2(x)))
+        \end{array}
+      \right.
+  \label{eqn:lr_base}
+  \end{equation}
+
+  The next step involves proving that syntactically well-typed terms are semantically correct.
+  In other words, the relation is valid for any term $x_1, \dots, x_n \vdash t : \tau$ and argument function $f : R \rightarrow R^n$ such that $S_\tau(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_f \circ f)$.
+  Note the need to apply a function $\D_f$ which essentially accompanies each argument supplied by $f$ with its accompanying derivative, $0$.
+
+  Proving this statement directly by induction on the typing derivation, however, does not work.
+  As expected in a logical relations proof, the indicative issue lies in both the case for applications and abstractions.
+  To make this work, the correctness statement needs to be generalized to arbitrary contexts and implicitly, substitutions.
+
+  If this were a syntactic proof, one would need to show that relation is preserved when applying substitutions consisting of arbitrary terms, possibly containing higher-order constructs.
+  In this style of proof, the same concept needs to be incorporated in the argument function $f$, which intuitively speaking, supplies the terms referenced by variables through the typing context.
+
+  % TODO: attempt to do this?
+
+  To prove this statement, it first needs to be generalized to arbitrary substitutions.
+  The key in formulating these denotationally lies in what was previously the argument function $f : R \rightarrow R^n$.
+  Previously the function was used to indicate the open variables or function arguments.
+  If generalized to $\Gamma = x_1 : \tau_1, \dots, x_n : \tau_n$, this same function could be seen as a function which supplies terms foreach open variable $x_1, \dots, x_n$ with their appropriate types.
+  So the argument function now becomes the pair of functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \D(\Gamma) \rrbracket$.
+  Note that the functions $s$ and $s'$ are built out of the denotations of terms such that these same denotations follow the logical relation (\ref{eqn:lr_base}) for our language.
+  We phrase this requirement as a definition.
+
+  \begin{definition}(Instantiation)
+    Substitutional functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ are inductively instantiated such that they follow
+    \begin{equation}
+      inst_\Gamma(f, g) =
+        \left\{
+          \begin{array}{ll}
+            f = const([]) \wedge g = const([])
+              & : \Gamma = [] \\
+            \forall s, s'.
+              & : \Gamma = (\tau :: \Gamma') \\
+              \;\;\;\;inst_{\Gamma'}(s, s') \wedge S_\tau(f, g)
+          \end{array}
+        \right.
+    \label{eqn:lr_base}
+    \end{equation}
+  \end{definition}
+
+  Using this notion of substitution instantiations we can now formulate our substitution lemma.
+
+  \begin{lemma}[Substitution]
+    If for any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s')$ then $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s')$.
+  \end{lemma}
+
+  \begin{proof}
+    This is proven by induction on the typing derivation of $t$.
+    Unless otherwise specified, the type of $s$ and $s'$ are respectively $R \rightarrow \llbracket \Gamma \rrbracket$ and $R \rightarrow \llbracket \D(\Gamma) \rrbracket$.
+    \begin{enumerate}
+      \item (\<var>)
+        Prove: $S_\tau(\llbracket var\ v \rrbracket \circ s, \llbracket \D(var\ v) \rrbracket \circ s)$.
+
+        Proceed by induction on the type evidence $v$.
+        \begin{itemize}
+          \item(\<Top>) Base case
+
+          Prove: $S_\tau(\llbracket var\ Top \rrbracket \circ s, \llbracket \D(var\ Top) \rrbracket \circ s')$
+
+          In this case the referenced $\tau$ exists at the top of the list.
+          So both $\llbracket var\ Top \rrbracket$ and $\llbracket \D(var\ Top) \rrbracket$ denotate to fetching the top term.
+          This is now proven by definition of $inst$, which states that the the term is semantically well-typed.
+
+          \item(\<Pop>) Induction step
+
+          Prove: $S_\tau(\llbracket var\ (Pop\ v) \rrbracket \circ s, \llbracket \D(var\ (Pop\ v)) \rrbracket \circ s')$, where $s : R \rightarrow \llbracket \sigma :: \Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \D(\sigma :: \Gamma) \rrbracket$.
+
+          The induction hypothesis states $\forall (f : R \rightarrow \llbracket \Gamma \rrbracket), (g : R \rightarrow \llbracket \D(\Gamma) \rrbracket). S_\tau(\llbracket var\ v \rrbracket \circ f, \llbracket \D(var\ v) \rrbracket \circ g)$
+
+          Note that the \<var> term now denotates to ignoring the arbitrary unrelated type $\sigma$ and looking up $v$ in the rest of the list $\Gamma$.
+          So $S_\tau(\llbracket var\ v \rrbracket \circ tl \circ s, \llbracket \D(var\ v) \rrbracket \circ tl \circ s')$, which is proven using the induction hypothesis by respectively instantiating $f$ and $g$ as $tl \circ s$ and $tl \circ s'$. \qed
+        \end{itemize}
+      \item (\<app>)
+
+        Prove: $S_\tau(\llbracket app\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(app\ t_1\ t_2) \rrbracket \circ s')$
+
+        Induction hypotheses:
+        \begin{enumerate}
+          \item \label{eqn:subst_ih_app1}$S_{\sigma\rightarrow\tau}(\llbracket t_1 \rrbracket \circ s, \llbracket \D(t_1) \rrbracket \circ s')$
+          \item \label{eqn:subst_ih_app2}$S_{\sigma}(\llbracket t_2 \rrbracket \circ s, \llbracket \D(t_2) \rrbracket \circ s')$
+        \end{enumerate}
+
+        First it is useful to rewrite the induction hypothesis \ref{eqn:subst_ih_app1} in a more usable format. Rewrite the statement using the definition of $S$ at function types.
+
+        \begin{align*}
+          S&_{\sigma\rightarrow\tau}(\llbracket t_1 \rrbracket \circ s, \llbracket \D(t_1) \rrbracket \circ s') \\
+            & \Vdash \text{(Definition of \circ)} \\
+            & S_{\sigma\rightarrow\tau}(\lambda x. \llbracket t_1 \rrbracket(s(x)), \lambda x. \llbracket \D(t_1) \rrbracket(s'(x))) \\
+            & \Vdash \text{(Definition of $S_{\rightarrow}$)} \\
+            & \forall f_1, f_2.
+              S_{\sigma}(f1, f2) \rightarrow \\
+            &S_\tau(\lambda x. (\llbracket t_1 \rrbracket(s(x)))(f_1(x)), \lambda x. (\llbracket \D(t_1) \rrbracket(s'(x)))(f_2(x)))
+        \end{align*}
+
+        The case for \<app> is now proven by applying the induction hypothesis \ref{eqn:subst_ih_app1} for the function term using the induction hypothesis \ref{eqn:subst_ih_app2} for the argument term to satify its premise.
+
+        \begin{align*}
+          S&_\tau(\llbracket app\ t_1\ t_2 \rrbracket \circ s, \llbracket \D(app\ t_1\ t_2) \rrbracket \circ s') \\
+            &\Vdash \text{(Definition of $\D$)}\\
+            & S_\tau(\llbracket app\ t_1\ t_2 \rrbracket \circ s, \llbracket app\ \D(t_1)\ \D(t_2) \rrbracket \circ s') \\
+            &\Vdash \text{(Definition of \circ)}\\
+            & S_\tau(\lambda x. \llbracket app\ t_1\ t_2 \rrbracket (s (x)), \lambda x. \llbracket app\ \D(t_1)\ \D(t_2) \rrbracket (s' (x))) \\
+            &\Vdash \text{(Definition of $\llbracket \rrbracket$)}\\
+            & S_\tau(\lambda x. (\llbracket t_1\ \rrbracket(s(x))) (\llbracket t_2 \rrbracket(s(x))),\lambda x. (\llbracket \D(t_1)\ \rrbracket(s'(x))) (\llbracket \D(t_2) \rrbracket(s'(x))) \\
+            &\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_app1})}\\
+            & S_{\sigma}(\lambda x. \llbracket t_2 \rrbracket (s(x)), \lambda x. \llbracket \D(t_2) \rrbracket \circ (s'(x))) \\
+            &\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_app2})} \\
+        \end{align*} \qed
+      \item (\<abs>)
+
+        Prove: $S_{\sigma\rightarrow\tau}(\llbracket abs\ t \rrbracket \circ s, \llbracket \D(abs\ t) \rrbracket \circ s')$
+
+        Induction hypothesis:
+        \begin{enumerate}
+          \item \label{eqn:subst_ih_abs} $S_\sigma(\llbracket t \rrbracket \circ s, \llbracket \D(t) \rrbracket \circ s')$, where $s : R \rightarrow \llbracket \sigma::\Gamma \rrbracket$ and $s' : R \rightarrow \llbracket \sigma::\Gamma \rrbracket$
+        \end{enumerate}
+
+        As is the case for \ref{eqn:subst_ih_app1}, simplify the goal statement using the definition of $S_\rightarrow$. So the proof obligation now becomes.
+
+        Prove: $S_{\tau}(\lambda x. (\llbracket abs\ t \rrbracket (s(x)))(f_1(x)), \lambda x. (\llbracket \D(abs\ t) \rrbracket (s'(x)))(f_2(x)))$
+
+        Assume:
+        \begin{enumerate}
+          \item $f_1 : R \rightarrow \llbracket \sigma \rrbracket$
+          \item $f_2 : R \rightarrow \llbracket \D(\sigma) \rrbracket$
+          \item \label{eqn:subst_ass_abs3} $S_\sigma(f_1, f_2)$
+        \end{enumerate}
+
+        The proof proceeds by rewriting the goal until we can apply the induction hypothesis.
+        Note that the assumption \ref{eqn:subst_ass_abs3}: $S_\sigma(f_1, f_2)$ ensures that the requirement of $inst_{\sigma::\Gamma}$ in the induction hypothesis \ref{eqn:subst_ih_abs} is satisfied.
+
+        \begin{align*}
+          S&_{\tau}(\lambda x. (\llbracket abs\ t \rrbracket (s(x)))(f_1(x)), \lambda x. (\llbracket \D(abs\ t) \rrbracket (s'(x)))(f_2(x))) \\
+            &\Vdash \text{(Definition of $\D$)}\\
+            & S_{\tau}(\lambda x. (\llbracket abs\ t \rrbracket (s(x)))(f_1(x)), \lambda x. (\llbracket abs\ \D(t) \rrbracket (s'(x)))(f_2(x))) \\
+            &\Vdash \text{(Definition of $\llbracket \rrbracket$)}\\
+            & S_{\tau}(\lambda x. (\llbracket t \rrbracket (f_1(x) :: s(x))), \lambda x. (\llbracket \D(t) \rrbracket (f_2(x) :: s'(x)))) \\
+            &\Vdash \text{(Induction hypothesis \ref{eqn:subst_ih_app1})}
+        \end{align*} \qed
+
+      \item (\<rval>)
+
+      Prove: $S_{R}(\llbracket rval\ n \rrbracket \circ s, \llbracket \D(rval\ n) \rrbracket \circ s')$
+
+      This is proven by nothing that the corresponding denotations of \<rval> are constant functions, which are both smooth and whose derivatives are equal to $0$.
+
+      \begin{align*}
+        S&_{\tau}(\llbracket rval\ n \rrbracket \circ s, \llbracket \D(rval\ n) \rrbracket \circ s') \\
+        &\Vdash \text{(Definition of $\D$)}\\
+        &S_{\tau}(\llbracket rval\ n \rrbracket \circ s, \llbracket tuple\ (rval\ n)\ (rval\ 0) \rrbracket \circ s') \\
+        &\Vdash \text{(Definition of $\llbracket\rrbracket$)}\\
+        &S_{\tau}(const\ n, (const\ n, const\ 0)) \\
+        &\Vdash \text{(Definition of $S_R$)}\\
+        &smooth\ (const\ n) \wedge
+          const\ 0 = \sfrac{\partial{const\ n}}{\partial{x}} \\
+        &\Vdash \text{(split goals: goal 1)}\\
+        &\;\;\;smooth\ (const\ n) \\
+        &\;\;\;\Vdash \text{($f(x) = n$ is continuously differentiable)}\\
+        &\Vdash \text{(split goals: goal 2)}\\
+        &\;\;\;const\ 0 = \sfrac{\partial{const\ n}}{\partial{x}} \\
+        &\;\;\;\Vdash \text{(if $f(x) = n$, then $\sfrac{\partial{f}}{\partial{x}} = 0$)}
+      \end{align*} \qed
+      \item (\<add>)
+      \item (\<mul>)
+      \item (\<tuple>)
+      \item (\<first>)
+      \item (\<second>)
+    \end{enumerate}
+  \end{proof}
+
+  \begin{theorem}[Macro correctness]
+    For any term $x_1 : R, ..., x_n : R \vdash t : R$, $\D(t)$ gives the dual number representation of $\llbracket t \rrbracket$.
+  \end{theorem}
+
+  \begin{proof}
+
+  \end{proof}
+
+
 
   \subsection{Adding Sums and Primitive Recursion}
   \subsection{Arrays}

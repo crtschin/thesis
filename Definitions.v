@@ -108,7 +108,7 @@ Lemma build_eq : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
 Proof. intros; rewrites. Qed.
 
 (* Examples *)
-Definition real_id :=
+Definition ex_id_real :=
   abs [] Real Real
     (var [Real] Real (Top _ _)).
 
@@ -117,19 +117,27 @@ Definition ex_const :=
     (abs [Real] (Real) (Real)
       (var [Real;Real] Real (Top [Real] Real))).
 
-Definition ex_plus :=
-  (add [Real;Real]
-    (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
-      (var [Real;Real] Real (Top [Real] Real))).
+Definition ex_plus {Γ} :=
+  abs Γ _ _ (abs _ _ _
+    (add _
+      (var _ Real (Pop _ Real Real (Top _ Real)))
+        (var _ Real (Top _ Real)))).
 
-Definition square_plus :=
-  (add [Real;Real]
-    (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
-      (mul _
-        (var [Real;Real] Real (Top [Real] Real))
-        (var [Real;Real] Real (Top [Real] Real)))).
+Definition ex_square {Γ} :=
+  abs Γ _ _
+    (mul _
+      (var _ Real (Top _ Real))
+      (var _ Real (Top _ Real))).
 
-Definition neuron :=
+Definition ex_square_plus {Γ} :=
+  abs Γ _ _ (abs _ _ _
+    (app _ _ _
+    ((app _ _ _
+      ex_plus
+      (var _ Real (Pop _ Real Real (Top _ Real)))))
+    (app _ _ _ ex_square (var _ Real (Top _ Real))))).
+
+Definition ex_neuron :=
   abs [] (Real → Real → Real) Real
     (abs [Real] (Real → Real) Real
       (abs [Real;Real] Real Real
