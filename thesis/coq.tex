@@ -1,0 +1,12 @@
+\subsection{Coq}
+
+\<Coq> is a proof assistant based on the calculus of constructions type theory created by Thierry Coquand and G\'{e}rard Huet\cite{Coquand1988}.
+In the past 30 years since it has been released, research has contributed to extending the proof assistant with additional features such as inductive and co-inductive data types\cite{Coquand1990}, dependent pattern matching\cite{Sozeau2010} and advanced modular constructions for organizing large mathematical proofs\cite{Sozeau2008}\cite{Mahboubi2013}.
+
+The core of this type theory is based on constructive logic and so many of the laws known in classical logic are not provable.
+An example includes the law of the excluded middle, $\forall A, A \vee \neg A$.
+In some cases they can, however, be safely added to \<Coq> without making its logic inconsistent. These are readily available in the standard library.
+Due to its usefulness in proving propositions over functions, we will make use of the functional extensionality axiom in \<Coq>.
+
+\input{language_representation.tex}
+\input{dependent_coq.tex}

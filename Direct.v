@@ -382,9 +382,12 @@ Proof with quick.
     specialize IHt with sb Dsb.
     simp S in IHt; pose proof (IHt H) as H'; clear IHt.
     destruct H' as [f1 [f2 [g1 [g2 [Hs1 [_ [Heq1 Heq2]]]]]]].
-    erewrite S_eq; quick; extensionality x...
-    { simp denote_tm. erewrite (equal_f Heq1)... }
-    { simp denote_tm. erewrite (equal_f Heq2)... } }
+    erewrite S_eq.
+  2,3: extensionality x.
+  2,3: simp Dtm denote_tm; reflexivity.
+    erewrite S_eq; quick; extensionality x.
+    { erewrite (equal_f Heq1)... }
+    { erewrite (equal_f Heq2)... } }
   { (* Projection 2
         Idem *)
     intros. simp Dtm.

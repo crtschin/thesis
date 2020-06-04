@@ -1,0 +1,77 @@
+\subsubsection{Language representation}
+\label{sec:language_repr}
+
+\begin{figure}
+  \begin{mathpar}
+    \inferrule*[Right=\textsc{TVar}]
+      {elem\ n\ \Gamma = \tau}
+      {\Gamma \vdash var\ n : \tau} \and
+    \inferrule*[Right=\textsc{TAbs}]
+      {(\sigma, \Gamma) \vdash t : \tau}
+      {\Gamma \vdash t : \sigma \rightarrow \tau} \\ \and
+    \inferrule*[Right=\textsc{TApp}]
+      {\Gamma \vdash t1 : \sigma \rightarrow \tau \\
+        \Gamma \vdash t2 : \sigma}
+      {\Gamma \vdash t1\ t2 : \tau}
+  \end{mathpar}
+  \label{fig:stlc_infer}
+  \caption{Type-inferrence rules for a simply-typed lambda calculus using De-Bruijn indices}
+\end{figure}
+
+When defining a simply-typed lambda calculus, there are two main possibilities\cite{plfa2019}.
+The arguably simpler variant, known as an extrinsic representation, is traditionally the one introduced to new students learning \<Coq>.
+In the extrinsic representation, the terms themselves are untyped and typing judgments are defined separately as relations between the types and terms. A basic example of working with this is given in Software Foundations\cite{Pierce:SF2}.
+This, however, required many additional lemmas and machinery to be proved to be able to work with both substitutions and contexts as these are defined separate from the terms.
+As an example, the preservation property which states that reduction does not change the type of a term, needs to be proven explicitly.
+The other approach, also called an intrinsic representation, makes use of just a single well-typed definition.
+Ill-typed terms are made impossible by the type checker.
+This representation, while beneficial in the proof load, however complicates much of the normal machinery involved in programming language theory.
+One example is how one would define operations such as substitutions or weakening.
+
+But even when choosing an intrinsic representation, the problem of variable binding persists.
+Much meta-theoretical research has been done on possible approaches to this problem each with their own advantages and disadvantages.
+The POPLmark challenge gives a comprehensive overview of each of the possibilities in various proof assistants\cite{Aydemir2005}.
+An example of an approach is the nominal representation where every variable is named.
+While this does follow the standard format used in regular mathematics, problems such as alpha-conversion and capture-avoidance appears.
+
+\begin{listing}[h]
+  \begin{minted}{coq}
+  Inductive ty : Type :=
+    | ~unit~ : ~ty~
+    | ~\Rightarrow~ : ~ty \rightarrow ty \rightarrow ty~.
+
+  Inductive tm : Type :=
+    | var : ~string \rightarrow tm ~
+    | abs : ~string \rightarrow ty \rightarrow tm \rightarrow tm~
+    | app : ~tm \rightarrow tm \rightarrow tm~.
+  \end{minted}
+  \caption{Simply typed \lambda-calculus using an extrinsic nominal representation.}
+  \label{lst:nominal_stlc}
+\end{listing}
+
+The approach used in the rest of this thesis is an extension of the De-Bruijn representation which numbers variables relative to the binding lambda term.
+In this representation the variables are referred to as well-typed De-Bruijn indices.
+A significant benefit of this representation is that the problems of capture avoidance and alpha equivalence are avoided.
+As an alternative, instead of using numbers to represent the distance, indices within the typing context can be used to ensure that a variable is always well-typed and well-scoped.
+While the idea of using type indexed terms has been both described and used by many authors\cite{Altenkirch99}\cite{McBride04}\cite{Adams06}, the specific formulation used in this thesis using separate substitutions and rename operations was fleshed out in Coq by Nick Benton, et. al.\cite{Benton2011}, and was also used as one of the examples in the second POPLmark challenge which deals with logical relations\cite{poplmark_reloaded}.
+While this does avoid the problems present in the nominal representation, it unfortunately does have some problems of its own.
+Variable substitutions have to be defined using two separate renaming and substitution operations.
+Renaming is formulated as extending the typing context of variables, while substitution actually swaps the variables for terms.
+Due to using indices from the context as variables, some lifting boilerplate is also needed to manipulate contexts.
+
+\begin{listing}[h]
+  \begin{minted}{coq}
+  Inductive ~\tau \in \Gamma~ : Type :=
+    | Top : ~\forall \Gamma \tau, \tau \in (\tau::\Gamma)~
+    | Pop : ~\forall \Gamma \tau \sigma, \tau \in \Gamma \rightarrow \tau \in (\sigma::\Gamma)~.
+
+  Inductive tm ~\Gamma \tau~ : Type :=
+    | var : ~\forall \Gamma \tau, \tau \in \Gamma \rightarrow tm \Gamma \tau~
+    | abs : ~\forall \Gamma \tau \sigma, tm (\sigma::\Gamma) \tau \rightarrow tm \Gamma (\sigma \Rightarrow \tau)~
+    | app : ~\forall \Gamma \tau \sigma, tm \Gamma (\sigma \Rightarrow \tau) \rightarrow tm \Gamma \sigma \rightarrow tm \Gamma \tau~.
+  \end{minted}
+  \caption{Basis of a simply-typed \lambda-calculus using a strongly typed intrinsic formulation.}
+  \label{lst:strong_stlc}
+\end{listing}
+
+% TODO: Work out how substitutions work
