@@ -16,7 +16,6 @@ Require Import Equations.Equations.
 Import EqNotations.
 
 Require Import AD.DepList.
-Require Import AD.vect.
 Require Import CoLoR.Util.Vector.VecUtil.
 Require Import AD.Definitions.
 Require Import AD.Macro.

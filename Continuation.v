@@ -16,7 +16,6 @@ Import EqNotations.
 Require Import CoLoR.Util.Vector.VecUtil.
 Require Import micromega.Lia.
 
-From AD Require vect.
 From Equations Require Import Equations.
 From AD Require Import Tactics.
 From AD Require Import DepList.
