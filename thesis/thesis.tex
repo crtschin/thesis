@@ -35,22 +35,25 @@
 \input{logical_relation.tex}
 
 \section{Formalizing Forward-Mode AD}
-  We will work out the formalization of automatic differentiation using a source code translating macro in the following sections.
-  We start from a base simply-typed lambda calculus extended with product types and incrementally add both sum and array types.
+  The formalization of the forward-mode automatic differentiation macro will be explained in the following sections.
+  The formal proof will start from a base simply-typed lambda calculus enriched with product types and incrementally add both sum and array types.
+  Also included in the final language is an implementation of primitive recursion using integer types.
+  Many of the theorems and lemmas will stay consistent between sections as the overarching correctness statement does not change.
+  Later section only add their respective cases to the corresponding proofs of the lemmas.
 
-  \subsection{Simply Typed Lambda Calculus}
+  \subsection{Simply Typed Lambda Calculus}\label{sec:formal_stlc}
   % Talk about simply typed lambda calculus,
   % Something about Λ_δ^{+, *, R}
   % Give examples of functions
   % talk about denotations and
-  As mentioned in background section \ref{sec:language_repr}, we will make use of De-Bruijn indices in a intrinsic representation to formulate our language.
-  Our base language consists of the typed lambda calculus with products and real numbers as ground type, $\Lambda_{\delta}^{\times, \rightarrow, R}$.
-  As operations on the real numbers we include both addition and multiplication which are also the functions in $\delta$.
+  As mentioned in background section~\ref{sec:language_repr}, we will make use of De-Bruijn indices in a intrinsic representation to formulate our language.
+  Both addition and multiplication are included as operations on the real numbers.
+  Our base language consists of the simply-typed lambda calculus with product types and real numbers, hereby referenced as $\Lambda_{\delta}^{\times, \rightarrow, R}$, where $\delta$ consists of the addition and multiplication operators.
 
   Both the language constructs and the typing rules for this language are standard for a simply typed lambda calculus, as shown in \ref{fig:base_infer}.
   As expected we include variables, applications and abstractions in the \<var>, \<app> and \<abs> constructors.
-  Product types are added to the language in the form of binary projections, \<first> and \<second> to fetch respectively the first and second components of \<tuple>s.
-  For real numbers, \<rval> is used to introduce constants and \<add> and \<mul> will be used to respectively encode addition and multiplication.
+  Product types are added to the language in the form of binary projections, \<first> and \<second> to represent respectively the left and right projections of \<tuple> terms.
+  For real numbers, \<rval> is used to introduce real numbered constants and \<add> and \<mul> will be used to respectively encode addition and multiplication.
 
   \begin{figure}
     \begin{mathpar}
@@ -91,118 +94,141 @@
   \end{figure}
 
   % How we translated this into the well-typed intrinsic representation
-  These can be translated into Coq definitions in a straigtforward manner, with each case keeping track of both how the typing context and types change.
+  These can be translated into Coq definitions in a reasonably straightforward manner, with each case keeping track of both how the typing context and types change.
   In the \<var> case we need some way to determine what type the variable is referencing.
-  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using numbers accompanied with a proof, we make use of an inductively defined type evidence to type our variables as shown in \ref{lst:strong_stlc}.
+  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied with a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in \ref{lst:strong_stlc}.
   The cases for \<app> and \<abs> are as expected, where variables in the body of abstraction are able to reference their respective arguments.
 
-  In the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they make use of n-ary products accompanied with pattern matching expressions. We opted to implement binary projection products, as they are conceptually simpler while still retaining much of the same functionality expected with product types.
+  Notably, in the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they make use of n-ary products accompanied with pattern matching expressions.
+  We opted to implement binary projection products, as they are conceptually simpler while still retaining much of the same functionality expected of product types.
 
-  \begin{listing}
-    \begin{minted}{coq}
-  Definition Ctx : Type := list ty.
+  % \begin{listing}
+  %   \begin{minted}{coq}
+  % Definition Ctx : Type := list ty.
 
-  Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
-    (* Base STLC *)
-    | var : ~forall \tau,
-      \tau ∈ \Gamma \rightarrow tm \Gamma \tau~
-    | app : ~forall \tau \sigma,
-      tm \Gamma (\sigma \Rightarrow \tau) \rightarrow
-      tm \Gamma \sigma \rightarrow
-      tm \Gamma \tau~
-    | abs : ~forall \tau \sigma,
-      tm (\sigma::\Gamma) \tau \rightarrow tm \Gamma (\sigma \Rightarrow \tau)~
+  % Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
+  %   (* Base STLC *)
+  %   | var : ~forall \tau,
+  %     \tau ∈ \Gamma \rightarrow tm \Gamma \tau~
+  %   | app : ~forall \tau \sigma,
+  %     tm \Gamma (\sigma \Rightarrow \tau) \rightarrow
+  %     tm \Gamma \sigma \rightarrow
+  %     tm \Gamma \tau~
+  %   | abs : ~forall \tau \sigma,
+  %     tm (\sigma::\Gamma) \tau \rightarrow tm \Gamma (\sigma \Rightarrow \tau)~
 
-    (* Operations on real numbers *)
-    | const : ~R \rightarrow tm \Gamma Real~
-    | add : ~tm \Gamma Real \rightarrow tm \Gamma Real \rightarrow tm \Gamma Real~
-    | mul : ~tm \Gamma Real \rightarrow tm \Gamma Real \rightarrow tm \Gamma Real~
+  %   (* Operations on real numbers *)
+  %   | const : ~R \rightarrow tm \Gamma Real~
+  %   | add : ~tm \Gamma Real \rightarrow tm \Gamma Real \rightarrow tm \Gamma Real~
+  %   | mul : ~tm \Gamma Real \rightarrow tm \Gamma Real \rightarrow tm \Gamma Real~
 
-    (* Binary projection products *)
-    | tuple : ~forall {\tau \sigma},
-      tm \Gamma \tau \rightarrow
-      tm \Gamma \sigma \rightarrow
-      tm \Gamma (\tau \times \sigma)~
-    | first : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \tau~
-    | second : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \sigma~
-    \end{minted}
-    \caption{\<Coq> definition of the base lambda calculus}
-    \label{lst:stlc_base}
-  \end{listing}
+  %   (* Binary projection products *)
+  %   | tuple : ~forall {\tau \sigma},
+  %     tm \Gamma \tau \rightarrow
+  %     tm \Gamma \sigma \rightarrow
+  %     tm \Gamma (\tau \times \sigma)~
+  %   | first : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \tau~
+  %   | second : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \sigma~
+  %   \end{minted}
+  %   \caption{\<Coq> definition of the base lambda calculus}
+  %   \label{lst:stlc_base}
+  % \end{listing}
 
-  We use the same inductively defined macro on types and terms to implement forward-mode automatic differentiation as used by many previous authors\cite{huot2020correctness}\cite{barthe2020versatility}\cite{Shaikha2019}.
-  The forward-mode macro $\D$ keeps track of both primal and tangent traces using tuples as respectively the first and second subcomponents.
+  We use the same inductively defined macro on types and terms used by many previous authors to implement the forward-mode automatic differentiation macro\cite{huot2020correctness}\cite{barthe2020versatility}\cite{Shaikha2019}.
+  The forward-mode macro, $\D$, keeps track of both primal and tangent traces using tuples as respectively its first and second elements.
   In most cases, the macro simply preserves the structure of the language.
-  In the cases for real numbers such as addition and multiplication, the appropriate implementation corresponding to the derivative needs to be given.
+  The cases for real numbers such as addition and multiplication are the exception.
+  Here, the element encoding the tangent trace needs to contain the proper syntactic translation of the derivative of the operation.
 
-  \begin{align*}
-    \D(\<R>) &= \<R> \times \<R>
-      & \D(n) &= (n, 0) \\
-    \D(\tau \times \sigma) &= \D(\tau) \times \D(\sigma)
-      & \D(n + m) &= (n + m, n' + m') \\
-    \D(\tau \rightarrow \sigma) &= \D(\tau) \rightarrow \D(\sigma)
-      & \D(n * m) &= (n * m, n' * m + m' * n)
+  \begin{figure}
+    \centering
+    \begin{equation*}
+      \begin{split}
+        \D(\<R>) &= \<R> \times \<R> \\
+        \D(\tau \times \sigma) &= \D(\tau) \times \D(\sigma) \\
+        \D(\tau \rightarrow \sigma) &= \D(\tau) \rightarrow \D(\sigma)
+      \end{split}
+      \begin{split}
+        \D(\rval{n}) &= \tuple{(\rval{n})}{(\rval{0})} \\
+        \D(\add{n}{m}) &= \tuple{(\add{n}{m})}{(\add{n'}{m'})} \\
+        \D(\mul{n}{m}) &= \tuple{(\mul{n}{m})} \\
+          &{(\add{(\mul{n'}{m})}{(\mul{m'}{n})})})
+      \end{split}
+    \end{equation*}
+    \caption{Macro on base simply-typed lambda calculus}
     \label{eqn:macro_base}
-  \end{align*}
+  \end{figure}
 
-  This is implemented by destructing recursive calls to $\<D>$ to access the syntactic counterparts of the primal and tangent denotations.
-  The \<Coq> implementation requires seperate definitions for types, typing contexts and terms, as shown in \ref{lst:macro_base}.
-  Note that applying the macro to a variable does nothing as we already apply the macro to the typing context, so variable implicitly reference macro-applied values.
+  This is implemented by destructing the recursive calls to $\<D>$ to access the syntactic counterparts of the primal and tangent denotations.
+  Note that applying the macro to variables do nothing exceptional as the macro is also applied to the typing context, so variables implicitly already reference macro-applied terms.
 
-  \begin{listing}
-    \begin{minted}{coq}
-    \end{minted}
-    \caption{Forward-mode macro on the base simply-typed lambda calculus.}
-    \label{lst:macro_base}
-  \end{listing}
+  Due to restricting our language to be total and excluding constructs related to partiality such as general recursion and iteration, it suffices to give our language a set-theoretic denotational semantics.
+  Like the type evidences, well-typed terms will denotate to functions $\llbracket \Gamma \rrbracket \rightarrow \llbracket \tau \rrbracket$.
 
-  Due to restricting our language to be total and excluding constructs related to partiality such as general recursion and iteration, it suffices to give our language a set-theoretic denotational semantics. Well-typed terms $\Gamma \vdash t : \tau$ will denotate to functions $\llbracket \Gamma \rrbracket \rightarrow \llbracket \tau \rrbracket$.
-
-  \begin{equation}
-    \llbracket t \rrbracket =
-      \left\{
-        \begin{array}{ll}
-          \lambda x. lookup\ \llbracket v \rrbracket\ x
-            & : t = \<var>\ v \\
-          \lambda x. (\llbracket t1 \rrbracket(x)) (\llbracket t2 \rrbracket(x))
-            & : t = \<app>\ t1\ t2 \\
-          \lambda x y. \llbracket t \rrbracket(y :: x)
-            & : t = \<abs>\ t \\
-          const\ n
-            & : t = \<rval>\ n \\
-          \lambda x. \llbracket t1 \rrbracket(x) + \llbracket t2 \rrbracket(x)
-            & : t = \<add>\ t1\ t2 \\
-          \lambda x. \llbracket t1 \rrbracket(x) * \llbracket t2 \rrbracket(x)
-            & : t = \<mul>\ t1\ t2 \\
-          \lambda x. (\llbracket t1 \rrbracket(x), \llbracket t2 \rrbracket(x))
-            & : t = \<tuple>\ t1\ t2 \\
-          \lambda x. let\ (x, y) = \llbracket t \rrbracket(x)\ in\ x
-            & : t = \<first>\ t \\
-          \lambda x. let\ (x, y) = \llbracket t \rrbracket(x)\ in\ y
-            & : t = \<second>\ t \\
-        \end{array}
-      \right.
-  \label{eqn:lr_base}
-  \end{equation}
+  \begin{figure}
+    \centering
+    \begin{equation*}
+      \begin{split}
+        \llbracket \<R> \rrbracket &= \<denoteR> \\
+        \llbracket \tau \times \sigma \rrbracket &=
+          \llbracket \tau \rrbracket * \llbracket \sigma \rrbracket \\
+        \llbracket \tau \rightarrow \sigma \rrbracket &= \llbracket \tau \rrbracket \rightarrow \llbracket \sigma \rrbracket \\
+        \\
+        \llbracket \<Top> \rrbracket &= \<hd> \\
+        \llbracket \<Pop>\ v \rrbracket &= \<tl> \circ \llbracket v \rrbracket \\
+      \end{split}
+      \;\;\;
+      \begin{split}
+        \llbracket \var{v} \rrbracket &=
+          \lambda x. lookup\ \llbracket v \rrbracket\ x \\
+        \llbracket \app{t_1}{t_2} \rrbracket &=
+          \lambda x. (\llbracket t_1 \rrbracket(x)) (\llbracket t_2 \rrbracket(x)) \\
+        \llbracket \abs{t} \rrbracket &=
+          \lambda x\ y. \llbracket t \rrbracket(y :: x) \\
+        \llbracket \add{t_1}{t_2} \rrbracket &=
+          \lambda x. \llbracket t_1 \rrbracket(x) + \llbracket t_2 \rrbracket(x) \\
+        \llbracket \mul{t_1}{t_2} \rrbracket &=
+          \lambda x. \llbracket t_1 \rrbracket(x) * \llbracket t_2 \rrbracket(x) \\
+        \llbracket \tuple{t_1}{t_2} \rrbracket &=
+          \lambda x. (\llbracket t_1 \rrbracket(x), \llbracket t_2 \rrbracket(x)) \\
+        \llbracket \first{t} \rrbracket &=
+          \lambda x. let\ (x, y) = \llbracket t \rrbracket(x)\ in\ x \\
+        \llbracket \second{t} \rrbracket &=
+          \lambda x. let\ (x, y) = \llbracket t \rrbracket(x)\ in\ y \\
+      \end{split}
+    \end{equation*}
+    \caption{Denotations of the base simply-typed lambda calculus}
+    \label{eqn:lr_base}
+  \end{figure}
 
   For any type $\tau$, simply swap out the syntactic type to its corresponding \<Coq> variant in \<Type>.
+  So the syntactic \<R> will denotate to the $\<denoteR>$ type in \<Coq>.
+  Denotating the terms in our language now corresponds to finding the appropriate inhabitants in the denotated types.
   We denotate our typing contexts $\Gamma$, lists of types, as heterogeneous lists containing their corresponding denotations.
   The specific implementation of heterogeneous lists used, correspond to the one given by Adam Chlipala\cite{ChlipalaCPDT}.
-  When working through giving the constructs in our language the proper denotations, most of the cases are straigtforward.
+
+  When working through giving the constructs in our language the proper denotations, most of the cases are straightforward.
   Notable is the case for variables, where we made use of an inductively defined evidence to type our terms.
   As denotations, these evidences wil correspond to lookups into our heterogeneous lists to their appropriate types.
 
-  \begin{listing}
-    \begin{minted}{coq}
-    \end{minted}
-    \caption{Denotatonal semantics for the base simply-typed lambda calculus.}
-    \label{lst:denotation_base}
-  \end{listing}
+  % \begin{listing}
+  %   \begin{minted}{coq}
+  %   \end{minted}
+  %   \caption{Denotatonal semantics for types, typing contexts and lookups.}
+  %   \label{lst:denotation_types}
+  % \end{listing}
+
+  % \begin{listing}
+  %   \begin{minted}{coq}
+  %   \end{minted}
+  %   \caption{Denotatonal semantics for the base simply-typed lambda calculus.}
+  %   \label{lst:denotation_base}
+  % \end{listing}
 
   % In the section denotation
   % Explain expressiveness of base language
   % Work out examples
-  As mentioned by by Barthe, et. al.\cite{barthe2020versatility}, this small calculus, $\lambdaBase$, accompanied with a very simple denotational semantics is expressive enough to encode all higher-order polynomial functions containing the addition and multiplication operators.
+  As mentioned by by Barthe, et. al.\cite{barthe2020versatility}, this small calculus, $\lambdaBase$, accompanied with the arguably simple set-theoretic denotational semantics is expressive enough to encode the higher-order polynomials containing the addition and multiplication operators.
 
   \begin{example}[Square]
     $abs\ (mul\ (var\ Top)\ (var\ Top))$ denotates to the square function $\lambda x. x * x$.
@@ -223,14 +249,15 @@
   % TODO: give reasonable examples
 
   As we work with denotations, smooth functions $f : \<R>^n -> \<R>$ can be interpreted as the denotations of a corresponding syntactic term $x_1, \dots, x_n \vdash t : R$.
-  The idea here is that the free variables in the term $t$ denote the usages of the parameters of the function and as such are restricted to terms of type $R$.
-  Note that while both the arguents and result type of $t$ are restricted to $R$, $t$ itself can contain higher order types.
+  Intuitively, the free variables in the term $t$ denote the usages of the parameters of the function and as such are restricted to terms of type $R$, same as each of the arguments in the function $f$.
+  Note that while both the arguments and result type of $t$ are restricted to $R$, $t$ itself can consist of higher order types.
 
   Although Barthe, et. al.\cite{barthe2020versatility} gave a syntactic proof of correctness of the macro, our proof follows the more denotational style of proof given by Huot, Staton and \Vakar{}\cite{huot2020correctness}.
-  We state correctness as the denotation of a macro-applied term will give a pair of both the original function the term represents along with its corresponding derivative.
+  Correctness of the forward-mode macro consists of the assertion that the denotation of any macro-applied term of type $x_1 : R, \dots, x_n : R \vdash t : \<R>$ will result in a pair of both the denotation of the original term and the derivative of that denotation.
 
-  The proof of correctness will follow a logical relations argument.Intuitively, the relation will encapsulate idea that derivability is preserved over higher-order types.
-  We define a type-indexed logical relation between denotations of both terms and their macro-applied variants, so for any type $\tau$, $S_\tau$ is the relation between functions $R \rightarrow \llbracket \tau \rrbracket$ and $R \rightarrow \llbracket \D(\tau) \rrbracket$.
+  Likewise, the proof of correctness will follow a logical relations argument, first generalizing the statement for both the typing contexts and the result type.
+  The relation will ensure that both the derivability property and the derivatives are preserved over higher-order types.
+  We define the logical relation as a type-indexed relation between denotations of both terms and their macro-applied variants, so for any type $\tau$, $S_\tau$ is the relation between functions $R \rightarrow \llbracket \tau \rrbracket$ and $R \rightarrow \llbracket \D(\tau) \rrbracket$.
 
   \begin{equation}
     S_\tau(f, g) =
@@ -254,7 +281,7 @@
   \end{equation}
 
   The next step involves proving that syntactically well-typed terms are semantically correct.
-  In other words, the relation is valid for any term $x_1, \dots, x_n \vdash t : \tau$ and argument function $f : R \rightarrow R^n$ such that $S_\tau(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f)$.
+  In other words, the relation needs to be proven valid for any term $x_1 : R, \dots, x_n : R \vdash t : \tau$ and argument function $f : R \rightarrow R^n$ such that $S_\tau(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f)$.
 
   To properly instantiate the arguments to the denotation of the macro-applied term, an auxiliary function is needed that pairs each constant with their derivative $0$. So it transforms $f : R \rightarrow \llbracket R^n \rrbracket$ into $\D_n(f, x) : R \rightarrow \llbracket \D(R)^n \rrbracket$.
   The full type signature of the function becomes $\D_n : (R \rightarrow \llbracket R^n \rrbracket) \rightarrow R \rightarrow \llbracket \D(R)^n \rrbracket$, which essentially accompanies each argument supplied by $f$ with its accompanying derivative.
@@ -264,7 +291,7 @@
       \left\{
         \begin{array}{ll}
           f(x) & : n = 0 \\
-          ((hd \circ f)(x)), \frac{\partial{(hd \circ f)}}{\partial{x}}(x)) :: \D_n(tl \circ f, x) & : n = S n' \\
+          ((hd \circ f)(x)), \frac{\partial{(hd \circ f)}}{\partial{x}}(x)) :: \D_{n'}(tl \circ f, x) & : n = S(n') \\
         \end{array}
       \right.
   \label{eqn:argument_df}
@@ -295,9 +322,11 @@
           \begin{array}{ll}
             f = const([]) \wedge g = const([])
               & : \Gamma = [] \\
-            \forall s, s_D.
+            \forall f_1, f_2, g_1, g_2.
               & : \Gamma = (\tau :: \Gamma') \\
-              \;\;\;\;inst_{\Gamma'}(s, s_D) \wedge S_\tau(f, g)
+              \;\;inst_{\Gamma'}(f_1, g_1) \wedge S_\tau(f_2, g_2) \\
+              \;\;\;\; \implies f = \lambda x. (f_2(x) :: f_1(x)) \wedge \\
+              \;\;\;\;\;\; g = \lambda x. (g_2(x) :: g_1(x))
           \end{array}
         \right.
     \label{eqn:lr_base}
@@ -307,7 +336,7 @@
   Using this notion of substitution instantiations we can now formulate our substitution lemma.
 
   \begin{lemma}[Substitution]\label{thm:substitution_lemma}
-    If for any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s_D)$ then $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
+    For any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s_D)$, then $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
   \end{lemma}
 
   \begin{proof}
@@ -592,14 +621,14 @@
         \item \label{eqn:subst_ih_first}$S_{\tau\times\sigma}(\llbracket t \rrbracket \circ s, \llbracket \D(t) \rrbracket \circ s_D)$
       \end{enumerate}
 
-      Simplifying the induction hypothesis \ref{eqn:subst_ih_first} using the definition of $S_{\tau\times\sigma}$ gives rise to a number of useful assumptions:
+      Simplifying the induction hypothesis \ref{eqn:subst_ih_first} using the definition of $S_{\tau\times\sigma}$ gives rise to a number of useful assumptions containing:
+      $f_1 : R \rightarrow \llbracket \tau \rrbracket$
+      , $f_2 : R \rightarrow \llbracket \D(\tau) \rrbracket$
+      , $g_1 : R \rightarrow \llbracket \sigma \rrbracket$
+      and $g_2 : R \rightarrow \llbracket \D(\sigma) \rrbracket$.
 
       Assumptions:
       \begin{enumerate}
-        \item \label{eqn:subst_ass_proj1_0} $f_1 : R \rightarrow \llbracket \tau \rrbracket$
-        \item \label{eqn:subst_ass_proj1_1} $f_2 : R \rightarrow \llbracket \D(\tau) \rrbracket$
-        \item \label{eqn:subst_ass_proj1_2} $g_1 : R \rightarrow \llbracket \sigma \rrbracket$
-        \item \label{eqn:subst_ass_proj1_3} $g_2 : R \rightarrow \llbracket \D(\sigma) \rrbracket$
         \item \label{eqn:subst_ass_proj1_4} $S_\tau(f_1, f_2)$
         \item \label{eqn:subst_ass_proj1_5} $S_\sigma(g_1, g_2)$
         \item \label{eqn:subst_ass_proj1_6} $\llbracket t \rrbracket \circ s = \lambda x. (f_1(x), g_1(x))$
@@ -628,14 +657,14 @@
         \item \label{eqn:subst_ih_first}$S_{\tau\times\sigma}(\llbracket t \rrbracket \circ s, \llbracket \D(t) \rrbracket \circ s_D)$
       \end{enumerate}
 
-      Proof goes the same as the case for \<first> with the same assumptions following from the induction hypothesis.
+      Proof goes the same as the case for \<first> with the same assumptions following from the induction hypothesis, with
+      $f_1 : R \rightarrow \llbracket \tau \rrbracket$
+      , $f_2 : R \rightarrow \llbracket \D(\tau) \rrbracket$
+      , $g_1 : R \rightarrow \llbracket \sigma \rrbracket$
+      and $g_2 : R \rightarrow \llbracket \D(\sigma) \rrbracket$.
 
       Assumptions:
       \begin{enumerate}
-        \item \label{eqn:subst_ass_proj2_0} $f_1 : R \rightarrow \llbracket \tau \rrbracket$
-        \item \label{eqn:subst_ass_proj2_1} $f_2 : R \rightarrow \llbracket \D(\tau) \rrbracket$
-        \item \label{eqn:subst_ass_proj2_2} $g_1 : R \rightarrow \llbracket \sigma \rrbracket$
-        \item \label{eqn:subst_ass_proj2_3} $g_2 : R \rightarrow \llbracket \D(\sigma) \rrbracket$
         \item \label{eqn:subst_ass_proj2_4} $S_\tau(f_1, f_2)$
         \item \label{eqn:subst_ass_proj2_5} $S_\sigma(g_1, g_2)$
         \item \label{eqn:subst_ass_proj2_6} $\llbracket t \rrbracket \circ s = \lambda x. (f_1(x), g_1(x))$
@@ -659,24 +688,94 @@
 
   The proof of the fundamental property of the logical relation now follows from the substitution lemma.
 
+  \begin{lemma}[Fundamental property]\label{thm:fundamental_property}
+    For any well-typed term $x_1 : R, \dots, x_n : R \vdash t : \tau$, and argument function $f : R \rightarrow \llbracket R^n \rrbracket$, such that each argument is continuously derivable, then $S_\tau(\llbracket t\rrbracket \circ f, \llbracket \D(t)\rrbracket \circ \D_n \circ f)$.
+  \end{lemma}
 
+  \begin{proof}
+    This is proven by instantiating the substitution lemma \ref{thm:substitution_lemma} with the proper variables and proving the resulting judgement of $inst_{R^n}$ by induction on $n$.
 
-  \begin{theorem}[Fundamental property]
-    If for any well-typed term $x_1, \dots, x_n \vdash t : \tau$, and argument function $f : R \rightarrow \llbracket R^n \rrbracket$, such and $s_D : R \rightarrow \llbracket \D(R)^n \rrbracket$ such that they follow $inst_\Gamma(s, s_D)$ then $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
-  \end{theorem}
+    \begin{align*}
+      S&_{\tau}(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f) \\
+      & \Vdash \text{(Apply substitution lemma with $s := f$, $s_D := \D_n \circ f$ and $\Gamma := R^n$)} \\
+      & inst_{R^n}(f, \D_n \circ f) \\
+    \end{align*}
 
+    Proceed by induction on $n$, intuitively building up the environment with denotation of terms such that they follow $S$.
+
+    \begin{itemize}
+      \item Base case: $n = 0$
+
+      \begin{align*}
+        inst&_{R^0}(f, \D_0 \circ f) \\
+        & \Vdash \text{(Induction on n, base case $n = 0$)} \\
+        & \;\;\; inst_{[]}(f, \D_0 \circ f) \\
+        & \;\;\; \Vdash \text{(Singleton instance of $R \rightarrow R^0$, $f = const([])$)} \\
+        & \;\;\; inst_{[]}(const([]), \D_0 \circ const([])) \\
+        & \;\;\; \Vdash \text{(Definition of $\D_0$)} \\
+        & \;\;\; inst_{[]}(const([]), const([])) \\
+        & \;\;\; \Vdash \text{(Definition of $inst_{[]}$)}
+      \end{align*}
+
+      \item Induction case: $n = S(n')$
+
+      Induction hypothesis: $inst_{R^{n'}}(f', D \circ f')$, where
+        $f' : R \rightarrow \llbracket R^{n'}\rrbracket$.
+
+      \begin{align*}
+        inst&_{R :: R^{n'}}(f, \D_{R :: R^{n'}} \circ f) \\
+        & \;\;\; \Vdash \text{(Unfold $\circ$)} \\
+        & \;\;\; inst_{R :: R^{n'}}(\lambda x. f(x), \lambda x. \D_{R :: R^{n'}}( f, x)) \\
+        & \;\;\; \Vdash \text{(Rewrite using $f = \lambda x. hd(f(x)) :: tl(f(x))$} \\
+        & \;\;\;\;\;\;\;\;\;\;\;\; \text{and definition of $\D_{R :: R^{n'}}$)} \\
+        & \;\;\; inst_{R :: R^{n'}}(\lambda x. hd(f(x)) :: tl(f(x)), \\
+        & \;\;\;\;\;\;
+          \lambda x. (hd(f(x)), \sfrac{\partial{(hd \circ f)}}{\partial{x}}(x)) :: \D_{R^{n'}}(tl \circ f, x)) \\
+        & \;\;\; \Vdash \text{(By definition of $inst_{R :: R^{n'}}$, rest proven by IH)}
+      \end{align*}
+    \end{itemize}
+  \end{proof}
+
+  Note that the correctness of the macro is dependent on the requirement that the denotations supplied by the argument function are all continuously derivable.
 
   \begin{theorem}[Macro correctness]
-    For any term $x_1 : R, ..., x_n : R \vdash t : R$, $\D(t)$ gives the dual number representation of $\llbracket t \rrbracket$.
+    For any term $x_1 : R, ..., x_n : R \vdash t : R$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : R \rightarrow R^n$, then $\llbracket \D(t) \rrbracket \circ \D_n \circ f = \lambda x. (\llbracket t \rrbracket \circ f, \sfrac{\partial{(\llbracket t \rrbracket \circ f)}}{\partial{x}})$.
   \end{theorem}
 
   \begin{proof}
+    This is proven by showing that the goal follows from the logical relation which itself implied by the fundamental property (\ref{thm:fundamental_property}) for well-typed terms.
 
+    \begin{align*}
+      \llbracket \D(t) &\rrbracket \circ \D_n \circ f = \lambda x. (\llbracket t \rrbracket \circ f, \sfrac{\partial{(\llbracket t \rrbracket \circ f)}}{\partial{x}}) \\
+      & \Vdash \text{(By definition of $S_R$ with $f := \llbracket t \rrbracket \circ f$ and $g := \llbracket \D(t) \rrbracket \circ \D_n \circ f$)} \\
+      & S_R(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f) \\
+      & \Vdash \text{(Fundamental property (\ref{thm:fundamental_property}))}
+    \end{align*}
   \end{proof}
 
-
-
   \subsection{Adding Sums and Primitive Recursion}
+    Now that correctness has been verified for the base simply-typed lambda calculus, the next goal will be to add in both sum and integer types.
+    The inference rules for the language constructs added for sum types are given in figure \ref{}
+
+    \begin{figure}[H]
+      $\dots$
+      \begin{mathpar}
+        \inferrule*[Right=\textsc{TCase}]
+          {\Gamma \vdash e : \tau + \sigma \\
+            \Gamma \vdash t1 : \tau \rightarrow \rho \\
+            \Gamma \vdash t2 : \sigma \rightarrow \rho }
+          {\Gamma \vdash \case{e}{t1}{t2} : \rho} \\ \and
+        \inferrule*[Right=\textsc{TInl}]
+          {\Gamma \vdash t : \tau}
+          {\Gamma \vdash \inl{t} : \tau + \sigma} \and
+        \inferrule*[Right=\textsc{TInr}]
+          {\Gamma \vdash t : \sigma}
+          {\Gamma \vdash \inr{t} : \tau + \sigma}
+      \end{mathpar}
+      \caption{Type-inferrence rules for language constructs for sum types}
+      \label{fig:base_infer}
+    \end{figure}
+
   \subsection{Arrays}
 \section{Optimization}
   \subsection{Program Transformations}

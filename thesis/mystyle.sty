@@ -33,12 +33,13 @@
 % \RequirePackage[hidelinks]{hyperref}
 \RequirePackage[hidelinks]{hyperref}
 \RequirePackage{fontspec}
+\RequirePackage{tcolorbox}
 \setmainfont{TeX Gyre Pagella}
 \setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]
 \setmonofont{Inconsolata}[Scale=MatchLowercase]
 \RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}
 \renewcommand{\figurename}{Listing}
-\setminted[coq]{escapeinside=~~,mathescape}
+\setminted[coq]{escapeinside=~~,mathescape, autogobble}
 \newcommand{\br}[1]{\langle #1 \rangle}
 \def\Yields{\Downarrow}
 \newcommand{\makefootnotelist}[1]{%
