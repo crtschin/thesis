@@ -1,24 +1,15 @@
-Adequacy.vo Adequacy.glob Adequacy.v.beautified Adequacy.required_vo: Adequacy.v 
-Adequacy.vio: Adequacy.v 
-Adequacy.vos Adequacy.vok Adequacy.required_vos: Adequacy.v 
-Base.vo Base.glob Base.v.beautified Base.required_vo: Base.v 
-Base.vio: Base.v 
-Base.vos Base.vok Base.required_vos: Base.v 
-Continuation.vo Continuation.glob Continuation.v.beautified Continuation.required_vo: Continuation.v vect.vo Tactics.vo DepList.vo Simply.vo Direct.vo
-Continuation.vio: Continuation.v vect.vio Tactics.vio DepList.vio Simply.vio Direct.vio
-Continuation.vos Continuation.vok Continuation.required_vos: Continuation.v vect.vos Tactics.vos DepList.vos Simply.vos Direct.vos
-coquelicotComplements.vo coquelicotComplements.glob coquelicotComplements.v.beautified coquelicotComplements.required_vo: coquelicotComplements.v 
-coquelicotComplements.vio: coquelicotComplements.v 
-coquelicotComplements.vos coquelicotComplements.vok coquelicotComplements.required_vos: coquelicotComplements.v 
+Continuation.vo Continuation.glob Continuation.v.beautified Continuation.required_vo: Continuation.v Tactics.vo DepList.vo Simply.vo Direct.vo
+Continuation.vio: Continuation.v Tactics.vio DepList.vio Simply.vio Direct.vio
+Continuation.vos Continuation.vok Continuation.required_vos: Continuation.v Tactics.vos DepList.vos Simply.vos Direct.vos
 CpdtTactics.vo CpdtTactics.glob CpdtTactics.v.beautified CpdtTactics.required_vo: CpdtTactics.v 
 CpdtTactics.vio: CpdtTactics.v 
 CpdtTactics.vos CpdtTactics.vok CpdtTactics.required_vos: CpdtTactics.v 
 Definitions.vo Definitions.glob Definitions.v.beautified Definitions.required_vo: Definitions.v Tactics.vo
 Definitions.vio: Definitions.v Tactics.vio
 Definitions.vos Definitions.vok Definitions.required_vos: Definitions.v Tactics.vos
-Denotation.vo Denotation.glob Denotation.v.beautified Denotation.required_vo: Denotation.v DepList.vo vect.vo Definitions.vo Macro.vo Tactics.vo
-Denotation.vio: Denotation.v DepList.vio vect.vio Definitions.vio Macro.vio Tactics.vio
-Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v DepList.vos vect.vos Definitions.vos Macro.vos Tactics.vos
+Denotation.vo Denotation.glob Denotation.v.beautified Denotation.required_vo: Denotation.v DepList.vo Definitions.vo Macro.vo Tactics.vo
+Denotation.vio: Denotation.v DepList.vio Definitions.vio Macro.vio Tactics.vio
+Denotation.vos Denotation.vok Denotation.required_vos: Denotation.v DepList.vos Definitions.vos Macro.vos Tactics.vos
 DepList.vo DepList.glob DepList.v.beautified DepList.required_vo: DepList.v CpdtTactics.vo
 DepList.vio: DepList.v CpdtTactics.vio
 DepList.vos DepList.vok DepList.required_vos: DepList.v CpdtTactics.vos
@@ -43,6 +34,3 @@ Simply.vos Simply.vok Simply.required_vos: Simply.v Tactics.vos DepList.vos
 Tactics.vo Tactics.glob Tactics.v.beautified Tactics.required_vo: Tactics.v 
 Tactics.vio: Tactics.v 
 Tactics.vos Tactics.vok Tactics.required_vos: Tactics.v 
-vect.vo vect.glob vect.v.beautified vect.required_vo: vect.v coquelicotComplements.vo
-vect.vio: vect.v coquelicotComplements.vio
-vect.vos vect.vok vect.required_vos: vect.v coquelicotComplements.vos

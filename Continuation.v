@@ -270,11 +270,6 @@ Example derivative_example_dtm :
     (@Dtm_ctx 2 2
       (@denote_ctx_cons (ℝ::[]) ℝ 7
         (@denote_ctx_cons [] ℝ 13 HNil))))
-    (* (@denote_ctx_cons (map (Dt 2) (ℝ::[])) (Dt 2 ℝ)
-        (7, Vcons 1 (Vcons 0 Vnil))
-    (@denote_ctx_cons (map (Dt 2) []) (Dt 2 ℝ)
-        (13, Vcons 0 (Vcons 1 Vnil))
-        HNil))) *)
     = ((13 + 7 * 7)%R,
       Vcons (0 + (7 * 1 + 7 * 1))%R (Vcons (1 + (7 * 0 + 7 * 0))%R Vnil)).
 Proof with quick.
@@ -288,11 +283,6 @@ Example derivative_example_dtm_c :
     (@Dtm_ctx_c 2 2
       (@denote_ctx_cons (ℝ::[]) ℝ 7
         (@denote_ctx_cons [] ℝ 13 HNil))))
-    (* (@denote_ctx_cons (map (Dt_c 2) (ℝ::[])) (Dt_c 2 ℝ)
-        (7, fun x => Vcons x (Vcons 0 Vnil))
-    (@denote_ctx_cons (map (Dt_c 2) ([])) (Dt_c 2 ℝ)
-        (13, fun y => Vcons 0 (Vcons y Vnil))
-        HNil))) *)
     = ((13 + 7 * 7)%R, (fun x =>
       Vcons (0 + (7 * x + 7 * x))%R (Vcons (x + (0 + 0))%R Vnil))).
 Proof with quick.
@@ -323,12 +313,6 @@ Qed.
 
 Equations S n τ :
   (R -> ⟦ Dt n τ ⟧ₜ) -> (R -> ⟦ Dt_c n τ ⟧ₜ) -> Prop :=
-(* S n ℝ f g with n := {
-  | 0%nat => ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
-      (fun r => (snd (f r))) = fun r => (snd (g r)) 1;
-  | Datatypes.S n' => ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
-      (fun r => (snd (f r))) = fun r => (snd (g r)) 1
-}; *)
 S n ℝ f g := ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
   (fun r => (snd (f r))) = fun r => (snd (g r)) 1;
 S n (Array m τ) f g := forall i,
@@ -466,27 +450,108 @@ Proof with quick.
   intros. split; dependent destruction H...
 Qed.
 
-Lemma denote_array_eq_correct :
-  forall Γ n (ctx : ⟦ Dctx n Γ ⟧ₜₓ) (ctx_c : ⟦ Dctx_c n Γ ⟧ₜₓ),
-  @denote_array (Dctx n Γ) ℝ n (const (const 0)) ctx =
-    @denote_array (ℝ::Dctx_c n Γ) ℝ n (const (const 0))
-      (@denote_ctx_cons (Dctx_c n Γ) ℝ 1 ctx_c).
+Lemma vector_nth_eq : forall (A : Set) n (i : Fin.t n) (v v': vector A n),
+  v = v' -> vector_nth i v = vector_nth i v'.
 Proof with quick.
-  intros.
-  induction n...
+  intros. rewrites.
+Qed.
+
+Lemma denote_array_eq_const_correct :
+  forall Γ m n (ctx : ⟦ Dctx m Γ ⟧ₜₓ) (ctx_c : ⟦ Dctx_c m Γ ⟧ₜₓ),
+  @denote_array (Dctx m Γ) ℝ n (const (const 0)) ctx =
+    @denote_array (ℝ::Dctx_c m Γ) ℝ n (const (const 0))
+      (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 ctx_c).
+Proof with quick.
+  unfold const.
+  intros; induction n...
   - apply Vcons_eq. split...
-    unfold shave_fin;
-      unfold denote_ctx_cons in *;
-      unfold const.
-    assert (H': (fun (_ : Fin.t n) (_ : ⟦ Dctx (Datatypes.S n) Γ ⟧ₜₓ) => 0)
-      = const (const 0))...
-    rewrite_c H'.
-    assert (H': (fun (_ : Fin.t n) (_ : ⟦ ℝ :: Dctx_c (Datatypes.S n) Γ ⟧ₜₓ)
-      => 0) = const (const 0))...
-    rewrite_c H'.
-    pose proof (IHn
-      (unpad_Dtm_ctx n Γ ctx) (unpad_Dtm_ctx_c n Γ ctx_c)).
+Qed.
+
+Lemma denote_array_eq_add_correct :
+  forall n m Γ x1 x2 f1 f2
+    (d: ⟦ Dctx_c m Γ ⟧ₜₓ) (d0: ⟦ Dctx m Γ ⟧ₜₓ),
+  x1 d0 = f1 d 1 -> x2 d0 = f2 d 1 ->
+  @denote_array (Dctx m Γ) ℝ n
+    (fun i ctx => (vector_nth i (x1 ctx) + vector_nth i (x2 ctx))%R) d0 =
+  @denote_array (ℝ :: Dctx_c m Γ) ℝ n
+    (fun i ctx => (vector_nth i (f1 (htl ctx) (denote_ctx_hd ctx)) +
+      vector_nth i (f2 (htl ctx) (denote_ctx_hd ctx)))%R)
+    (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 d).
+Proof with quick.
+  intros; induction n...
+  { apply Vcons_eq. split; rewrites...
+    { unfold shave_fin...
+      erewrite (IHn (fun x => Vtail (x1 x)) (fun x => Vtail (x2 x))
+        (fun ctx x => Vtail (f1 ctx x)) (fun ctx x => Vtail (f2 ctx x)))...
+      all: apply f_equal... } }
+Qed.
+
+Lemma denote_array_eq_mul_correct :
+  forall (n: nat) m (Γ: Ctx)
+    x1_1 x2_1 f1_1 f2_1
+    x1_2 x2_2 f1_2 f2_2
+    (d: ⟦ Dctx m Γ ⟧ₜₓ)
+    (d0: ⟦ Dctx_c m Γ ⟧ₜₓ),
+  x2_1 d = f2_1 d0 1 -> x1_1 d = f1_1 d0 1 ->
+  x1_2 d = f1_2 d0 1 -> x2_2 d = f2_2 d0 1 ->
+    @denote_array (Dctx m Γ) ℝ n
+      (fun (i : Fin.t n) (ctx : ⟦ Dctx m Γ ⟧ₜₓ) =>
+      (vector_nth i
+          (@denote_array (Dctx m Γ) ℝ n
+            (fun (x : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
+              x2_1 ctx' *
+              vector_nth x (x1_2 ctx')) ctx) +
+        vector_nth i
+          (@denote_array (Dctx m Γ) ℝ n
+            (fun (x : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
+              x1_1 ctx' *
+              vector_nth x (x2_2 ctx')) ctx))%R) d =
+    @denote_array (ℝ :: Dctx_c m Γ) ℝ n
+      (fun (i : Fin.t n) (ctx : ⟦ ℝ :: Dctx_c m Γ ⟧ₜₓ) =>
+    (vector_nth i
+        ((f1_2 (htl ctx)
+          ((f2_1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))) +
+    vector_nth i
+      ((f2_2 (htl ctx)
+         ((f1_1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))))%R)
+      (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 d0).
+Proof with quick.
+  intros. induction n...
+  { apply Vcons_eq.
+    unfold shave_fin...
+    split.
+    { erewrite vector_nth_eq.
+      erewrite (vector_nth_eq _ _ _ (Vcons (x1_1 d * vector_nth (nat_to_fin n) (x2_2 d))%R
+      (@denote_array (Dctx m Γ) ℝ n
+         (fun (i : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
+          x1_1 ctx' * vector_nth i (Vtail (x2_2 ctx')))%R d))).
+    2,3: apply Vcons_eq; split; rewrites.
+    all: admit. }
+    { admit. } }
 Admitted.
+(*
+denote_array n
+  (fun (i : Fin.t n) (ctx : ⟦ map (Dt n) Γ ⟧ₜₓ) =>
+   (vector_nth i
+      (denote_array n
+         (fun (x : Fin.t n) (ctx' : ⟦ map (Dt n) Γ ⟧ₜₓ) =>
+          fst (⟦ Dtm n t2 ⟧ₜₘ ctx') *
+          vector_nth x (snd (⟦ Dtm n t1 ⟧ₜₘ ctx'))) ctx) +
+    vector_nth i
+      (denote_array n
+         (fun (x : Fin.t n) (ctx' : ⟦ map (Dt n) Γ ⟧ₜₓ) =>
+          fst (⟦ Dtm n t1 ⟧ₜₘ ctx') *
+          vector_nth x (snd (⟦ Dtm n t2 ⟧ₜₘ ctx'))) ctx))%R) d =
+denote_array n
+  (fun (i : Fin.t n) (ctx : ⟦ ℝ :: map (Dt_c n) Γ ⟧ₜₓ) =>
+   (vector_nth i
+      (snd (⟦ Dtm_c n t1 ⟧ₜₘ (htl ctx))
+         (fst (⟦ Dtm_c n t2 ⟧ₜₘ (htl ctx)) * denote_ctx_hd ctx)) +
+    vector_nth i
+      (snd (⟦ Dtm_c n t2 ⟧ₜₘ (htl ctx))
+         (fst (⟦ Dtm_c n t1 ⟧ₜₘ (htl ctx)) * denote_ctx_hd ctx)))%R)
+  (1 ::: d0)
+      *)
 
 Lemma S_subst :
   forall Γ τ n,
@@ -551,7 +616,7 @@ Proof with quick.
         ⟦ rval (ℝ :: map (Dt_c n) Γ) 0 ⟧ₜₘ) = const (const 0)).
       { extensionality i. extensionality ctx. unfold const. simp denote_tm... }
       rewrite_c H'.
-      apply denote_array_eq_correct. } }
+      apply denote_array_eq_const_correct. } }
   { (* Add *)
     simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as [IHeq1 IHeq1'].
@@ -568,11 +633,23 @@ Proof with quick.
       erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
     2:{ extensionality i. extensionality ctx. simp denote_tm.
         rewrite 2 denote_shift. simp denote_tm.
+        eassert (⟦ Top (map (Dt_c n) Γ) ℝ ⟧ᵥ = denote_ctx_hd).
+        { extensionality xs. dependent destruction xs... }
+        rewrite H0.
         reflexivity. }
     2:{ extensionality i. extensionality ctx. simp denote_tm.
         reflexivity. }
-      rewrites.
-      admit. } }
+      clear IHeq1 IHeq2.
+      remember (sb_c r); remember (sb r).
+      rewrite <- Heqd in IHeq2', IHeq1';
+        rewrite <- Heqd0 in IHeq2', IHeq1'.
+      clear Heqd Heqd0 sb sb_c H r.
+      apply (denote_array_eq_add_correct n n Γ
+        (fun d => snd (⟦ Dtm n t1 ⟧ₜₘ d))
+        (fun d => snd (⟦ Dtm n t2 ⟧ₜₘ d))
+        (fun d x => snd (⟦ Dtm_c n t1 ⟧ₜₘ d) x)
+        (fun d x => snd (⟦ Dtm_c n t2 ⟧ₜₘ d) x)
+        d d0 IHeq1' IHeq2'). } }
   { (* Mul *)
     simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as [IHeq1 IHeq1'].
@@ -580,25 +657,45 @@ Proof with quick.
     clear IHt1 IHt2.
     simp S in *.
     split; extensionality r;
-      eapply equal_f in IHeq1;
-      eapply equal_f in IHeq2;
-      eapply equal_f in IHeq1';
-      eapply equal_f in IHeq2'.
-    { simp denote_tm...
-      rewrites. }
-    { simp denote_tm...
+      eapply equal_f in IHeq1; eapply equal_f in IHeq2;
+      eapply equal_f in IHeq1'; eapply equal_f in IHeq2';
+      simp denote_tm...
+    { rewrites. }
+    { remember (sb r); remember (sb_c r).
+      rewrite <- Heqd in IHeq1', IHeq2', IHeq1, IHeq2.
+      rewrite <- Heqd0 in IHeq1', IHeq2', IHeq1, IHeq2.
+      clear sb sb_c H Heqd Heqd0 r.
       unfold vector_add, vector_map2...
       simp denote_tm; unfold compose...
       erewrite denote_array_eq...
       erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
   2:{ extensionality i. extensionality ctx.
       simp denote_tm. rewrite 4 denote_shift.
-      simp denote_tm. reflexivity. }
+      simp denote_tm.
+      eassert (⟦ Top (map (Dt_c n) Γ) ℝ ⟧ᵥ = denote_ctx_hd).
+      { extensionality xs. dependent destruction xs... }
+      rewrite_c H. reflexivity. }
   2:{ extensionality i. extensionality ctx.
       simp denote_tm. unfold vector_map.
       simp denote_tm. unfold compose.
+      erewrite (denote_array_eq _ _ _ (fun x : Fin.t n =>
+       ⟦ mul (map (Dt n) Γ) (first (map (Dt n) Γ) (Dtm n t1))
+           (get (map (Dt n) Γ) x (second (map (Dt n) Γ) (Dtm n t2))) ⟧ₜₘ))...
+    2:{ extensionality x; extensionality ctx'.
+        simp denote_tm. reflexivity. }
+        erewrite denote_array_eq...
+    2:{ extensionality x; extensionality ctx'.
+        simp denote_tm. reflexivity. }
       reflexivity. }
-      admit. } }
+      apply (denote_array_eq_mul_correct
+        n n Γ (fst ∘ ⟦ Dtm n t1 ⟧ₜₘ) (fst ∘ ⟦ Dtm n t2 ⟧ₜₘ)
+        (fun ctx x => fst (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
+        (fun ctx x => fst (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
+        (snd ∘ ⟦ Dtm n t1 ⟧ₜₘ)
+        (snd ∘ ⟦ Dtm n t2 ⟧ₜₘ)
+        (fun ctx => snd (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
+        (fun ctx => snd (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
+        d d0 IHeq2 IHeq1 IHeq1' IHeq2'). } }
   { (* Products *)
     simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as IHt1.
@@ -658,7 +755,9 @@ Proof with quick.
     intros. simp S. right...
     exists (⟦ Dtm n t ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm_c n t ⟧ₜₘ ∘ sb_c)... }
-Admitted.
+  Grab Existential Variables.
+  all: apply r.
+Qed.
 
 Lemma fundamental_property :
   forall τ n m,
@@ -679,12 +778,33 @@ Proof with quick.
     eassert (H: (fun _ : R => HNil) = const HNil)...
     rewrite_c H.
     constructor. }
-  { erewrite inst_eq.
-    instantiate (2:=fun x => @Dtm_ctx (Datatypes.S m) n
-      (HCons (hhd (f x)) (htl (f x))))...
-    instantiate (1:=fun x => @Dtm_ctx_c (Datatypes.S m) n
-      (HCons (hhd (f x)) (htl (f x))))...
-    (* constructor... *)
+  {
+    rewrite (inst_eq n (ℝ :: repeat ℝ m) _ _
+      (fun x =>
+        (@denote_ctx_cons (Dctx n (repeat ℝ m)) (Dt n ℝ)
+          (* (repeat ℝ m) *)
+          ((denote_ctx_hd ∘ f) x, vector_one_hot 0 n)
+          (Dtm_ctx' m n ((denote_ctx_tl ∘ f) x) (one_hots 0 n m))))
+      (fun x =>
+        (@denote_ctx_cons (Dctx_c n (repeat ℝ m)) (Dt_c n ℝ)
+          ((denote_ctx_hd ∘ f) x, vector_one_hot_c 0 n)
+          (Dtm_ctx_c' m n ((denote_ctx_tl ∘ f) x) (one_hots_c 0 n m))))).
+  2,3: extensionality x; unfold compose; remember (f x);
+      dependent destruction d...
+  2,3: simp Dtm_ctx Dtm_ctx_c.
+  2,3: simp one_hots one_hots_c.
+  2,3: unfold denote_ctx_cons.
+  2,3: simp Dtm_ctx' Dtm_ctx_c'.
+
+    unfold denote_ctx_cons; unfold denote_ctx_hd;
+      unfold denote_ctx_tl; unfold compose.
+    apply inst_cons.
+    specialize IHm with (fun x => htl (f x))...
+    simp S. split... extensionality x.
+    simp vector_one_hot vector_one_hot_c...
+    induction n...
+    simp vector_one_hot' vector_one_hot_c'.
+    apply Vcons_eq... splits.
     all: admit. }
 Admitted.
 
