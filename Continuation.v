@@ -340,7 +340,7 @@ S n (σ <+> ρ) f g :=
       f = Datatypes.inr ∘ g1 /\
       g = Datatypes.inr ∘ g2).
 
-Equations pad_Dt n τ (t : ⟦ Dt n τ ⟧ₜ)
+(* Equations pad_Dt n τ (t : ⟦ Dt n τ ⟧ₜ)
   : ⟦ Dt (Datatypes.S n) τ ⟧ₜ := {
 pad_Dt n ℝ (r, rs) := (r, Vcons 0 rs);
 pad_Dt n (Array m τ) t := Vmap (pad_Dt n τ) t;
@@ -410,7 +410,7 @@ Dtm_cons n Γ τ x xs := x ::: xs.
 
 Equations Dtm_cons_c n Γ τ (x : ⟦ Dt_c n τ ⟧ₜ) (xs : ⟦ Dctx_c n Γ ⟧ₜₓ) :
   ⟦Dctx_c n (τ::Γ)⟧ₜₓ :=
-Dtm_cons_c n Γ τ x xs := x ::: xs.
+Dtm_cons_c n Γ τ x xs := x ::: xs. *)
 
 (* Instantiation here keeps track of how many function arguments
     there are/partial derivs are to be calculated. *)
@@ -516,16 +516,29 @@ Lemma denote_array_eq_mul_correct :
          ((f1_1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))))%R)
       (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 d0).
 Proof with quick.
-  intros. induction n...
+  induction n...
   { apply Vcons_eq.
     unfold shave_fin...
+    rewrite (IHn m Γ x1_1 x2_1 f1_1 f2_1
+      (fun x => Vtail (x1_2 x)) (fun x => Vtail (x2_2 x))
+      (fun x => @Vtail _ _ ∘ (f1_2 x)) (fun x => @Vtail _ _ ∘ (f2_2 x))
+      d d0)...
+  all: unfold compose.
+  all: rewrites.
     split.
     { erewrite vector_nth_eq.
-      erewrite (vector_nth_eq _ _ _ (Vcons (x1_1 d * vector_nth (nat_to_fin n) (x2_2 d))%R
-      (@denote_array (Dctx m Γ) ℝ n
-         (fun (i : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
-          x1_1 ctx' * vector_nth i (Vtail (x2_2 ctx')))%R d))).
-    2,3: apply Vcons_eq; split; rewrites.
+    2:{ apply Vcons_eq. split.
+        rewrite <- H. rewrite <- H1.
+        all: reflexivity. }
+      erewrite (vector_nth_eq _ _ _
+        (Vcons (f1_1 d0 1 * vector_nth (nat_to_fin n) (f2_2 d0 1))%R
+            (@denote_array (Dctx m Γ) ℝ n
+              (fun (i : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
+                x1_1 ctx' * vector_nth i (Vtail (x2_2 ctx')))%R d))).
+    2:{ apply Vcons_eq; split.
+        rewrite <- H0. rewrite <- H2.
+        all: reflexivity. }
+    all: rewrites.
     all: admit. }
     { admit. } }
 Admitted.
@@ -795,7 +808,6 @@ Proof with quick.
   2,3: simp one_hots one_hots_c.
   2,3: unfold denote_ctx_cons.
   2,3: simp Dtm_ctx' Dtm_ctx_c'.
-
     unfold denote_ctx_cons; unfold denote_ctx_hd;
       unfold denote_ctx_tl; unfold compose.
     apply inst_cons.
