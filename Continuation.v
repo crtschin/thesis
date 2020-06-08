@@ -161,32 +161,6 @@ Lemma vector_eq : forall A n (h h' : A) (t t' : vector A n),
 Proof. rewrites. Qed.
 
 (*
-  C&P code for evaluating the denotation (useful for examples):
-    simp denote_tm.
-    unfold denote_ctx_cons.
-    simp denote_v...
-    apply injective_projections...
-    extensionality x...
-    unfold vector_add, vector_map2, vector_hot.
-    repeat (simp denote_tm; unfold compose)...
-    unfold shave_fin.
-    apply vector_eq.
-    { repeat (rewrite denote_shift; quick;
-        simp denote_v; simp denote_tm)...
-      simp denote_v...
-      admit. }
-    { repeat (simp denote_tm; unfold compose)...
-      repeat (rewrite denote_shift; quick;
-        repeat (simp denote_v; simp denote_tm))...
-      repeat (simp denote_tm; unfold compose)...
-      unfold shave_fin.
-      repeat (simp denote_tm; unfold compose)...
-      repeat (rewrite denote_shift; quick;
-        repeat (simp denote_v; simp denote_tm))...
-      admit. }
-*)
-
-(*
   For some arguments (ctx = x_1, ..., x_n : ⟦ repeat ℝ n ⟧ₜₓ)
   Need to augment ctx for Dtm with arguments to get all
     partial derivatives.
@@ -212,39 +186,58 @@ Proof. rewrites. Qed.
           function which evaluated at 1 gives the partial derivs)
 *)
 
+(* Helper function for creating one-hot encoding vectors with variable start
+    indices *)
 Equations vector_one_hot' (j i n : nat) : vector R n  :=
 vector_one_hot' j i 0 := Vnil;
 vector_one_hot' j i (S n') :=
   Vcons (if Nat.eqb i j then 1 else 0) (vector_one_hot' (S j) i n').
 
+(* Create a one-hot encoding of length n with the one at position i *)
 Equations vector_one_hot (i n : nat) : vector R n :=
 vector_one_hot i n := vector_one_hot' 0 i n.
 
+(* Create a one-hot encoding matrix of with width n and height m.
+    Current row-index is tracked in i.
+*)
 Equations one_hots (i n m : nat) : ⟦repeat (Array n ℝ) m⟧ₜₓ :=
 one_hots i n 0 := HNil;
 one_hots i n (S m) :=
   @denote_ctx_cons (repeat (Array n ℝ) m) (Array n ℝ)
     (vector_one_hot i n) (one_hots (S i) n m).
 
+(* Simply tuples the input vector with the matrix *)
 Equations Dtm_ctx' n m (ctx : ⟦repeat ℝ n⟧ₜₓ) (ctx2 : ⟦repeat (Array m ℝ) n⟧ₜₓ)
   : ⟦map (Dt m) (repeat ℝ n)⟧ₜₓ :=
 Dtm_ctx' 0 m ctx ctx' := HNil;
 Dtm_ctx' (S n) m (HCons x hl) (HCons x' hl') :=
-  @HCons ty denote_t (Dt m ℝ)
-    (map (Dt m) (repeat ℝ n))
+  @denote_ctx_cons (map (Dt m) (repeat ℝ n)) (Dt m ℝ)
   (x, x') (Dtm_ctx' n m hl hl').
 
+(* Couple the one-hot encoded matrices with the input vectors for input to
+    the macro Dtm
+  Ex.
+    [x]    [x], [1 0 0]
+    [y] => [y], [0 1 0]
+    [z]    [z], [0 0 1]
+*)
 Equations Dtm_ctx {n m} (ctx : ⟦repeat ℝ n⟧ₜₓ) : ⟦map (Dt m) (repeat ℝ n)⟧ₜₓ :=
 Dtm_ctx ctx := Dtm_ctx' n m ctx (one_hots 0 m n).
 
+(* Helper function for creating one-hot id encoding vectors with variable start
+    indices *)
 Equations vector_one_hot_c' (j i n : nat) : R -> vector R n  :=
 vector_one_hot_c' j i 0 r := Vnil;
 vector_one_hot_c' j i (S n) r :=
   Vcons (if Nat.eqb i j then r else 0) (vector_one_hot_c' (S j) i n r).
 
+(* Create a one-hot id encoding matrix of with width n and height m.
+    Current row-index is tracked in i.
+*)
 Equations vector_one_hot_c (i n : nat) : R -> vector R n :=
 vector_one_hot_c i n r := vector_one_hot_c' 0 i n r.
 
+(* Create a one-hot id encoding vector of length n with the id at position i *)
 Equations one_hots_c (i n m : nat) : ⟦repeat (ℝ → Array n ℝ) m⟧ₜₓ :=
 one_hots_c i n 0 := HNil;
 one_hots_c i n (S m) :=
@@ -260,9 +253,63 @@ Dtm_ctx_c' (S n) m (HCons x hl) (HCons x' hl') :=
   (map (Dt_c m) (repeat ℝ n))
   (x, x') (Dtm_ctx_c' n m hl hl').
 
+(* Couple the matrices with the input vectors for input to
+    the macro Dtm_c
+  Ex.
+    [x]    [x], (\a. [a 0 0])
+    [y] => [y], (\a. [0 a 0])
+    [z]    [z], (\a. [0 0 a])
+*)
 Equations Dtm_ctx_c {n m} (ctx : ⟦repeat ℝ n⟧ₜₓ)
   : ⟦map (Dt_c m) (repeat ℝ n)⟧ₜₓ :=
 Dtm_ctx_c ctx := Dtm_ctx_c' n m ctx (one_hots_c 0 m n).
+
+Equations trigger_ctx_c {n} m (ctx : ⟦ repeat (ℝ → Array n ℝ) m ⟧ₜₓ)
+  : ⟦ repeat (Array n ℝ) m ⟧ₜₓ :=
+trigger_ctx_c 0 HNil => HNil;
+trigger_ctx_c (S m) (t ::: xs) =>
+  @denote_ctx_cons (repeat (Array n ℝ) m) (Array n ℝ)
+  (t 1) (trigger_ctx_c m xs).
+
+Lemma vector_one_hot'_same : forall j i n,
+  vector_one_hot' j i n = vector_one_hot_c' j i n 1.
+Proof with quick.
+  intros i j n.
+  generalize dependent i.
+  generalize dependent j.
+  induction n...
+  simp vector_one_hot' vector_one_hot_c'.
+  apply Vcons_eq. splits.
+  rewrite IHn...
+Qed.
+
+Lemma vector_one_hot_same : forall i n,
+  vector_one_hot i n = vector_one_hot_c i n 1.
+Proof with quick.
+  intros.
+  simp vector_one_hot vector_one_hot_c.
+  generalize dependent i.
+  induction n...
+  apply vector_one_hot'_same.
+Qed.
+
+Lemma one_hots_same : forall i n m,
+  one_hots i n m = trigger_ctx_c m (one_hots_c i n m).
+Proof with quick.
+  intros.
+  generalize dependent i.
+  generalize dependent n.
+  induction m; quick; simp one_hots; simp one_hots_c;
+    simp trigger_ctx_c.
+  { unfold denote_ctx_cons. simp trigger_ctx_c.
+    unfold denote_ctx_cons.
+    rewrites. rewrite vector_one_hot_same... }
+Qed.
+
+Ltac eval_denote :=
+    repeat (try (rewrite denote_shift);
+      simp denote_tm; quick; unfold compose; simp denote_tm;
+      quick; simp denote_v; quick).
 
 (* y + x * x *)
 Example derivative_example_dtm :
@@ -340,80 +387,9 @@ S n (σ <+> ρ) f g :=
       f = Datatypes.inr ∘ g1 /\
       g = Datatypes.inr ∘ g2).
 
-(* Equations pad_Dt n τ (t : ⟦ Dt n τ ⟧ₜ)
-  : ⟦ Dt (Datatypes.S n) τ ⟧ₜ := {
-pad_Dt n ℝ (r, rs) := (r, Vcons 0 rs);
-pad_Dt n (Array m τ) t := Vmap (pad_Dt n τ) t;
-pad_Dt n (τ × σ) (t1, t2) := (pad_Dt n τ t1, pad_Dt n σ t2);
-pad_Dt n (τ <+> σ) t with t := {
-  | Datatypes.inl t' => Datatypes.inl (pad_Dt n τ t');
-  | Datatypes.inr t' => Datatypes.inr (pad_Dt n σ t')
-};
-pad_Dt n (τ → σ) t := fun t' => pad_Dt n σ (t (unpad_Dt n τ t')) }
-with unpad_Dt n τ (t : ⟦ Dt (Datatypes.S n) τ ⟧ₜ)
-  : ⟦ Dt n τ ⟧ₜ :=
-unpad_Dt n ℝ (r, rs) := (r, Vtail rs);
-unpad_Dt n (Array m τ) t := Vmap (unpad_Dt n τ) t;
-unpad_Dt n (τ × σ) (t1, t2) := (unpad_Dt n τ t1, unpad_Dt n σ t2);
-unpad_Dt n (τ <+> σ) t with t := {
-  | Datatypes.inl t' => Datatypes.inl (unpad_Dt n τ t');
-  | Datatypes.inr t' => Datatypes.inr (unpad_Dt n σ t')
-};
-unpad_Dt n (τ → σ) t := fun t' => unpad_Dt n σ (t (pad_Dt n τ t')).
-
-Equations pad_Dt_c n τ (t : ⟦ Dt_c n τ ⟧ₜ)
-  : ⟦ Dt_c (Datatypes.S n) τ ⟧ₜ := {
-pad_Dt_c n ℝ (r, rs) := (r, fun x => Vcons 0 (rs x));
-pad_Dt_c n (Array m τ) t := Vmap (pad_Dt_c n τ) t;
-pad_Dt_c n (τ × σ) (t1, t2) := (pad_Dt_c n τ t1, pad_Dt_c n σ t2);
-pad_Dt_c n (τ <+> σ) t with t := {
-  | Datatypes.inl t' => Datatypes.inl (pad_Dt_c n τ t');
-  | Datatypes.inr t' => Datatypes.inr (pad_Dt_c n σ t')
-};
-pad_Dt_c n (τ → σ) t := fun t' => pad_Dt_c n σ (t (unpad_Dt_c n τ t')) }
-with unpad_Dt_c n τ (t : ⟦ Dt_c (Datatypes.S n) τ ⟧ₜ)
-  : ⟦ Dt_c n τ ⟧ₜ :=
-unpad_Dt_c n ℝ (r, rs) := (r, fun x => Vtail (rs x));
-unpad_Dt_c n (Array m τ) t := Vmap (unpad_Dt_c n τ) t;
-unpad_Dt_c n (τ × σ) (t1, t2) := (unpad_Dt_c n τ t1, unpad_Dt_c n σ t2);
-unpad_Dt_c n (τ <+> σ) t with t := {
-  | Datatypes.inl t' => Datatypes.inl (unpad_Dt_c n τ t');
-  | Datatypes.inr t' => Datatypes.inr (unpad_Dt_c n σ t')
-};
-unpad_Dt_c n (τ → σ) t := fun t' => unpad_Dt_c n σ (t (pad_Dt_c n τ t')).
-
-Equations pad_Dtm_ctx n Γ (ctx : ⟦ Dctx n Γ ⟧ₜₓ)
-  : ⟦ Dctx (Datatypes.S n) Γ ⟧ₜₓ :=
-pad_Dtm_ctx n nil ctx := ctx;
-pad_Dtm_ctx n (τ::l) (HCons h hl) := pad_Dt n τ h ::: pad_Dtm_ctx n l hl.
-
-Equations pad_Dtm_ctx_c n Γ (ctx : ⟦ Dctx_c n Γ ⟧ₜₓ)
-  : ⟦ Dctx_c (Datatypes.S n) Γ ⟧ₜₓ :=
-pad_Dtm_ctx_c n nil ctx := ctx;
-pad_Dtm_ctx_c n (τ::l) (HCons h hl) :=
-  pad_Dt_c n τ h ::: pad_Dtm_ctx_c n l hl.
-
-Equations unpad_Dtm_ctx n Γ (ctx : ⟦ Dctx (Datatypes.S n) Γ ⟧ₜₓ)
-  : ⟦ Dctx n Γ ⟧ₜₓ :=
-unpad_Dtm_ctx n nil ctx := ctx;
-unpad_Dtm_ctx n (τ::l) (HCons h hl) := unpad_Dt n τ h ::: unpad_Dtm_ctx n l hl.
-
-Equations unpad_Dtm_ctx_c n Γ (ctx : ⟦ Dctx_c (Datatypes.S n) Γ ⟧ₜₓ)
-  : ⟦ Dctx_c n Γ ⟧ₜₓ :=
-unpad_Dtm_ctx_c n nil ctx := ctx;
-unpad_Dtm_ctx_c n (τ::l) (HCons h hl) :=
-  unpad_Dt_c n τ h ::: unpad_Dtm_ctx_c n l hl.
-
-Equations Dtm_cons n Γ τ (x : ⟦ Dt n τ ⟧ₜ) (xs : ⟦ Dctx n Γ ⟧ₜₓ) :
-  ⟦Dctx n (τ::Γ)⟧ₜₓ :=
-Dtm_cons n Γ τ x xs := x ::: xs.
-
-Equations Dtm_cons_c n Γ τ (x : ⟦ Dt_c n τ ⟧ₜ) (xs : ⟦ Dctx_c n Γ ⟧ₜₓ) :
-  ⟦Dctx_c n (τ::Γ)⟧ₜₓ :=
-Dtm_cons_c n Γ τ x xs := x ::: xs. *)
-
-(* Instantiation here keeps track of how many function arguments
-    there are/partial derivs are to be calculated. *)
+(* Helper definition to ensure that the context is only built
+    from terms whose denotation are in the relation
+*)
 Inductive instantiation : forall n Γ,
     (R -> ⟦ Dctx n Γ ⟧ₜₓ) -> (R -> ⟦ Dctx_c n Γ ⟧ₜₓ) -> Prop :=
   | inst_empty : forall n,
@@ -488,40 +464,40 @@ Qed.
 
 Lemma denote_array_eq_mul_correct :
   forall (n: nat) m (Γ: Ctx)
-    x1_1 x2_1 f1_1 f2_1
-    x1_2 x2_2 f1_2 f2_2
+    x1 x2 f1 f2
+    x1' x2' f1' f2'
     (d: ⟦ Dctx m Γ ⟧ₜₓ)
     (d0: ⟦ Dctx_c m Γ ⟧ₜₓ),
-  x2_1 d = f2_1 d0 1 -> x1_1 d = f1_1 d0 1 ->
-  x1_2 d = f1_2 d0 1 -> x2_2 d = f2_2 d0 1 ->
+  x2 d = f2 d0 1 -> x1 d = f1 d0 1 ->
+  x1' d = f1' d0 1 -> x2' d = f2' d0 1 ->
     @denote_array (Dctx m Γ) ℝ n
       (fun (i : Fin.t n) (ctx : ⟦ Dctx m Γ ⟧ₜₓ) =>
       (vector_nth i
           (@denote_array (Dctx m Γ) ℝ n
             (fun (x : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
-              x2_1 ctx' *
-              vector_nth x (x1_2 ctx')) ctx) +
+              x2 ctx' *
+              vector_nth x (x1' ctx')) ctx) +
         vector_nth i
           (@denote_array (Dctx m Γ) ℝ n
             (fun (x : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
-              x1_1 ctx' *
-              vector_nth x (x2_2 ctx')) ctx))%R) d =
+              x1 ctx' *
+              vector_nth x (x2' ctx')) ctx))%R) d =
     @denote_array (ℝ :: Dctx_c m Γ) ℝ n
       (fun (i : Fin.t n) (ctx : ⟦ ℝ :: Dctx_c m Γ ⟧ₜₓ) =>
     (vector_nth i
-        ((f1_2 (htl ctx)
-          ((f2_1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))) +
+        ((f1' (htl ctx)
+          ((f2 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))) +
     vector_nth i
-      ((f2_2 (htl ctx)
-         ((f1_1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))))%R)
+      ((f2' (htl ctx)
+         ((f1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))))%R)
       (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 d0).
 Proof with quick.
   induction n...
   { apply Vcons_eq.
     unfold shave_fin...
-    rewrite (IHn m Γ x1_1 x2_1 f1_1 f2_1
-      (fun x => Vtail (x1_2 x)) (fun x => Vtail (x2_2 x))
-      (fun x => @Vtail _ _ ∘ (f1_2 x)) (fun x => @Vtail _ _ ∘ (f2_2 x))
+    rewrite (IHn m Γ x1 x2 f1 f2
+      (fun x => Vtail (x1' x)) (fun x => Vtail (x2' x))
+      (fun x => @Vtail _ _ ∘ (f1' x)) (fun x => @Vtail _ _ ∘ (f2' x))
       d d0)...
   all: unfold compose.
   all: rewrites.
@@ -531,10 +507,10 @@ Proof with quick.
         rewrite <- H. rewrite <- H1.
         all: reflexivity. }
       erewrite (vector_nth_eq _ _ _
-        (Vcons (f1_1 d0 1 * vector_nth (nat_to_fin n) (f2_2 d0 1))%R
+        (Vcons (f1 d0 1 * vector_nth (nat_to_fin n) (f2' d0 1))%R
             (@denote_array (Dctx m Γ) ℝ n
               (fun (i : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
-                x1_1 ctx' * vector_nth i (Vtail (x2_2 ctx')))%R d))).
+                x1 ctx' * vector_nth i (Vtail (x2' ctx')))%R d))).
     2:{ apply Vcons_eq; split.
         rewrite <- H0. rewrite <- H2.
         all: reflexivity. }
@@ -772,6 +748,28 @@ Proof with quick.
   all: apply r.
 Qed.
 
+Lemma inst_correct :
+  forall (i n m: nat) (f: R -> ⟦ repeat ℝ m ⟧ₜₓ),
+    instantiation n (repeat ℝ m)
+      (fun x : R => Dtm_ctx' m n (f x) (one_hots i n m))
+      (fun x : R => Dtm_ctx_c' m n (f x) (one_hots_c i n m)).
+Proof with quick.
+  intros. generalize dependent i.
+  generalize dependent n.
+  induction m...
+  { erewrite inst_eq.
+  2,3: extensionality x; remember (f x);
+      dependent destruction d; simp Dtm_ctx' Dtm_ctx_c'; reflexivity.
+    apply inst_empty. }
+  { erewrite inst_eq.
+    apply inst_cons. apply IHm.
+    clear IHm.
+    simp S.
+  2,3: extensionality x; simp one_hots one_hots_c.
+  2,3: unfold denote_ctx_cons...
+    all: admit. }
+Admitted.
+
 Lemma fundamental_property :
   forall τ n m,
   forall (t : tm (repeat ℝ m) τ),
@@ -782,7 +780,11 @@ Proof with quick.
   intros.
   apply S_subst.
   clear t.
-  induction m...
+  erewrite inst_eq.
+2,3: extensionality x; simp Dtm_ctx Dtm_ctx_c;
+    generalize dependent n; quick; reflexivity.
+  apply inst_correct.
+  (* induction m...
   { erewrite inst_eq.
   2,3: extensionality x; remember (f x);
       dependent destruction d;
@@ -791,34 +793,30 @@ Proof with quick.
     eassert (H: (fun _ : R => HNil) = const HNil)...
     rewrite_c H.
     constructor. }
-  {
-    rewrite (inst_eq n (ℝ :: repeat ℝ m) _ _
+  { rewrite (inst_eq n (ℝ :: repeat ℝ m) _ _
       (fun x =>
         (@denote_ctx_cons (Dctx n (repeat ℝ m)) (Dt n ℝ)
           (* (repeat ℝ m) *)
           ((denote_ctx_hd ∘ f) x, vector_one_hot 0 n)
-          (Dtm_ctx' m n ((denote_ctx_tl ∘ f) x) (one_hots 0 n m))))
+          (Dtm_ctx' m n ((denote_ctx_tl ∘ f) x) (one_hots 1 n m))))
       (fun x =>
         (@denote_ctx_cons (Dctx_c n (repeat ℝ m)) (Dt_c n ℝ)
           ((denote_ctx_hd ∘ f) x, vector_one_hot_c 0 n)
-          (Dtm_ctx_c' m n ((denote_ctx_tl ∘ f) x) (one_hots_c 0 n m))))).
+          (Dtm_ctx_c' m n ((denote_ctx_tl ∘ f) x) (one_hots_c 1 n m))))).
   2,3: extensionality x; unfold compose; remember (f x);
       dependent destruction d...
-  2,3: simp Dtm_ctx Dtm_ctx_c.
-  2,3: simp one_hots one_hots_c.
-  2,3: unfold denote_ctx_cons.
-  2,3: simp Dtm_ctx' Dtm_ctx_c'.
-    unfold denote_ctx_cons; unfold denote_ctx_hd;
-      unfold denote_ctx_tl; unfold compose.
+  all: unfold denote_ctx_cons; unfold denote_ctx_hd;
+      unfold denote_ctx_tl; unfold compose; simpl.
     apply inst_cons.
     specialize IHm with (fun x => htl (f x))...
+    erewrite inst_eq in IHm.
+  2,3: extensionality x; simp Dtm_ctx Dtm_ctx_c; reflexivity.
+
     simp S. split... extensionality x.
-    simp vector_one_hot vector_one_hot_c...
-    induction n...
-    simp vector_one_hot' vector_one_hot_c'.
-    apply Vcons_eq... splits.
-    all: admit. }
-Admitted.
+    { rewrite vector_one_hot_same... }
+    all: unfold denote_ctx_cons.
+    all: admit. *)
+Qed.
 
 Lemma S_correctness_R :
   forall n
