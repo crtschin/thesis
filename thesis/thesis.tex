@@ -25,14 +25,14 @@
 \tableofcontents
 \newpage
 
-\input{introduction}
+% \input{introduction}
 
-\section{Background}
+% \section{Background}
 
-\input{ad.tex}
-\input{denotational.tex}
-\input{coq.tex}
-\input{logical_relation.tex}
+% \input{ad.tex}
+% \input{denotational.tex}
+% \input{coq.tex}
+% \input{logical_relation.tex}
 
 \section{Formalizing Forward-Mode AD}
   The formalization of the forward-mode automatic differentiation macro will be explained in the following sections.
@@ -59,37 +59,37 @@
     \begin{mathpar}
       \inferrule*[Right=\textsc{TVar}]
         {elem\ n\ \Gamma = \tau}
-        {\Gamma \vdash var\ n : \tau} \and
+        {\Gamma \vdash \var{n} : \tau} \and
       \inferrule*[Right=\textsc{TAbs}]
         {(\sigma, \Gamma) \vdash t : \tau}
-        {\Gamma \vdash abs\ t : \sigma \rightarrow \tau} \\ \and
+        {\Gamma \vdash \abs{t} : \sigma \rightarrow \tau} \\ \and
       \inferrule*[Right=\textsc{TApp}]
         {\Gamma \vdash t1 : \sigma \rightarrow \tau \\
           \Gamma \vdash t2 : \sigma}
-        {\Gamma \vdash app\ t1\ t2 : \tau} \\ \and
+        {\Gamma \vdash \app{t1}{t2} : \tau} \\ \and
       \inferrule*[Right=\textsc{TTuple}]
         {\Gamma \vdash t1 : \tau \\
           \Gamma \vdash t2 : \sigma}
-        {\Gamma \vdash tuple\ t1\ t2 : \tau \times \sigma} \\ \and
+        {\Gamma \vdash \tuple{t1}{t2} : \tau \times \sigma} \\ \and
       \inferrule*[Right=\textsc{TFst}]
         {\Gamma \vdash t : \tau \times \sigma}
-        {\Gamma \vdash first\ t : \tau} \and
+        {\Gamma \vdash \first{t} : \tau} \and
       \inferrule*[Right=\textsc{TSnd}]
         {\Gamma \vdash t : \tau \times \sigma}
-        {\Gamma \vdash second\ t : \sigma} \\ \and
-      \inferrule*[Right=\textsc{TRval}]
-        {r \in \<R>}
-        {\Gamma \vdash rval\ r : R} \\ \and
+        {\Gamma \vdash \second{t} : \sigma} \\ \and
+      \inferrule*[Right=\textsc{TRVal}]
+        {r \in \denoteR}
+        {\Gamma \vdash \rval{r} : \<R>} \\ \and
       \inferrule*[Right=\textsc{TAdd}]
-        {\Gamma \vdash r1 : R \\
-          \Gamma \vdash r2 : R \\ }
-        {\Gamma \vdash add\ r1\ r2 : R} \and
+        {\Gamma \vdash r1 : \<R> \\
+          \Gamma \vdash r2 : \<R> \\ }
+        {\Gamma \vdash \add{r1}{r2} : \<R>} \and
       \inferrule*[Right=\textsc{TMull}]
-        {\Gamma \vdash r1 : R \\
-        \Gamma \vdash r2 : R \\ }
-      {\Gamma \vdash mul\ r1\ r2 : R} \and
+        {\Gamma \vdash r1 : \<R> \\
+        \Gamma \vdash r2 : \<R> \\ }
+      {\Gamma \vdash \mul{r1}{r2} : \<R>} \and
     \end{mathpar}
-    \caption{Type-inferrence rules for $\lambdaBase$}
+    \caption{Type-inference rules for the base simply-typed lambda calculus}
     \label{fig:base_infer}
   \end{figure}
 
@@ -755,7 +755,8 @@
 
   \subsection{Adding Sums and Primitive Recursion}
     Now that correctness has been verified for the base simply-typed lambda calculus, the next goal will be to add in both sum and integer types.
-    The inference rules for the language constructs added for sum types are given in figure \ref{}
+    In the interest of testing the flexibility of both the representation and the proofing technique, integer types and primitive recursion were also added.
+    The inference rules for the new language constructs added for sum and number types are given in figure \ref{fig:sum_prim_infer}
 
     \begin{figure}[H]
       $\dots$
@@ -770,12 +771,22 @@
           {\Gamma \vdash \inl{t} : \tau + \sigma} \and
         \inferrule*[Right=\textsc{TInr}]
           {\Gamma \vdash t : \sigma}
-          {\Gamma \vdash \inr{t} : \tau + \sigma}
+          {\Gamma \vdash \inr{t} : \tau + \sigma} \\ \and
+        \inferrule*[Right=\textsc{TNVal}]
+          {n \in \denoteN}
+          {\Gamma \vdash \nval{n} : \<N>} \and
+        \inferrule*[Right=\textsc{TNSucc}]
+          {\Gamma \vdash t : \<N>}
+          {\Gamma \vdash \nsucc{t} : \<N>} \\ \and
+        \inferrule*[Right=\textsc{TPrim}]
+          {\Gamma \vdash f : \tau \rightarrow \tau \\
+            \Gamma \vdash n : \<N> \\
+            \Gamma \vdash t : \tau }
+          {\Gamma \vdash \nrec{f}{n}{t} : \tau}
       \end{mathpar}
-      \caption{Type-inferrence rules for language constructs for sum types}
-      \label{fig:base_infer}
+      \caption{Type-inference rules for language constructs for sum and primitive recursion}
+      \label{fig:sum_prim_infer}
     \end{figure}
-
   \subsection{Arrays}
 \section{Optimization}
   \subsection{Program Transformations}

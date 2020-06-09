@@ -748,28 +748,6 @@ Proof with quick.
   all: apply r.
 Qed.
 
-Lemma inst_correct :
-  forall (i n m: nat) (f: R -> ⟦ repeat ℝ m ⟧ₜₓ),
-    instantiation n (repeat ℝ m)
-      (fun x : R => Dtm_ctx' m n (f x) (one_hots i n m))
-      (fun x : R => Dtm_ctx_c' m n (f x) (one_hots_c i n m)).
-Proof with quick.
-  intros. generalize dependent i.
-  generalize dependent n.
-  induction m...
-  { erewrite inst_eq.
-  2,3: extensionality x; remember (f x);
-      dependent destruction d; simp Dtm_ctx' Dtm_ctx_c'; reflexivity.
-    apply inst_empty. }
-  { erewrite inst_eq.
-    apply inst_cons. apply IHm.
-    clear IHm.
-    simp S.
-  2,3: extensionality x; simp one_hots one_hots_c.
-  2,3: unfold denote_ctx_cons...
-    all: admit. }
-Admitted.
-
 Lemma fundamental_property :
   forall τ n m,
   forall (t : tm (repeat ℝ m) τ),
@@ -783,15 +761,11 @@ Proof with quick.
   erewrite inst_eq.
 2,3: extensionality x; simp Dtm_ctx Dtm_ctx_c;
     generalize dependent n; quick; reflexivity.
-  apply inst_correct.
-  (* induction m...
+  (* apply inst_correct. *)
+  induction m...
   { erewrite inst_eq.
-  2,3: extensionality x; remember (f x);
-      dependent destruction d;
-      simp Dtm_ctx Dtm_ctx_c Dtm_ctx' Dtm_ctx_c';
-      reflexivity.
-    eassert (H: (fun _ : R => HNil) = const HNil)...
-    rewrite_c H.
+  2,3: extensionality x; remember (f x); dependent destruction d;
+      simp Dtm_ctx Dtm_ctx_c Dtm_ctx' Dtm_ctx_c'; reflexivity.
     constructor. }
   { rewrite (inst_eq n (ℝ :: repeat ℝ m) _ _
       (fun x =>
@@ -806,17 +780,12 @@ Proof with quick.
   2,3: extensionality x; unfold compose; remember (f x);
       dependent destruction d...
   all: unfold denote_ctx_cons; unfold denote_ctx_hd;
-      unfold denote_ctx_tl; unfold compose; simpl.
+      unfold denote_ctx_tl; unfold compose...
     apply inst_cons.
+  2:{ simp S. splits. extensionality x. rewrite vector_one_hot_same... }
     specialize IHm with (fun x => htl (f x))...
-    erewrite inst_eq in IHm.
-  2,3: extensionality x; simp Dtm_ctx Dtm_ctx_c; reflexivity.
-
-    simp S. split... extensionality x.
-    { rewrite vector_one_hot_same... }
-    all: unfold denote_ctx_cons.
-    all: admit. *)
-Qed.
+    admit.
+Admitted.
 
 Lemma S_correctness_R :
   forall n

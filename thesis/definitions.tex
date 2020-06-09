@@ -27,6 +27,12 @@
 \newcommand{\case}[3]{case\ #1\ #2\ #3}
 \newcommand{\inl}[1]{inl\ #1}
 \newcommand{\inr}[1]{inr\ #1}
+\newcommand{\nval}[1]{nval\ #1}
+\renewcommand{\nsucc}[1]{nsucc\ #1}
+\newcommand{\nrec}[3]{nrec\ #1\ #2\ #3}
+
+\newcommand{\denoteR}[0]{\mathcal{R}}
+\newcommand{\denoteN}[0]{\mathcal{N}}
 
 % Keywords and shortcuts
 \def\Vakar{V\'{a}k\'{a}r}
@@ -40,12 +46,12 @@
 \def\keyword@style#1{\textbf{#1}}
 \do{Coq}
 \do{Agda}
-\def\keyword@style#1{\mathds{#1}}
-\do{denoteR}
 \def\keyword@style#1{\mathcal{#1}}
 \do{D}
 \def\keyword@style#1{\texttt{#1}}
 \do{R}
+\do{N}
+
 \do{bottom}
 \do{Equations}
 \do{Coquelicot}
@@ -59,6 +65,7 @@
 \do{sb}
 \do{Dsb}
 \do{Reals}
+
 \do{var}
 \do{abs}
 \do{app}
@@ -68,8 +75,15 @@
 \do{rval}
 \do{add}
 \do{mul}
+\do{nval}
+\do{nsucc}
+\do{case}
+\do{inl}
+\do{inr}
+
 \do{Top}
 \do{Pop}
 \do{hd}
 \do{tl}
+
 \endgroup
