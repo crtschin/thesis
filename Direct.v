@@ -471,6 +471,8 @@ Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop 
       differentiable (Datatypes.S n) (fun x =>
         @denote_ctx_cons (repeat ℝ n) ℝ (g x) (f x)).
 
+Check (Derive id 1).
+
 (* The fundamental property of the logical relation given above.
     States that syntactically well-typed terms are
     semantically well-typed (so, in the relation).
