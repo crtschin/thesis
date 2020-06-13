@@ -472,7 +472,7 @@ Inductive differentiable : forall n, (R -> ⟦ repeat Real n ⟧ₜₓ) -> Prop 
         @denote_ctx_cons (repeat ℝ n) ℝ (g x) (f x)).
 
 (* The fundamental property of the logical relation given above.
-    Simply states that syntacticly well-typed terms are
+    States that syntactically well-typed terms are
     semantically well-typed (so, in the relation).
     Note the restriction that the only free variables allowed
     are of type ℝ, the arguments which the function denotation
