@@ -1,0 +1,103 @@
+\subsection{Adding Sums and Primitive Recursion}
+  Now that correctness has been verified for the base simply-typed lambda calculus, the next goal will be to add in both sum and integer types.
+  In the interest of testing the flexibility of both the representation and the proofing technique, integer types and primitive recursion were also added.
+  The inference rules for the new language constructs added for sum and number types are given in figure~\ref{fig:sum_prim_infer}.
+
+  \begin{figure}[H]
+    \begin{mathpar}
+      \inferrule*[Right=\textsc{TCase}]
+        {\Gamma \vdash e : \tau + \sigma \\
+          \Gamma \vdash t1 : \tau \rightarrow \rho \\
+          \Gamma \vdash t2 : \sigma \rightarrow \rho }
+        {\Gamma \vdash \case{e}{t1}{t2} : \rho} \\ \and
+      \inferrule*[Right=\textsc{TInl}]
+        {\Gamma \vdash t : \tau}
+        {\Gamma \vdash \inl{t} : \tau + \sigma} \and
+      \inferrule*[Right=\textsc{TInr}]
+        {\Gamma \vdash t : \sigma}
+        {\Gamma \vdash \inr{t} : \tau + \sigma} \\ \and
+      \inferrule*[Right=\textsc{TNVal}]
+        {n \in \denoteN}
+        {\Gamma \vdash \nval{n} : \<N>} \and
+      \inferrule*[Right=\textsc{TNSucc}]
+        {\Gamma \vdash t : \<N>}
+        {\Gamma \vdash \nsucc{t} : \<N>} \\ \and
+      \inferrule*[Right=\textsc{TPrim}]
+        {\Gamma \vdash f : \tau \rightarrow \tau \\
+          \Gamma \vdash n : \<N> \\
+          \Gamma \vdash t : \tau }
+        {\Gamma \vdash \nrec{f}{n}{t} : \tau}
+    \end{mathpar}
+    \caption{Type-inference rules for language constructs for sum types and primitive recursion}
+    \label{fig:sum_prim_infer}
+  \end{figure}
+
+  \begin{minted}{coq}
+    Inductive tm ~($\Gamma$ : Ctx) : ty $\rightarrow$ Type~ :=
+      ...
+      (* Sums *)
+      | case : ~forall {$\tau$ $\sigma$ $\rho$},
+        tm $\Gamma$ ($\tau$ <+> $\sigma$) $\rightarrow$
+        tm $\Gamma$ ($\tau \Rightarrow \rho$) $\rightarrow$
+        tm $\Gamma$ ($\sigma \Rightarrow \rho$) $\rightarrow$
+        tm $\Gamma$ $\rho$~
+      | inl : ~forall {$\tau$ $\sigma$},
+        tm $\Gamma$ $\tau$ $\rightarrow$ tm $\Gamma$ ($\tau$ <+> $\sigma$)~
+      | inr : ~forall {$\tau$ $\sigma$},
+        tm $\Gamma$ $\sigma$ $\rightarrow$ tm $\Gamma$ ($\tau$ <+> $\sigma$)~
+  \end{minted}
+
+  Binary sum types are included in the language using \<inl> and \<inr> as introducing terms.
+  The \<case> term encodes case-analysis given a function term for each possibility.
+  Primitive recursion is implemented using simple integers, where a endomorphic function is recursively applied a bounded number of times to a start value.
+  For convenience, an additional successor function is added in the form of the \<nsucc> term.
+
+  \begin{minted}{coq}
+    Inductive tm ~($\Gamma$ : Ctx) : ty $\rightarrow$ Type~ :=
+      ...
+      (* Primitive recursion *)
+      | nval : ~forall n, tm \Gamma N~
+      | nsucc : ~tm $\Gamma$ N $\rightarrow$ tm $\Gamma$ N~
+      | nrec : ~forall $\tau$,
+        tm $\Gamma$ ($\tau \Rightarrow \tau$) $\rightarrow$ tm $\Gamma$ N $\rightarrow$ tm $\Gamma$ $\tau$ $\rightarrow$ tm $\Gamma$ $\tau$~
+  \end{minted}
+
+  In terms of denotations, \<case> expressions will follow the same lines as \<app> as they both involve applying a function to an argument.
+  Note that the sum term first needs to be destructed to be able to determine which function branch to apply.
+  Both \<inl> and \<inr> will map to their \<Coq> counterparts.
+  For \<nrec>, the number of applications should be dependent on the input integer.
+
+  \begin{figure}
+    \centering
+    \begin{equation*}
+      \begin{split}
+        \llbracket \tau \text{<+>} \sigma \rrbracket &= \llbracket \tau \rrbracket + \llbracket \sigma \rrbracket \\
+        \llbracket N \rrbracket &= \denoteN \\
+        \\
+        \llbracket \case{e}{t_1}{t_2} \rrbracket &=
+          \left\{
+            \begin{array}{ll}
+              \llbracket t_1 \rrbracket(t)
+                & : \llbracket e \rrbracket = inl(t) \\
+              \llbracket t_2 \rrbracket(t)
+                & : \llbracket e \rrbracket = inr(t) \\
+            \end{array}
+          \right. \\
+        \llbracket \inl{t} \rrbracket &= inl(\llbracket t \rrbracket) \\
+        \llbracket \inr{t} \rrbracket &= inr(\llbracket t \rrbracket) \\
+        \llbracket \nval{n} \rrbracket &= n \\
+        \llbracket \nsucc{t} \rrbracket &= n + 1 \\
+        \llbracket \nrec{f}{i}{t} \rrbracket &= fold(\llbracket f \rrbracket, \llbracket i \rrbracket, \llbracket t \rrbracket) \\
+        fold(f, i, t) &=
+          \left\{
+            \begin{array}{ll}
+              t &: i = 0 \\
+              f(fold(f, i', t))
+                &: i = i' + 1 \\
+            \end{array}
+          \right. \\
+      \end{split}
+    \end{equation*}
+    \caption{Denotations of the sum and integer terms}
+    \label{eqn:denotation_base}
+  \end{figure}

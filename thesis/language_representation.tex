@@ -37,13 +37,13 @@ While this does follow the standard format used in regular mathematics, problems
 \begin{listing}[h]
   \begin{minted}{coq}
   Inductive ty : Type :=
-    | ~unit~ : ~ty~
-    | ~\Rightarrow~ : ~ty \rightarrow ty \rightarrow ty~.
+    | ~unit~ : ty
+    | ~\Rightarrow~ : ty ~\rightarrow~ ty ~\rightarrow~ ty.
 
   Inductive tm : Type :=
-    | var : ~string \rightarrow tm ~
-    | abs : ~string \rightarrow ty \rightarrow tm \rightarrow tm~
-    | app : ~tm \rightarrow tm \rightarrow tm~.
+    | var : string ~\rightarrow~ tm
+    | abs : string ~\rightarrow~ ty ~\rightarrow~ tm ~\rightarrow~ tm
+    | app : tm ~\rightarrow~ tm ~\rightarrow~ tm.
   \end{minted}
   \caption{Simply typed \lambda-calculus using an extrinsic nominal representation.}
   \label{lst:nominal_stlc}

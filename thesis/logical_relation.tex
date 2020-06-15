@@ -12,11 +12,13 @@ In most cases this requires that the relation is correct with respect to applyin
 
 A well-known logical relations proof is the proof of strong normalization of well-typed terms, which states that all terms eventually terminate.
 An example of a logical relation used in such a proof using the intrinsic strongly-typed formulation is given in Snippet~\ref{lst:sn_logical_relation}.
-Noteworthy is the case for function types, which indicates that an application should maintain the strongly normalization property.
-If one were to attempt the proof of strong normalization without using logical relations, they would get stuck in the cases dealing with function types.
-More specifically when reducing an application, the induction hypothesis is not strong enough to prove that substituting the argument into the body of the abstraction also results in a terminating term.
-The proof given in the paper this thesis is based on, is a logical relations proof on the denotation semantics using diffeological spaces as its domains\cite{huot2020correctness}.
-A similar, independent proof of correctness was given by Barthe, et. al.\cite{barthe2020versatility} using a syntactic relation on the operational semantics.
+Noteworthy is the case for function types, where one needs to prove that applying a function preserves the strong normalization property.
+If one were to attempt the proof of strong normalization without using logical relations, the proof would get stuck in the cases dealing with function types.
+More specifically when applying a function term to an argument term which terminates, the induction hypothesis is not strong enough to prove that substituting the argument into the body of the abstraction results in a terminating term.
+
+% TODO: Remove/Move this
+% The proof given in the paper this thesis is based on, is a logical relations proof on the denotational semantics using diffeological spaces as its domains\cite{huot2020correctness}.
+% A similar, independent proof of correctness was given by Barthe, et. al.\cite{barthe2020versatility} using a syntactic relation on the operational semantics.
 
 \begin{listing}
   \begin{minted}{coq}
@@ -25,6 +27,6 @@ A similar, independent proof of correctness was given by Barthe, et. al.\cite{ba
     SN ~(\tau \Rightarrow \sigma)~ t := halts t ~$\wedge$~
       ~(\forall (s : tm \Gamma \tau), SN \tau s \rightarrow SN \sigma (app \Gamma \sigma \tau t s))~;
   \end{minted}
-  \caption{Example of a logical predicate used in a strong normalizations proof in the intrinsic strongly-typed formulation}
+  \caption{Example of a logical predicate used in a strong normalizations proof in the intrinsic strongly-typed representation}
   \label{lst:sn_logical_relation}
 \end{listing}

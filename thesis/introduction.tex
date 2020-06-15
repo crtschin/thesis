@@ -9,14 +9,14 @@ Frameworks such as Tangent\fancyfootnote{https://github.com/google/tangent} or a
 Programming language research has a rich history with many well-known both high- and low-level optimization techniques such as partial evaluation and deforestation.
 If instead of a framework, we were to have a programming language that is able to facilitate automatic differentiation, we would be able to apply many of these techniques. Through the use of higher-order functions and type systems, we would also get additional benefits such as code-reusability and correctness.
 
-In this thesis, we will aim to formalize an extendable correctness proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
+In this thesis, we will aim to formalize an extendable correctness proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \Coq proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
 Our formalization is based on a recent proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}.
 They proved, using a denotational model of diffeological spaces, that their forward mode emulating macro is correct when applied to a simply-typed lambda calculus with products, co-products and inductive types.
 
 
 With this thesis we will aim for the following goals:
 \begin{itemize}
-  \item Formalize the proofs of both the forward mode and continuation-based automatic differentiation algorithms specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
+  \item Formalize the proofs of both the forward mode and continuation-based automatic differentiation algorithms specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \Coq.
   \item Prove that well-known compile-time optimizations such as the partial evaluation, are correct with respect to the semantics of automatic differentiation.
   \item Extend the proof with the array types and compile-time optimization rules by Shaikhha, et. al.\cite{Shaikha2019}.
 \end{itemize}
