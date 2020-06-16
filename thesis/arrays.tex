@@ -29,8 +29,6 @@
     \begin{equation*}
       \begin{split}
         \D(\Array{n}{R}) &= \Array{n}{\D(R)} \\
-      \end{split}
-      \begin{split}
         \D(\build{n}{f}) &= \build{n}{(\D \circ f)} \\
         \D(\get{i}{t}) &= \get{i}{\D(t)}
       \end{split}
@@ -89,6 +87,7 @@
   \label{eqn:lr_array}
   \end{equation}
 
+  As was the case for sum types, only the proof of the substitution lemma needs to be extended.
   The proof for the array terms proceeds as follows.
   For \<build>, we first do induction on $n$, the length of the array.
   The base case is trivial, as $\Fin{0}$ contains $0$ inhabitants.

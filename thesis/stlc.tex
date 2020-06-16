@@ -5,13 +5,13 @@
   % talk about denotations and
   As mentioned in background section~\ref{sec:language_repr}, we will make use of De-Bruijn indices in a intrinsic representation to formulate our language.
   Both addition and multiplication are included as operations on the real numbers.
-  Our base language consists of the simply-typed lambda calculus with product types and real numbers.
+  Our base language consists of the classic simply-typed lambda calculus with product types and real numbers.
 
-  Both the language constructs and the typing rules for this language are standard for a simply typed lambda calculus, as shown in \ref{fig:base_infer}.
-  As expected we include variables, applications and abstractions in the language using respectively the \<var>, \<app> and \<abs> constructors.
+  Both the language constructs and the typing rules for this language are common for a simply typed lambda calculus, as shown in figure~\ref{fig:base_infer}.
+  As expected, we include variables, applications and abstractions in the language using the \<var>, \<app> and \<abs> constructors.
   Product types are added to the language in the form of binary projections.
   The \<first> and \<second> constructors represent respectively the left and right projections of \<tuple> terms.
-  For real numbers, \<rval> is used to introduce real numbered constants and \<add> and \<mul> will be used to respectively encode addition and multiplication.
+  For real numbers, \<rval> is used to introduce real numbered constants and \<add> and \<mul> will be used to encode addition and multiplication.
 
   \begin{figure}
     \begin{mathpar}
@@ -55,10 +55,10 @@
   These can be translated into Coq definitions in a reasonably straightforward manner, with each case keeping track of both how the typing context and types change.
   In the \<var> case we need some way to determine what type the variable is referencing.
   Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied with a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in \ref{lst:strong_stlc}.
-  The cases for \<app> and \<abs> are as expected, where variables in the body of abstraction are able to reference their respective arguments.
+  The cases for \<app> and \<abs> are as expected, where variables in the body of abstractions are able to reference their respective arguments.
 
-  Notably, in the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they make use of n-ary products accompanied with pattern matching expressions.
-  We opted to implement binary projection products, as they are conceptually simpler while still retaining much of the same functionality expected of product types.
+  Note that in the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they made use of n-ary products accompanied with pattern matching expressions.
+  We opted to implement binary projection products, as these are conceptually simpler while still retaining much of the same functionality expected of product types.
 
   \begin{minted}{coq}
     Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
@@ -108,12 +108,15 @@
   %   \label{lst:stlc_base}
   % \end{listing}
 
+  % TODO: Find better origins of this macro
   We use the same inductively defined macro on types and terms used by many previous authors to implement the forward-mode automatic differentiation macro\cite{huot2020correctness}\cite{barthe2020versatility}\cite{Shaikha2019}.
   The forward-mode macro, $\D$, keeps track of both primal and tangent traces using tuples as respectively its first and second elements.
   In most cases, the macro simply preserves the structure of the language.
   The cases for real numbers such as addition and multiplication are the exception.
   Here, the element encoding the tangent trace needs to contain the proper syntactic translation of the derivative of the operation.
-  Due to the intrinsic nature of our language representation in the proof, the macro also needs to be applied to both the types and typing context to ensure that the terms stay well-typed.
+
+  Due to the intrinsic nature of our language representation, the macro also needs to be applied to both the types and typing context to ensure that the terms remain well-typed.
+  In other words, for any well-typed term $\Gamma \vdash t : \tau$, applying the forward-mode macro results in a well-typed term in the macro context, $\D(\Gamma) \vdash \D(t) : \D(\tau)$.
 
   \begin{figure}[H]
     \centering
@@ -134,8 +137,8 @@
     \label{eqn:macro_base}
   \end{figure}
 
-  Applying the macro, to subterms give the syntactic counterparts of both their primal and tangent denotations as a tuple.
-  Accessing these with projections, we can implement the specific derivative implementations of the operations on real terms.
+  Applying the macro to a term gives the syntactic counterparts of both their primal and tangent denotations as a tuple.
+  These terms can be accessed with projections to implement the various derivative implementations of the operations on real terms included in the language.
   Note that applying the macro to the case for variables does nothing as the macro is also applied to the typing context, so variables implicitly already reference macro-applied terms.
 
   Due to restricting our language to total constructions and excluding concepts such as general recursion and iteration, it suffices to give our language a set-theoretic denotational semantics.
@@ -148,7 +151,7 @@
       \begin{split}
         \llbracket \<R> \rrbracket &= \<denoteR> \\
         \llbracket \tau \times \sigma \rrbracket &=
-          \llbracket \tau \rrbracket * \llbracket \sigma \rrbracket \\
+          \llbracket \tau \rrbracket \star \llbracket \sigma \rrbracket \\
         \llbracket \tau \rightarrow \sigma \rrbracket &= \llbracket \tau \rrbracket \rightarrow \llbracket \sigma \rrbracket \\
         \\
         \llbracket \<Top> \rrbracket &= \<hd> \\
@@ -179,14 +182,15 @@
   \end{figure}
 
   Denotating the terms in our language now corresponds to finding the appropriate inhabitants in the denotated types.
-  We denotate our typing contexts $\Gamma$, lists of types, as heterogeneous lists containing their corresponding denotations.
-  The specific implementation of heterogeneous lists used, correspond to the one given by Adam Chlipala\cite{ChlipalaCPDT}.
-  In this implementation, heterogeneous lists consist of an underlying list of some type $A$ and an accompanying function $A \rightarrow Set$.
-  In our case these are respectively the typing context and the denotation function.
+  As typing contexts, $\Gamma$, are represented by lists of types.
+  The appropriate way to denotate these would be to map the denotation function over the list.
+  The resulting heterogeneous list contains the denotations of each type in the list in the correct order.
+  The specific implementation of heterogeneous lists used in the proof, corresponds to the one given by Adam Chlipala\cite{ChlipalaCPDT}.
+  In this implementation, heterogeneous lists consist of an underlying list of some type $A$ and an accompanying function $A \rightarrow Set$, which in our use case are, respectively, the typing context and the denotation function.
 
   When giving the constructs in our language their proper denotations, most of the cases are straightforward.
   Notable is the case for variables, where we made use of the inductively defined type evidence to type our terms.
-  As denotations, these evidences wil correspond to lookups into our heterogeneous lists to their appropriate types.
+  As denotations, these evidences correspond to lookups into our heterogeneous lists to their appropriate types.
 
   \begin{minted}{coq}
     Equations denote_v ~$\Gamma$~ ~$\tau$~ (v: ~$\tau \in \Gamma$~) : ~$\llbracket \Gamma \rrbracket \rightarrow \llbracket \tau \rrbracket$~ :=
@@ -234,17 +238,19 @@
 
   As we work with denotations, smooth functions $f : \<R>^n -> \<R>$ can be interpreted as the denotations of a corresponding syntactic term $x_1, \dots, x_n \vdash t : R$.
   Intuitively, the free variables in the term $t$ denote the usages of the parameters of the function and as such are restricted to terms of type $R$, same as each of the arguments in the function $f$.
-  Note that while both the arguments and result type of $t$ are restricted to $R$, $t$ itself can consist of higher order types.
 
   Although Barthe, et. al.\cite{barthe2020versatility} gave a syntactic proof of correctness of the macro, our proof follows the more denotational style of proof given by Huot, Staton and \Vakar{}\cite{huot2020correctness}.
+  Likewise, our proof of correctness will follow a similar logical relations argument.
   Correctness of the forward-mode macro consists of the assertion that the denotation of any macro-applied term of type $x_1 : R, \dots, x_n : R \vdash t : \<R>$ will result in a pair of both the denotation of the original term and the derivative of that denotation.
+  Note that while both the arguments and result type of $t$ are restricted to $\<R>$, $t$ itself can consist of higher order types.
+  This hints at the need for a more generalized statement.
 
-  Likewise, the proof of correctness will follow a logical relations argument, first generalizing the statement for both the typing contexts and the result type.
-  The relation will ensure that both the smoothness property and the derivatives are preserved over higher-order types.
+  The logical relation will ensure that both the smoothness property and the derivatives are preserved over higher-order types.
   We define the logical relation as a type-indexed relation between denotations of both terms and their macro-applied variants, so for any type $\tau$, $S_\tau$ is the relation between functions $R \rightarrow \llbracket \tau \rrbracket$ and $R \rightarrow \llbracket \D(\tau) \rrbracket$.
+
   When $\tau = \<R>$, the denotation of the macro-applied term should give both the original denotation and its derivative.
   With function types, as long as the relation is valid for the argument, applying these argument functions to the tracked denotations should preserve the relation.
-  Some care has to be taken with in the case for products.
+  Some care has to be taken in the case for products.
   Notably, the denotations of the subterms, $R \rightarrow \llbracket \tau \rrbracket$ and $R \rightarrow \llbracket \sigma \rrbracket$, should be existentially quantified as these are dependent on the original denotation $R \rightarrow \llbracket \tau \times \sigma \rrbracket$.
 
   \begin{equation}
@@ -321,7 +327,7 @@
     \end{equation}
   \end{definition}
 
-  Using this notion of substitution instantiations we can now formulate our substitution lemma.
+  Using this notion of instantiations we can now formulate our substitution lemma.
 
   \begin{lemma}[Substitution]\label{thm:substitution_lemma}
     For any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s_D)$, then $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.

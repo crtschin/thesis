@@ -17,29 +17,29 @@
 \input{titlepage.tex}
 \newpage
 
-\input{abstract.tex}
-\newpage
+% \input{abstract.tex}
+% \newpage
 
 \pagenumbering{arabic}
 \setcounter{page}{3}
 \tableofcontents
 \newpage
 
-\input{introduction.tex}
+% \input{introduction.tex}
 
-\section{Background}
+% \section{Background}
 
-\input{ad.tex}
-\input{denotational.tex}
-\input{coq.tex}
-\input{logical_relation.tex}
-\input{related_work.tex}
+% \input{ad.tex}
+% \input{denotational.tex}
+% \input{coq.tex}
+% \input{logical_relation.tex}
+% \input{related_work.tex}
 
 \section{Formalizing Forward-Mode AD}
   The formalization of the forward-mode automatic differentiation macro will be explained in the following sections.
   The formal proof will start from a base simply-typed lambda calculus enriched with product types and incrementally add both sum and array types.
   Also included in the final language is an implementation of primitive recursion using integer types.
-  Many of the theorems and lemmas will stay consistent between sections as the overarching correctness statement does not change.
+  Many of the theorems and lemmas introduced in section~\ref{sec:formal_stlc} do not change, as they are independent of the types and terms in the language.
 
   \input{stlc.tex}
   \input{sums_prim.tex}
