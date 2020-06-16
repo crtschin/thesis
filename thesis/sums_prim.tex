@@ -3,7 +3,7 @@
   In the interest of testing the flexibility of both the representation and the proofing technique, integer types and primitive recursion were also added.
   The inference rules for the new language constructs added for sum and number types are given in figure~\ref{fig:sum_prim_infer}.
 
-  \begin{figure}[H]
+  \begin{figure}
     \begin{mathpar}
       \inferrule*[Right=\textsc{TCase}]
         {\Gamma \vdash e : \tau + \sigma \\
@@ -74,20 +74,20 @@
         \llbracket \tau \text{<+>} \sigma \rrbracket &= \llbracket \tau \rrbracket + \llbracket \sigma \rrbracket \\
         \llbracket N \rrbracket &= \denoteN \\
         \\
-        \llbracket \case{e}{t_1}{t_2} \rrbracket &=
+        \llbracket \case{e}{t_1}{t_2} \rrbracket &= \lambda x.
           \left\{
             \begin{array}{ll}
-              \llbracket t_1 \rrbracket(t)
-                & : \llbracket e \rrbracket = inl(t) \\
-              \llbracket t_2 \rrbracket(t)
-                & : \llbracket e \rrbracket = inr(t) \\
+              (\llbracket t_1 \rrbracket(x))(t)
+                & : \llbracket e \rrbracket(x) = inl(t) \\
+              (\llbracket t_2 \rrbracket(x))(t)
+                & : \llbracket e \rrbracket(x) = inr(t) \\
             \end{array}
           \right. \\
-        \llbracket \inl{t} \rrbracket &= inl(\llbracket t \rrbracket) \\
-        \llbracket \inr{t} \rrbracket &= inr(\llbracket t \rrbracket) \\
+        \llbracket \inl{t} \rrbracket &= \lambda x. inl(\llbracket t \rrbracket(x)) \\
+        \llbracket \inr{t} \rrbracket &= \lambda x. inr(\llbracket t \rrbracket(x)) \\
         \llbracket \nval{n} \rrbracket &= n \\
-        \llbracket \nsucc{t} \rrbracket &= n + 1 \\
-        \llbracket \nrec{f}{i}{t} \rrbracket &= fold(\llbracket f \rrbracket, \llbracket i \rrbracket, \llbracket t \rrbracket) \\
+        \llbracket \nsucc{t} \rrbracket &= \lambda x. \llbracket t \rrbracket(x) + 1 \\
+        \llbracket \nrec{f}{i}{t} \rrbracket &= \lambda x. fold(\llbracket f \rrbracket(x), \llbracket i \rrbracket(x), \llbracket t \rrbracket(x)) \\
         fold(f, i, t) &=
           \left\{
             \begin{array}{ll}
@@ -99,5 +99,57 @@
       \end{split}
     \end{equation*}
     \caption{Denotations of the sum and integer terms}
-    \label{eqn:denotation_base}
+    \label{eqn:denotation_sums_prim}
   \end{figure}
+
+  Both sums and integer terms are structure preserving with respect to the forward-mode macro.
+  Note that we only take the derivative of values of type \<R>, so when integers are encountered.
+  More specifically, we do not keep track of derivatives at integer types as the tangent space is $0$-dimensional.
+
+  \begin{figure}
+    \centering
+    \begin{equation*}
+      \begin{split}
+        \D(\<N>) &= \<N> \\
+        \D(\tau \text{<+>} \sigma) &= \D(\tau) \text{<+>} \D(\sigma) \\
+        \D(\inl{t}) &= \inl{\D(t)} \\
+        \D(\inr{t}) &= \inr{\D(t)} \\
+        \D(\case{e}{t_1}{t_2}) &= \case{\D(e)}{\D(t_1)}{\D(t_2)} \\
+        \D(\nval{n}) &= \nval{n} \\
+        \D(\nsucc{n}{m}) &= \nsucc{\D(n)}{\D(m)} \\
+        \D(\nrec{f}{i}{t}) &= \nrec{\D(f)}{\D(i)}{\D(t)}
+      \end{split}
+    \end{equation*}
+    \caption{Macro on the sum and integer terms}
+    \label{eqn:macro_sums_prim}
+  \end{figure}
+
+  For a similar reason, the logical relation at integer types only needs establish that denotations of integer terms are constant.
+  For sum terms, the functions tracked are either the left or right tag of the sum.
+  This is neatly defined using a logical disjunction.
+
+  \begin{equation}
+    S_\tau(f, g) =
+      \left\{
+        \begin{array}{ll}
+          f = g \wedge
+            \exists n. f = const(n)
+            & : \tau = \<N> \\
+          (\exists f_1, f_2,
+            & : \tau = \sigma \text{<+>} \rho \\
+            \;\;\;\;S_\sigma(f_1, f_2) \wedge \\
+            \;\;\;\;f = inl \circ f_1 \wedge \\
+            \;\;\;\;g = inl \circ g_1) \vee \\
+          (\exists f_1, f_2,\\
+            \;\;\;\;S_\rho(f_1, f_2) \wedge \\
+            \;\;\;\;f = inr \circ f_1 \wedge \\
+            \;\;\;\;g = inr \circ g_1) \\
+        \end{array}
+      \right.
+  \label{eqn:lr_sums_prim}
+  \end{equation}
+
+  The only lemma or theorem that requires extension to deal with these new terms is the substitution lemma, as the validity of every other statement is independent of the additional types added to our language.
+  With terms of integer type, the proof for the substitution lemma is trivial using the definition of our denotation functions.
+  The \<nrec> case for primitive recursion is only slightly more difficult as case-analysis on the denotation of the iteration term is required, where the $0$ and $n+1$ case are proven using the induction hypotheses derived from respectively the initial and function terms.
+  As expected with the \<case> term for sums, the denotation of the term under scrutiny needs to be destructed to properly apply the two disjunct induction hypotheses to their respective cases.

@@ -21,6 +21,8 @@
 \newcommand{\first}[1]{first\ #1}
 \newcommand{\second}[1]{second\ #1}
 \newcommand{\add}[2]{add\ #1\ #2}
+\newcommand{\build}[2]{build\ #1\ #1}
+\newcommand{\get}[2]{get\ #1\ #2}
 \newcommand{\mul}[2]{mul\ #1\ #2}
 \newcommand{\app}[2]{app\ #1\ #2}
 \newcommand{\tuple}[2]{tuple\ #1\ #2}
@@ -30,6 +32,10 @@
 \newcommand{\nval}[1]{nval\ #1}
 \renewcommand{\nsucc}[1]{nsucc\ #1}
 \newcommand{\nrec}[3]{nrec\ #1\ #2\ #3}
+
+\newcommand{\tm}[2]{tm\ #1\ #2}
+\newcommand{\Fin}[1]{Fin\ #1}
+\newcommand{\Array}[2]{Array\ #1\ #2}
 
 \newcommand{\denoteR}[0]{\mathcal{R}}
 \newcommand{\denoteN}[0]{\mathcal{N}}
@@ -63,8 +69,7 @@
 \do{return}
 \do{simpl}
 \do{Either}
-\do{sb}
-\do{Dsb}
+\do{Fin}
 \do{Reals}
 \do{var}
 \do{abs}
@@ -81,6 +86,8 @@
 \do{case}
 \do{inl}
 \do{inr}
+\do{build}
+\do{get}
 \do{Top}
 \do{Pop}
 \do{hd}

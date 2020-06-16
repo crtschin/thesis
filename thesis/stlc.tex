@@ -5,7 +5,7 @@
   % talk about denotations and
   As mentioned in background section~\ref{sec:language_repr}, we will make use of De-Bruijn indices in a intrinsic representation to formulate our language.
   Both addition and multiplication are included as operations on the real numbers.
-  Our base language consists of the simply-typed lambda calculus with product types and real numbers, hereby referenced as $\Lambda_{\delta}^{\times, \rightarrow, R}$, where $\delta$ consists of the addition and multiplication operators.
+  Our base language consists of the simply-typed lambda calculus with product types and real numbers.
 
   Both the language constructs and the typing rules for this language are standard for a simply typed lambda calculus, as shown in \ref{fig:base_infer}.
   As expected we include variables, applications and abstractions in the language using respectively the \<var>, \<app> and \<abs> constructors.
@@ -343,7 +343,7 @@
   \end{lemma}
 
   This is proven using the substitution lemma.
-  The remaining goal of $inst_{R^n}$ is proven by induction on $n$, the number of arguments.
+  The remaining goal of $inst_{R^n}$ is proven by induction on the number of arguments, $n$.
   With the case where $n = 0$, the goal is trivial due to the argument function $f$ being extensionally equal to $const\ []$, which directly corresponds to $inst_{[]}$.
   Similarly the induction step is proven by both the induction hypothesis and the assumption that the denotations of the arguments supplied are smooth.
 

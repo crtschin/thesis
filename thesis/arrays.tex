@@ -1,0 +1,96 @@
+\subsection{Arrays}
+  Rarely is automatic differentiation done on mono-valued real numbers, due to the massive computational power available in GPUs in the form of array operations.
+  So the next extension worth considering in our language are the array types.
+  To be more specific we will be considering the array types and terms presented by Shaikhha, et. al.\cite{Shaikha2019}.
+  The well-typed nature of our presentation allows us to avoid much of the hairy details associated with bounds checking both indexing and array creation constructions.
+  This is possible using the finite datatype, \<Fin>, which is indexed by the upper-bound and represents for some $n$, the range of $[1..n]$.
+
+  \begin{figure}
+    \begin{mathpar}
+      \inferrule*[Right=\textsc{TBuild}]
+        {\Gamma \vdash f : \Fin{n} \rightarrow tm \Gamma \tau }
+        {\Gamma \vdash \build{n}{f} : \Array{n}{\tau}} \\ \and
+      \inferrule*[Right=\textsc{TGet}]
+        {\Gamma \vdash t : \Array{n}{\tau} \\
+          \Gamma \vdash i : \Fin{n}}
+        {\Gamma \vdash \get{i}{t} : \tau}
+    \end{mathpar}
+    \caption{Type-inference rules for array construction and indexing}
+    \label{fig:array_infer}
+  \end{figure}
+
+  Both the macro and denotation functions deviate slightly from how the previous terms were defined.
+  % While it sufficed to recurse down the datatype and apply the appropriate functions at each level previously, this is not possible as with the \<build> term as it contains a function.
+  When looking at the macro, while it previously sufficed to recursively call the macro on subterms, this is not possible as the subterm of interest is now a function.
+  This can be solved by substituting the function by a composition of itself combined with the forward-mode macro, essentially applying the macro to every possible result of the function.
+
+  \begin{figure}
+    \centering
+    \begin{equation*}
+      \begin{split}
+        \D(\Array{n}{R}) &= \Array{n}{\D(R)} \\
+      \end{split}
+      \begin{split}
+        \D(\build{n}{f}) &= \build{n}{(\D \circ f)} \\
+        \D(\get{i}{t}) &= \get{i}{\D(t)}
+      \end{split}
+    \end{equation*}
+    \caption{Macro on array construction and indexing terms}
+    \label{eqn:macro_array}
+  \end{figure}
+
+  Similarly for denotations, the denotation function, instantiated to the correct type, has to be passed along to an auxiliary function that builds up a vector of denotation terms.
+  Appropriately, array types will denotate to vectors indexed by length.
+  There is some additional boilerplate necessary to circumvent the structurally recursive requirement imposed by the \<Coq> type checker.
+  Note that in the $S$ case of $vectorize$, the $Fin$ and $nat$ types are treated interchangeably, where $\Fin{n}$ is interpreted as $n$.
+  The recursive call to $vectorize$ also transforms the function by incrementing the bounded integer given as its argument.
+
+  \begin{figure}
+    \centering
+    \begin{gather}
+      \begin{align*}
+      \llbracket \Array{n}{\tau} \rrbracket &=
+        vector(n, \llbracket \tau \rrbracket) \\
+      \llbracket \build{n}{f} \rrbracket &=
+        \lambda x.
+        vect(n, \llbracket \rrbracket \circ f, x) \\
+      \llbracket \get{i}{t} \rrbracket &=
+        \lambda x. \llbracket t \rrbracket(x) ! i \\
+      \end{align*} \\
+      \begin{align*}
+      vect(i, f, x) &=
+        \begin{cases}
+          []
+            &: i = 0 \\
+          f(i, x) :: vect(i', \lambda j. f(j + 1), x)
+            &: i = S(i')
+        \end{cases}
+      \end{align*}
+    \end{gather}
+    \caption{Denotations of the array construction and indexing terms}
+    \label{eqn:denotation_array}
+  \end{figure}
+
+  The logical relation for array types needs to exhibit the same behavior with respect to both construction and indexing in how it preserves the relation on subterms.
+  This is accomplished by first and foremost, quantifying over the indices possible for the vector denotation.
+  Next, each subdenotation needs to both preserve the relation and be extensionally equal to the appropriate projection of the term.
+
+  \begin{equation}
+    S_\tau(f, g) =
+      \left\{
+        \begin{array}{ll}
+          \forall i. \exists f_1, g_1.
+            & : \tau = \Array{n}{\sigma} \\
+          \;\;S_\sigma(f_1, g_1) \wedge \\
+          \;\;\;\;f_1 = \lambda x. f(x)!i \wedge \\
+          \;\;\;\;f_1 = \lambda x. g(x)!i \\
+        \end{array}
+      \right.
+  \label{eqn:lr_array}
+  \end{equation}
+
+  The proof for the array terms proceeds as follows.
+  For \<build>, we first do induction on $n$, the length of the array.
+  The base case is trivial, as $\Fin{0}$ contains $0$ inhabitants.
+  For the induction step, we first do case-analysis on the indices, $i$, where the $(+1)$ case follows from the induction hypothesis.
+  For $i=1$ it suffices to give the proper inhabitants using the induction hypothesis derived from the function used for construction.
