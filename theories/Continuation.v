@@ -492,7 +492,8 @@ Lemma denote_array_eq_mul_correct :
          ((f1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))))%R)
       (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 d0).
 Proof with quick.
-  induction n...
+  intros...
+  dependent induction n...
   { apply Vcons_eq.
     unfold shave_fin...
     rewrite (IHn m Γ x1 x2 f1 f2
@@ -514,33 +515,12 @@ Proof with quick.
     2:{ apply Vcons_eq; split.
         rewrite <- H0. rewrite <- H2.
         all: reflexivity. }
-    all: rewrites.
+      rewrites.
+      induction n...
+    all: repeat rewrite Rmult_1_r.
     all: admit. }
-    { admit. } }
+    { unfold denote_ctx_cons... } }
 Admitted.
-(*
-denote_array n
-  (fun (i : Fin.t n) (ctx : ⟦ map (Dt n) Γ ⟧ₜₓ) =>
-   (vector_nth i
-      (denote_array n
-         (fun (x : Fin.t n) (ctx' : ⟦ map (Dt n) Γ ⟧ₜₓ) =>
-          fst (⟦ Dtm n t2 ⟧ₜₘ ctx') *
-          vector_nth x (snd (⟦ Dtm n t1 ⟧ₜₘ ctx'))) ctx) +
-    vector_nth i
-      (denote_array n
-         (fun (x : Fin.t n) (ctx' : ⟦ map (Dt n) Γ ⟧ₜₓ) =>
-          fst (⟦ Dtm n t1 ⟧ₜₘ ctx') *
-          vector_nth x (snd (⟦ Dtm n t2 ⟧ₜₘ ctx'))) ctx))%R) d =
-denote_array n
-  (fun (i : Fin.t n) (ctx : ⟦ ℝ :: map (Dt_c n) Γ ⟧ₜₓ) =>
-   (vector_nth i
-      (snd (⟦ Dtm_c n t1 ⟧ₜₘ (htl ctx))
-         (fst (⟦ Dtm_c n t2 ⟧ₜₘ (htl ctx)) * denote_ctx_hd ctx)) +
-    vector_nth i
-      (snd (⟦ Dtm_c n t2 ⟧ₜₘ (htl ctx))
-         (fst (⟦ Dtm_c n t1 ⟧ₜₘ (htl ctx)) * denote_ctx_hd ctx)))%R)
-  (1 ::: d0)
-      *)
 
 Lemma S_subst :
   forall Γ τ n,
@@ -650,12 +630,12 @@ Proof with quick.
       eapply equal_f in IHeq1'; eapply equal_f in IHeq2';
       simp denote_tm...
     { rewrites. }
-    { remember (sb r); remember (sb_c r).
+    { unfold vector_add, vector_map2...
+      simp denote_tm; unfold compose...
+      remember (sb r); remember (sb_c r).
       rewrite <- Heqd in IHeq1', IHeq2', IHeq1, IHeq2.
       rewrite <- Heqd0 in IHeq1', IHeq2', IHeq1, IHeq2.
       clear sb sb_c H Heqd Heqd0 r.
-      unfold vector_add, vector_map2...
-      simp denote_tm; unfold compose...
       erewrite denote_array_eq...
       erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
   2:{ extensionality i. extensionality ctx.
@@ -748,6 +728,55 @@ Proof with quick.
   all: apply r.
 Qed.
 
+(* Prove that the massaged variants of arguments are valid w.r.t.
+    the instantiation relation.
+*)
+Lemma inst_Dtm_ctx : forall m n (f : R -> ⟦repeat ℝ m⟧ₜₓ) i,
+  instantiation n (repeat ℝ m)
+    (fun x => Dtm_ctx' m n (f x) (one_hots i n m))
+    (fun x => Dtm_ctx_c' m n (f x) (one_hots_c i n m)).
+Proof with quick.
+  intros m.
+
+  (* We prove this by induction on the number of arguments *)
+  induction m...
+  { (* Base case:
+        trivial as supplying zero arguments directly corresponds
+        to the empty case of instantiation.
+    *)
+    erewrite inst_eq.
+    apply inst_empty.
+  all: extensionality x... }
+  { (* Induction step:
+      Need to find the correct form which corresponds to the
+      cons case of instantiation
+    *)
+
+    (* Found using trial and error. *)
+    rewrite (inst_eq n (ℝ :: repeat ℝ m) _ _
+      (fun x => (@denote_ctx_cons (Dctx n (repeat ℝ m)) (Dt n ℝ)
+        ((denote_ctx_hd ∘ f) x, vector_one_hot i n)
+        (Dtm_ctx' m n ((denote_ctx_tl ∘ f) x) (one_hots (Datatypes.S i) n m))))
+      (fun x => (@denote_ctx_cons (Dctx_c n (repeat ℝ m)) (Dt_c n ℝ)
+        ((denote_ctx_hd ∘ f) x, vector_one_hot_c i n)
+        (Dtm_ctx_c' m n ((denote_ctx_tl ∘ f) x) (one_hots_c (Datatypes.S i) n m))))).
+    { (* Prove the above is indeed valid w.r.t. instantiation *)
+      erewrite inst_eq.
+      apply inst_cons...
+    2,3: extensionality x; unfold denote_ctx_cons; reflexivity.
+      unfold compose, denote_ctx_hd...
+      simp S; splits; extensionality x; simpl.
+      (* Finally we have to prove equivalence between the continuation
+        and format input vectors
+      *)
+      apply vector_one_hot_same. }
+    (* Prove that we can rewrite the goal we had to the form we proved
+      above. Done using simple rewriting.
+    *)
+  all: extensionality x; unfold denote_ctx_cons, denote_ctx_hd, compose;
+      remember (f x); dependent destruction d... }
+Qed.
+
 (* Prove syntactically well-typed terms are
     semantically well-typed (valid w.r.t the logical relation).
 *)
@@ -768,6 +797,10 @@ Proof with quick.
         we still need to prove the argument function valid) *)
   clear t.
 
+  erewrite inst_eq;
+    try (extensionality x; simp Dtm_ctx Dtm_ctx_c;
+    reflexivity).
+
   (* Remaining goal:
       Prove every term being supplied is valid w.r.t.
         the instantiation relation.
@@ -780,66 +813,9 @@ Proof with quick.
       are valid w.r.t to the logical relation.
   *)
 
-  (* Induction on the number of open variables
-      (number of arguments the denotated function takes,
-        also the number of rows in the argument matrix)
-  *)
-  induction m...
-
-  { (* 0-case: trivial,
-        because supplying no arguments directly
-        corresponds to empty case in the instantiation relation.
-    *)
-    erewrite inst_eq.
-    (* Rewrite the functions in the correct format *)
-  2,3: extensionality x; remember (f x); dependent destruction d;
-      simp Dtm_ctx Dtm_ctx_c Dtm_ctx' Dtm_ctx_c'; reflexivity.
-    (* empty case of the relation *)
-    constructor. }
-
-  { (* Induction-step:
-        First give the format we want the instantiation goal to have
-        (to fit the cons case of the relation)
-    *)
-    rewrite (inst_eq n (ℝ :: repeat ℝ m) _ _
-      (fun x =>
-        (@denote_ctx_cons (Dctx n (repeat ℝ m)) (Dt n ℝ)
-          ((denote_ctx_hd ∘ f) x, vector_one_hot 0 n)
-          (Dtm_ctx' m n ((denote_ctx_tl ∘ f) x) (one_hots 1 n m))))
-      (fun x =>
-        (@denote_ctx_cons (Dctx_c n (repeat ℝ m)) (Dt_c n ℝ)
-          ((denote_ctx_hd ∘ f) x, vector_one_hot_c 0 n)
-          (Dtm_ctx_c' m n ((denote_ctx_tl ∘ f) x) (one_hots_c 1 n m))))).
-
-    (* Prove what we just wrote is valid *)
-  2,3: extensionality x; unfold compose; remember (f x);
-      dependent destruction d...
-
-    (* Unfold helper definitions *)
-    unfold denote_ctx_cons; unfold denote_ctx_hd;
-      unfold denote_ctx_tl; unfold compose...
-
-    (* Apply cons case of instantiation relation *)
-    apply inst_cons.
-
-    (* Prove the element being cons'd respects the logical relation *)
-  2:{ (* True by simply unfolding the relation at type ℝ
-          and simple rewriting.
-      *)
-      simp S.
-      splits. extensionality x.
-      rewrite vector_one_hot_same... }
-
-    (* Weird *)
-    specialize IHm with (fun x => htl (f x))...
-  all: unfold denote_ctx_cons; unfold denote_ctx_hd;
-      unfold denote_ctx_tl; unfold compose;
-      simp Dtm_ctx Dtm_ctx_c; simp Dtm_ctx' Dtm_ctx_c'.
-
-    Compute (one_hots 0 2 3).
-    Compute (one_hots 1 2 3).
-    admit.
-Admitted.
+  (* We need to first prove a generalized version. *)
+  apply inst_Dtm_ctx.
+Qed.
 
 Lemma S_correctness_R :
   forall n
