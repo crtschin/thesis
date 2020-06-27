@@ -116,7 +116,7 @@
   Here, the element encoding the tangent trace needs to contain the proper syntactic translation of the derivative of the operation.
 
   Due to the intrinsic nature of our language representation, the macro also needs to be applied to both the types and typing context to ensure that the terms remain well-typed.
-  In other words, for any well-typed term $\Gamma \vdash t : \tau$, applying the forward-mode macro results in a well-typed term in the macro context, $\D(\Gamma) \vdash \D(t) : \D(\tau)$.
+  In other words, for any well-typed term $\Gamma \vdash t : \tau$, applying the forward-mode macro results in a well-typed term in the macro-expanded context, $\D(\Gamma) \vdash \D(t) : \D(\tau)$.
 
   \begin{figure}[H]
     \centering

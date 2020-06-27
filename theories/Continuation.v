@@ -748,6 +748,9 @@ Proof with quick.
   all: apply r.
 Qed.
 
+(* Prove syntactically well-typed terms are
+    semantically well-typed (valid w.r.t the logical relation).
+*)
 Lemma fundamental_property :
   forall τ n m,
   forall (t : tm (repeat ℝ m) τ),
@@ -756,34 +759,85 @@ Lemma fundamental_property :
     (fun x => ⟦Dtm_c n t⟧ₜₘ (@Dtm_ctx_c m n (f x))).
 Proof with quick.
   intros.
+
+  (* Apply the substitution lemma *)
   apply S_subst.
+
+  (* Clean up context
+      (we already proved the term valid,
+        we still need to prove the argument function valid) *)
   clear t.
-  erewrite inst_eq.
-2,3: extensionality x; simp Dtm_ctx Dtm_ctx_c;
-    generalize dependent n; quick; reflexivity.
-  (* apply inst_correct. *)
+
+  (* Remaining goal:
+      Prove every term being supplied is valid w.r.t.
+        the instantiation relation.
+
+      So for every term
+        (x_i : R) in x_1, ..., x_n : R^n |- t : τ
+      the denotations of the one_hot encoded variants of x_i,
+        v_i in the forward macro
+        v_c_i in the continuation-based macro
+      are valid w.r.t to the logical relation.
+  *)
+
+  (* Induction on the number of open variables
+      (number of arguments the denotated function takes,
+        also the number of rows in the argument matrix)
+  *)
   induction m...
-  { erewrite inst_eq.
+
+  { (* 0-case: trivial,
+        because supplying no arguments directly
+        corresponds to empty case in the instantiation relation.
+    *)
+    erewrite inst_eq.
+    (* Rewrite the functions in the correct format *)
   2,3: extensionality x; remember (f x); dependent destruction d;
       simp Dtm_ctx Dtm_ctx_c Dtm_ctx' Dtm_ctx_c'; reflexivity.
+    (* empty case of the relation *)
     constructor. }
-  { rewrite (inst_eq n (ℝ :: repeat ℝ m) _ _
+
+  { (* Induction-step:
+        First give the format we want the instantiation goal to have
+        (to fit the cons case of the relation)
+    *)
+    rewrite (inst_eq n (ℝ :: repeat ℝ m) _ _
       (fun x =>
         (@denote_ctx_cons (Dctx n (repeat ℝ m)) (Dt n ℝ)
-          (* (repeat ℝ m) *)
           ((denote_ctx_hd ∘ f) x, vector_one_hot 0 n)
           (Dtm_ctx' m n ((denote_ctx_tl ∘ f) x) (one_hots 1 n m))))
       (fun x =>
         (@denote_ctx_cons (Dctx_c n (repeat ℝ m)) (Dt_c n ℝ)
           ((denote_ctx_hd ∘ f) x, vector_one_hot_c 0 n)
           (Dtm_ctx_c' m n ((denote_ctx_tl ∘ f) x) (one_hots_c 1 n m))))).
+
+    (* Prove what we just wrote is valid *)
   2,3: extensionality x; unfold compose; remember (f x);
       dependent destruction d...
-  all: unfold denote_ctx_cons; unfold denote_ctx_hd;
+
+    (* Unfold helper definitions *)
+    unfold denote_ctx_cons; unfold denote_ctx_hd;
       unfold denote_ctx_tl; unfold compose...
+
+    (* Apply cons case of instantiation relation *)
     apply inst_cons.
-  2:{ simp S. splits. extensionality x. rewrite vector_one_hot_same... }
+
+    (* Prove the element being cons'd respects the logical relation *)
+  2:{ (* True by simply unfolding the relation at type ℝ
+          and simple rewriting.
+      *)
+      simp S.
+      splits. extensionality x.
+      rewrite vector_one_hot_same... }
+
+    (* Weird *)
     specialize IHm with (fun x => htl (f x))...
+  all: unfold denote_ctx_cons; unfold denote_ctx_hd;
+      unfold denote_ctx_tl; unfold compose;
+      simp Dtm_ctx Dtm_ctx_c; simp Dtm_ctx' Dtm_ctx_c'.
+
+    Compute (one_hots 0 2 3).
+    Compute (one_hots 1 2 3).
     admit.
 Admitted.
 
