@@ -1,5 +1,6 @@
 \subsubsection{Language representation}
 \label{sec:language_repr}
+% TODO: Work through MV feedback
 
 \begin{figure}
   \begin{mathpar}
@@ -20,7 +21,7 @@
 
 When defining a simply-typed lambda calculus, there are two main possibilities\cite{plfa2019}.
 The arguably simpler variant, known as an extrinsic representation, is traditionally the one introduced to new students learning \<Coq>.
-In the extrinsic representation, the terms themselves are untyped and typing judgments are defined separately as relations between the types and terms. A basic example of working with this is given in Software Foundations\cite{Pierce:SF2}.
+In the extrinsic representation, the terms themselves are untyped and typing judgments are defined separately as relations between the types and terms. A basic example of working with this is given by Pierce, et. al.\cite{Pierce:SF2}.
 This, however, required many additional lemmas and machinery to be proved to be able to work with both substitutions and contexts as these are defined separate from the terms.
 As an example, the preservation property which states that reduction does not change the type of a term, needs to be proven explicitly.
 The other approach, also called an intrinsic representation, makes use of just a single well-typed definition.

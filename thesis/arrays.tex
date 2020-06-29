@@ -40,8 +40,8 @@
   Similarly for denotations, the denotation function, instantiated to the correct type, has to be passed along to an auxiliary function that builds up a vector of denotation terms.
   Appropriately, array types will denotate to vectors indexed by length.
   There is some additional boilerplate necessary to circumvent the structurally recursive requirement imposed by the \<Coq> type checker.
-  Note that in the $S$ case of $vectorize$, the $Fin$ and $nat$ types are treated interchangeably, where $\Fin{n}$ is interpreted as $n$.
-  The recursive call to $vectorize$ also transforms the function by incrementing the bounded integer given as its argument.
+  Note that in the definition of $vect$, the $Fin$ and $nat$ types are treated interchangeably, where $\Fin{n}$ is interpreted as $n$.
+  The recursive call to $vect$ also transforms the function by incrementing the bounded integer given as its argument.
 
   \begin{figure}
     \centering

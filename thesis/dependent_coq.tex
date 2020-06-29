@@ -1,9 +1,9 @@
 \subsubsection{Dependently-typed programming in Coq}
-
+% TODO: Work through MV feedback
 In \<Coq>, one can normally write function definitions using either case-analysis as is done in other functional languages, or using \<Coq>'s tactics language.
 Using the standard case-analysis functionality can cause the code to be complicated and verbose, even more so when proof terms are present in the function signature.
 This has been caused by the previously poor support in Coq for dependent pattern matching.
-Using the return keyword, one is able to vary the result type of a match expression. But due to requirement Coq used to have that case expressions be syntactically total, this could be very annoying to work with.
+Using the return keyword, one is able to vary the result type of a match expression. But due to requirement Coq used to have that case expressions be syntactically total, this could be very difficult to work with.
 One other possibility would be to write the function as a relation between its input and output.
 This also has its limitations as you then lose computability as Coq treats these definitions opaquely. In this case the standard \<simpl> tactic which invokes \<Coq>'s reduction mechanism is not able to reduce instances of the term.
 This often requires the user to write many more proofs to be able to work with the definitions.

@@ -1,7 +1,5 @@
 \subsection{Automatic differentiation}
-
-% http://jmlr.org/papers/volume18/17-468/17-468.pdf
-
+% TODO: Work through MV feedback
 One of the principal techniques used in machine learning is back propagation, which calculates the gradient of a function. This gradient is used in the gradient descent algorithm to optimize objective functions by determining the direction of steepest descent\cite{Baydin2015AutomaticDI}.
 Automatic differentiation has a long and rich history, where its driving motivation is to efficiently calculate the derivatives of functions in a manner that is both correct and fast.
 There are several different methods of implementing automatic differentiation algorithms, such as source-code transformations or operator overloading.
@@ -10,13 +8,14 @@ In addition to the standard semantics present in most programming languages, con
 
 There are two main variants of automatic differentiation, namely forward mode and reverse mode automatic differentiation. In forward mode automatic differentiation every term in the function trace is annotated with the corresponding derivative of that term. These are also known as the respectively the primal and tangent traces. So every partial derivative of every sub-function is calculated parallel to its counterpart. We will take the function $f(x, y) = x^2 + (x - y)$ as an example. The dependencies between the terms and operations of the function is visible in the computational graph in Figure~\ref{fig:func_trace}. The corresponding traces are filled in Table~\ref{table:func_trace} for the input values $x = 2, y = 1$. We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$. In this paper we will prove the correctness of a simple forward mode automatic differentiation algorithm with respect to the semantics of a simply-typed lambda calculus.
 
-Reverse mode automatic differentiation takes a different approach. It works backwards from the output by annotating each intermediate variable $v_i$ with an adjoint $v'_i=\frac{\delta y_i}{\delta v_i}$. To do this, two passes are necessary. Like the forward mode variant, a primal trace is needed to determine the intermediate variables and subfunction dependencies. The second pass calculates the derivatives by working backwards from the output using the adjoints, also called the adjoint trace.
+Reverse mode automatic differentiation takes a different approach. It works backwards from the output by annotating each intermediate variable $v_i$ with an adjoint $v'_i=\frac{\delta y_i}{\delta v_i}$. To do this, two passes are necessary. Like the forward mode variant, a primal trace is needed to determine the intermediate variables and their dependencies. The second pass calculates the derivatives by working backwards from the output using the adjoints, also called the adjoint trace.
+
+% TODO: explain dual numbers
 
 The optimal choice between automatic differentiation variant is heavily dependent on the specific function being differentiated.
 The number of applications of the forward mode algorithm is dependent on the number of input variables, as it has to be rerun for each partial derivative of the function.
 On the other hand, as reverse mode AD works backwards, the reverse-pass needs to be redone for each output variable.
 In machine learning research, reverse mode AD is generally preferred as the objective functions regularly contain a small number of output variables.
-How one does reverse mode automatic differentiation on a functional language is still an active area of research.
 
 \begin{figure}
   \centering

@@ -1,17 +1,17 @@
 \subsection{Simply Typed Lambda Calculus}\label{sec:formal_stlc}
+  % TODO: Work through MV feedback
   % Talk about simply typed lambda calculus,
   % Something about Λ_δ^{+, *, R}
   % Give examples of functions
   % talk about denotations and
   As mentioned in background section~\ref{sec:language_repr}, we will make use of De-Bruijn indices in a intrinsic representation to formulate our language.
-  Both addition and multiplication are included as operations on the real numbers.
+  Both addition and multiplication are included as example operations on the real numbers, but the proofs can be easily extended to other primitive operations.
   Our base language consists of the classic simply-typed lambda calculus with product types and real numbers.
 
   Both the language constructs and the typing rules for this language are common for a simply typed lambda calculus, as shown in figure~\ref{fig:base_infer}.
-  As expected, we include variables, applications and abstractions in the language using the \<var>, \<app> and \<abs> constructors.
-  Product types are added to the language in the form of binary projections.
-  The \<first> and \<second> constructors represent respectively the left and right projections of \<tuple> terms.
-  For real numbers, \<rval> is used to introduce real numbered constants and \<add> and \<mul> will be used to encode addition and multiplication.
+  As expected, we include variables, applications and abstractions in the language using, respectively, the \<var>, \<app> and \<abs> constructors.
+  We work with projection products, whose elimination rules are encoded in the  \<first> and \<second> constructors. The \<tuple> constructor is used to represent the introduction rule.
+  For real numbers, \<rval> is used to introduce real numbered constants and \<add> and \<mul> will be used to respectively encode addition and multiplication.
 
   \begin{figure}
     \begin{mathpar}
@@ -54,7 +54,7 @@
   % How we translated this into the well-typed intrinsic representation
   These can be translated into Coq definitions in a reasonably straightforward manner, with each case keeping track of both how the typing context and types change.
   In the \<var> case we need some way to determine what type the variable is referencing.
-  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied with a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in \ref{lst:strong_stlc}.
+  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied with a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in code snippet~\ref{lst:strong_stlc}.
   The cases for \<app> and \<abs> are as expected, where variables in the body of abstractions are able to reference their respective arguments.
 
   Note that in the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they made use of n-ary products accompanied with pattern matching expressions.
@@ -126,6 +126,7 @@
         \D(\tau \times \sigma) &= \D(\tau) \times \D(\sigma) \\
         \D(\tau \rightarrow \sigma) &= \D(\tau) \rightarrow \D(\sigma)
       \end{split}
+      \;\;\;
       \begin{split}
         \D(\rval{n}) &= \tuple{(\rval{n})}{(\rval{0})} \\
         \D(\add{n}{m}) &= \tuple{(\add{n}{m})}{(\add{n'}{m'})} \\
@@ -141,9 +142,9 @@
   These terms can be accessed with projections to implement the various derivative implementations of the operations on real terms included in the language.
   Note that applying the macro to the case for variables does nothing as the macro is also applied to the typing context, so variables implicitly already reference macro-applied terms.
 
-  Due to restricting our language to total constructions and excluding concepts such as general recursion and iteration, it suffices to give our language a set-theoretic denotational semantics.
+  As we restrict our language to total constructions and excluding concepts such as general recursion and iteration, it suffices to give our language a set-theoretic denotational semantics.
   In this case the types $\<R>, \Rightarrow, \times$ directly correspond to their Coq equivalent, respectively $\denoteR, \rightarrow, \star$.
-  Like the type evidences, well-typed terms will denotate to functions $\llbracket \Gamma \rrbracket \rightarrow \llbracket \tau \rrbracket$.
+  Like the type evidences, well-typed terms of type $\tau$ given typing context $\Gamma$ will denotate to functions $\llbracket \Gamma \rrbracket \rightarrow \llbracket \tau \rrbracket$.
 
   \begin{figure}
     \centering
@@ -185,7 +186,7 @@
   As typing contexts, $\Gamma$, are represented by lists of types.
   The appropriate way to denotate these would be to map the denotation function over the list.
   The resulting heterogeneous list contains the denotations of each type in the list in the correct order.
-  The specific implementation of heterogeneous lists used in the proof, corresponds to the one given by Adam Chlipala\cite{ChlipalaCPDT}.
+  The specific implementation of heterogeneous lists used in the proof corresponds to the one given by Adam Chlipala\cite{ChlipalaCPDT}.
   In this implementation, heterogeneous lists consist of an underlying list of some type $A$ and an accompanying function $A \rightarrow Set$, which in our use case are, respectively, the typing context and the denotation function.
 
   When giving the constructs in our language their proper denotations, most of the cases are straightforward.

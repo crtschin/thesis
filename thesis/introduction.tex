@@ -1,5 +1,5 @@
 \section{Introduction}
-
+% TODO: Work through MV feedback
 AI and machine learning research has sparked a lot of new interest in recent times. It has been used in fields such as computer vision, natural language processing, and as opponents in various games such as chess and Go.
 In machine learning and more specifically neural network research, researchers set up functions referred to as layers between the input and output data and through an algorithm called back propagation, try to optimize the network such that it learns how to solve the problem implied by the data.
 Back propagation makes heavy use of automatic differentiation, but programming in an environment which allows for automatic differentiation can be limited.
@@ -13,15 +13,15 @@ In this thesis, we will aim to formalize an extendable correctness proof of an i
 Our formalization is based on a recent proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}.
 They proved, using a denotational model of diffeological spaces, that their forward mode emulating macro is correct when applied to a simply-typed lambda calculus with products, co-products and inductive types.
 
-
-With this thesis we will aim for the following goals:
+With this thesis we make the following core contributions:
 \begin{itemize}
-  \item Formalize the proofs of both the forward mode and continuation-based automatic differentiation algorithms specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \Coq.
-  \item Prove that well-known compile-time optimizations such as the partial evaluation, are correct with respect to the semantics of automatic differentiation.
-  \item Extend the proof with the array types and compile-time optimization rules by Shaikhha, et. al.\cite{Shaikha2019}.
+  \item Formalize the proofs of both the forward-mode and continuation-based automatic differentiation algorithms specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \Coq.
+  \item Prove the semantic correctness of various useful compile-time optimizations techniques in the context of generating performant code for automatic differentiation.
+  \item Extend the proofs with the array types and compile-time optimization rules by Shaikhha, et. al.\cite{Shaikha2019}.
 \end{itemize}
 
 % TODO: Add references
 Chapter 2 includes a background section explaining many of the topics and techniques used in this thesis. The formalization of forward-mode automatic differentiation is given in Chapter 3, starting from a base simply-typed lambda calculus extended with product types and incrementally adding new types and language constructs. Chapters 4 and 5 give formalizations of optimization avenues using respectively program transformations and continuation-based reverse-mode automatic differentiation.
 
+% TODO: Add a more elaborate section for notations
 As a notational convention, we will use specialized notation in the definitions themselves. Coq normally requires that pretty printed notations be defined separately from the definitions they reference. The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.
