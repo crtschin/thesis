@@ -17,7 +17,7 @@
         {\Gamma \vdash t : \sigma}
         {\Gamma \vdash \inr{t} : \tau + \sigma} \\ \and
       \inferrule*[Right=\textsc{TNVal}]
-        {n \in \denoteN}
+        {n \in \<N>}
         {\Gamma \vdash \nval{n} : \<N>} \and
       \inferrule*[Right=\textsc{TNSucc}]
         {\Gamma \vdash t : \<N>}
@@ -72,7 +72,7 @@
     \begin{equation*}
       \begin{split}
         \llbracket \tau \text{<+>} \sigma \rrbracket &= \llbracket \tau \rrbracket + \llbracket \sigma \rrbracket \\
-        \llbracket N \rrbracket &= \denoteN \\
+        \llbracket N \rrbracket &= \<N> \\
         \\
         \llbracket \case{e}{t_1}{t_2} \rrbracket &= \lambda x.
           \left\{

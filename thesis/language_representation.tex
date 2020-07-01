@@ -6,14 +6,14 @@
   \begin{mathpar}
     \inferrule*[Right=\textsc{TVar}]
       {elem\ n\ \Gamma = \tau}
-      {\Gamma \vdash var\ n : \tau} \and
+      {\Gamma \vdash \var{n} : \tau} \and
     \inferrule*[Right=\textsc{TAbs}]
       {(\sigma, \Gamma) \vdash t : \tau}
       {\Gamma \vdash t : \sigma \rightarrow \tau} \\ \and
     \inferrule*[Right=\textsc{TApp}]
-      {\Gamma \vdash t1 : \sigma \rightarrow \tau \\
-        \Gamma \vdash t2 : \sigma}
-      {\Gamma \vdash t1\ t2 : \tau}
+      {\Gamma \vdash t_1 : \sigma \rightarrow \tau \\
+        \Gamma \vdash t_2 : \sigma}
+      {\Gamma \vdash t_1\ t_2 : \tau}
   \end{mathpar}
   \label{fig:stlc_infer}
   \caption{Type-inferrence rules for a simply-typed lambda calculus using De-Bruijn indices}

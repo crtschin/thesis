@@ -15,34 +15,35 @@
 \newenvironment{llisting}{\captionsetup{type=listing}}{}
 
 % lang
-\newcommand{\var}[1]{var\ #1}
-\newcommand{\rval}[1]{rval\ #1}
-\newcommand{\abs}[1]{abs\ #1}
-\newcommand{\first}[1]{first\ #1}
-\newcommand{\second}[1]{second\ #1}
-\newcommand{\add}[2]{add\ #1\ #2}
-\newcommand{\build}[2]{build\ #1\ #2}
-\newcommand{\get}[2]{get\ #1\ #2}
-\newcommand{\mul}[2]{mul\ #1\ #2}
-\newcommand{\app}[2]{app\ #1\ #2}
-\newcommand{\tuple}[2]{tuple\ #1\ #2}
-\newcommand{\case}[3]{case\ #1\ #2\ #3}
-\newcommand{\inl}[1]{inl\ #1}
-\newcommand{\inr}[1]{inr\ #1}
-\newcommand{\nval}[1]{nval\ #1}
-\renewcommand{\nsucc}[1]{nsucc\ #1}
-\newcommand{\nrec}[3]{nrec\ #1\ #2\ #3}
+\newcommand{\var}[1]{\texttt{var}\ #1}
+\newcommand{\rval}[1]{\texttt{rval}\ #1}
+\newcommand{\abs}[1]{\texttt{abs}\ #1}
+\newcommand{\first}[1]{\texttt{first}\ #1}
+\newcommand{\second}[1]{\texttt{second}\ #1}
+\newcommand{\add}[2]{\texttt{add}\ #1\ #2}
+\newcommand{\build}[2]{\texttt{build}\ #1\ #2}
+\newcommand{\get}[2]{\texttt{get}\ #1\ #2}
+\newcommand{\mul}[2]{\texttt{mul}\ #1\ #2}
+\newcommand{\app}[2]{\texttt{app}\ #1\ #2}
+\newcommand{\tuple}[2]{\texttt{tuple}\ #1\ #2}
+\newcommand{\case}[3]{\texttt{case}\ #1\ #2\ #3}
+\newcommand{\inl}[1]{\texttt{inl}\ #1}
+\newcommand{\inr}[1]{\texttt{inr}\ #1}
+\newcommand{\nval}[1]{\texttt{nval}\ #1}
+\renewcommand{\nsucc}[1]{\texttt{nsucc}\ #1}
+\newcommand{\nrec}[3]{\texttt{nrec}\ #1\ #2\ #3}
 
 \newcommand{\tm}[2]{tm\ #1\ #2}
 \newcommand{\Fin}[1]{Fin\ #1}
 \newcommand{\Array}[2]{Array\ #1\ #2}
 
-\newcommand{\denoteR}[0]{\mathcal{R}}
-\newcommand{\denoteN}[0]{\mathcal{N}}
+\newcommand{\denR}[0]{\mathcal{R}}
+\newcommand{\denN}[0]{\mathcal{N}}
 
 % Keywords and shortcuts
 \newcommand{\Coq}[0]{\textbf{Coq}}
 
+% Syntactic terms
 \def\Vakar{V\'{a}k\'{a}r}
 \def\D{\overrightarrow{\mathcal{D}}}
 \def\lambdaBase{\Lambda_{\delta}^{\times, \rightarrow, \mathds{R}}}
@@ -51,11 +52,9 @@
 \makeatletter
 \def\do#1{\expandafter\doaux\expandafter{\keyword@style{#1}}{#1}}
 \def\doaux#1#2{\global\@namedef{keyword@@#2}{#1}}
-\def\keyword@style#1{\textbf{#1}}
+\def\keyword@style#1{\textit{#1}}
 \do{Coq}
 \do{Agda}
-\def\keyword@style#1{\mathcal{#1}}
-\do{D}
 \def\keyword@style#1{\texttt{#1}}
 \do{R}
 \do{N}

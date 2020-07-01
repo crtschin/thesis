@@ -36,7 +36,7 @@
         {\Gamma \vdash t : \tau \times \sigma}
         {\Gamma \vdash \second{t} : \sigma} \\ \and
       \inferrule*[Right=\textsc{TRVal}]
-        {r \in \denoteR}
+        {r \in \denR}
         {\Gamma \vdash \rval{r} : \<R>} \\ \and
       \inferrule*[Right=\textsc{TAdd}]
         {\Gamma \vdash r1 : \<R> \\
@@ -143,7 +143,7 @@
   Note that applying the macro to the case for variables does nothing as the macro is also applied to the typing context, so variables implicitly already reference macro-applied terms.
 
   As we restrict our language to total constructions and excluding concepts such as general recursion and iteration, it suffices to give our language a set-theoretic denotational semantics.
-  In this case the types $\<R>, \Rightarrow, \times$ directly correspond to their Coq equivalent, respectively $\denoteR, \rightarrow, \star$.
+  In this case the types $\<R>, \Rightarrow, \times$ directly correspond to their Coq equivalent, respectively $\denR, \rightarrow, \star$.
   Like the type evidences, well-typed terms of type $\tau$ given typing context $\Gamma$ will denotate to functions $\llbracket \Gamma \rrbracket \rightarrow \llbracket \tau \rrbracket$.
 
   \begin{figure}

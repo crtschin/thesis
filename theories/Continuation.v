@@ -535,8 +535,7 @@ Proof with quick.
         rewrite (@Rmult_comm (fst (⟦ Dtm_c m t1 ⟧ₜₘ d0))).
       subst.
       { admit. }
-      { admit. } }
-    { unfold denote_ctx_cons... } }
+      { admit. } } }
 Admitted.
 
 Lemma S_subst :
@@ -785,7 +784,7 @@ Proof with quick.
       unfold compose, denote_ctx_hd...
       simp S; splits; extensionality x; simpl.
       (* Finally we have to prove equivalence between the continuation
-        and format input vectors
+        and forward-mode format input vectors
       *)
       apply vector_one_hot_same. }
     (* Prove that we can rewrite the goal we had to the form we proved
