@@ -32,7 +32,8 @@ One example is how one would define operations such as substitutions or weakenin
 But even when choosing an intrinsic representation, the problem of variable binding persists.
 Much meta-theoretical research has been done on possible approaches to this problem each with their own advantages and disadvantages.
 The POPLmark challenge gives a comprehensive overview of each of the possibilities in various proof assistants\cite{Aydemir2005}.
-An example of an approach is the nominal representation where every variable is named.
+One example of such an approach is the nominal representation where every variable is named.
+Code snippet~\ref{lst:nominal_stlc} gives an example of how one would define a simply-typed lambda calculus in such a representation.
 While this does follow the standard format used in regular mathematics, problems such as alpha-conversion and capture-avoidance appears.
 
 \begin{listing}[h]
@@ -46,7 +47,7 @@ While this does follow the standard format used in regular mathematics, problems
     | abs : string ~\rightarrow~ ty ~\rightarrow~ tm ~\rightarrow~ tm
     | app : tm ~\rightarrow~ tm ~\rightarrow~ tm.
   \end{minted}
-  \caption{Simply typed \lambda-calculus using an extrinsic nominal representation.}
+  \caption{Simply typed \lambda-calculus using an nominal extrinsic representation.}
   \label{lst:nominal_stlc}
 \end{listing}
 
@@ -54,11 +55,11 @@ The approach used in the rest of this thesis is an extension of the De-Bruijn re
 In this representation the variables are referred to as well-typed De-Bruijn indices.
 A significant benefit of this representation is that the problems of capture avoidance and alpha equivalence are avoided.
 As an alternative, instead of using numbers to represent the distance, indices within the typing context can be used to ensure that a variable is always well-typed and well-scoped.
-While the idea of using type indexed terms has been both described and used by many authors\cite{Altenkirch99}\cite{McBride04}\cite{Adams06}, the specific formulation used in this thesis using separate substitutions and rename operations was fleshed out in Coq by Nick Benton, et. al.\cite{Benton2011}, and was also used as one of the examples in the second POPLmark challenge which deals with logical relations\cite{poplmark_reloaded}.
+While the idea of using type indexed terms has been both described and used by many authors\cite{Altenkirch99}\cite{McBride04}\cite{Adams06}, the specific formulation used in this thesis using separate substitution and renaming operations was fleshed out in \<Coq> by Nick Benton, et. al.\cite{Benton2011}, and was also used as one of the examples in the second POPLmark challenge which deals with logical relations\cite{poplmark_reloaded}.
 While this does avoid the problems present in the nominal representation, it unfortunately does have some problems of its own.
 Variable substitutions have to be defined using two separate renaming and substitution operations.
 Renaming is formulated as extending the typing context of variables, while substitution actually swaps the variables for terms.
-Due to using indices from the context as variables, some lifting boilerplate is also needed to manipulate contexts.
+Due to using indices from the context as variables, some lifting boilerplate is required to manipulate contexts.
 
 \begin{listing}[h]
   \begin{minted}{coq}
@@ -71,7 +72,7 @@ Due to using indices from the context as variables, some lifting boilerplate is 
     | abs : ~\forall \Gamma \tau \sigma, tm (\sigma::\Gamma) \tau \rightarrow tm \Gamma (\sigma \Rightarrow \tau)~
     | app : ~\forall \Gamma \tau \sigma, tm \Gamma (\sigma \Rightarrow \tau) \rightarrow tm \Gamma \sigma \rightarrow tm \Gamma \tau~.
   \end{minted}
-  \caption{Basis of a simply-typed \lambda-calculus using a strongly typed intrinsic formulation.}
+  \caption{Basis of a simply-typed \lambda-calculus using the strongly typed intrinsic formulation.}
   \label{lst:strong_stlc}
 \end{listing}
 

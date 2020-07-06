@@ -4,12 +4,12 @@ Automatic differentiation (\textit{AD}) has a long and rich history, where its d
 There are several different methods of implementing AD algorithms, such as source-code transformations or operator overloading.
 These algorithms usually transform any program which implements some function to one that calculates its derivative.
 
-There are two main variants of AD, namely forward mode and reverse-mode AD.
-In forward mode AD, every term in the function trace is annotated with the corresponding derivative of that term.
+There are two main variants of AD, namely forward-mode and reverse-mode AD.
+In forward-mode AD, every term in the function trace is annotated with the corresponding derivative of that term.
 These are also known as the respectively the primal and tangent traces.
 So calculating the partial derivatives of sub-terms is structure preserving with respect to the normal calculation of terms.
 
-This approach to forward mode AD can be explained by dual numbers as these are, mathematically seen, what we are calculating with\cite{Baydin2015AutomaticDI}. Dual numbers are numbers of the form of
+This approach to forward-mode AD can be explained by dual numbers as these are, mathematically seen, what we are calculating with\cite{Baydin2015AutomaticDI}. Dual numbers are numbers of the form of
 $$
   x + x' \epsilon
 $$
@@ -31,22 +31,22 @@ We can also see that it follows the chain rule for function composition.
 \end{align*}
 Using this, we can essentially calculate the derivative of any derivable function by interpreting the non-dual number input $x$ as its dual number counterpart of $x + 0\epsilon$.
 
-To give a more elaborate example of how this works in forward mode AD, take the function $f(x, y) = x^2 + (x - y)$ as an example.
+To give a more elaborate example of how this works in forward-mode AD, take the function $f(x, y) = x^2 + (x - y)$ as an example.
 The dependencies between the terms and operations of the function is visible in the computational graph in Figure~\ref{fig:func_trace}.
 The corresponding traces are filled in Table~\ref{table:func_trace} for the input values $x = 2, y = 1$.
 We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$.
-In this paper we will prove the correctness of a simple forward mode automatic differentiation algorithm with respect to the semantics of a simply-typed lambda calculus.
+In this paper we will prove the correctness of a simple forward-mode automatic differentiation algorithm with respect to the semantics of a simply-typed lambda calculus.
 
-Reverse mode automatic differentiation takes a different approach.
+Reverse-mode automatic differentiation takes a different approach.
 It works backwards from the output by annotating each intermediate variable $v_i$ with an adjoint $v'_i=\frac{\delta y_i}{\delta v_i}$.
 To do this, two passes are necessary.
-Like the forward mode variant, a primal trace is needed to determine the intermediate variables and their dependencies.
+Like the forward-mode variant, a primal trace is needed to determine the intermediate variables and their dependencies.
 The second pass calculates the derivatives by working backwards from the output using the adjoints, also called the adjoint trace.
 
 The optimal choice between automatic differentiation variant is heavily dependent on the specific function being differentiated.
-Preference is given for forward mode AD when the number of output variables exceeds the number of input variables, as it has to be rerun for each partial derivative of the function.
-On the other hand, as reverse mode AD works backwards, the reverse-pass needs to be redone for each output variable.
-In machine learning research, reverse mode AD is generally preferred as the objective functions generally contain a small number of output variables.
+Preference is given for forward-mode AD when the number of output variables exceeds the number of input variables, as it has to be rerun for each partial derivative of the function.
+On the other hand, as reverse-mode AD works backwards, the reverse-pass needs to be redone for each output variable.
+In machine learning research, reverse-mode AD is generally preferred as the objective functions generally contain a small number of output variables.
 
 % TODO: Mention something about Eliott's categorical approach and its possible extension to a macro on combinators.
 

@@ -1,30 +1,30 @@
 \subsection{Adding Sums and Primitive Recursion}
   Now that correctness has been verified for the base simply-typed lambda calculus, the next goal will be to add in both sum and integer types.
-  In the interest of testing the flexibility of both the representation and the proofing technique, integer types and primitive recursion were also added.
+  In the interest of testing the flexibility of both the representation and the proof technique, natural number types and primitive recursion were also added.
   The inference rules for the new language constructs added for sum and number types are given in figure~\ref{fig:sum_prim_infer}.
 
   \begin{figure}
     \begin{mathpar}
       \inferrule*[Right=\textsc{TCase}]
-        {\Gamma \vdash e : \tau + \sigma \\
-          \Gamma \vdash t1 : \tau \rightarrow \rho \\
-          \Gamma \vdash t2 : \sigma \rightarrow \rho }
-        {\Gamma \vdash \case{e}{t1}{t2} : \rho} \\ \and
+        {\Gamma \vdash e : \tau \synPlus \sigma \\
+          \Gamma \vdash t_1 : \tau \synFunc \rho \\
+          \Gamma \vdash t_2 : \sigma \synFunc \rho }
+        {\Gamma \vdash \case{e}{t_1}{t_2} : \rho} \\ \and
       \inferrule*[Right=\textsc{TInl}]
         {\Gamma \vdash t : \tau}
-        {\Gamma \vdash \inl{t} : \tau + \sigma} \and
+        {\Gamma \vdash \inl{t} : \tau \synPlus \sigma} \and
       \inferrule*[Right=\textsc{TInr}]
         {\Gamma \vdash t : \sigma}
-        {\Gamma \vdash \inr{t} : \tau + \sigma} \\ \and
+        {\Gamma \vdash \inr{t} : \tau \synPlus \sigma} \\ \and
       \inferrule*[Right=\textsc{TNVal}]
-        {n \in \<N>}
-        {\Gamma \vdash \nval{n} : \<N>} \and
+        {n \in \synN}
+        {\Gamma \vdash \nval{n} : \synN} \and
       \inferrule*[Right=\textsc{TNSucc}]
-        {\Gamma \vdash t : \<N>}
-        {\Gamma \vdash \nsucc{t} : \<N>} \\ \and
+        {\Gamma \vdash t : \synN}
+        {\Gamma \vdash \nsucc{t} : \synN} \\ \and
       \inferrule*[Right=\textsc{TPrim}]
-        {\Gamma \vdash f : \tau \rightarrow \tau \\
-          \Gamma \vdash n : \<N> \\
+        {\Gamma \vdash f : \tau \synFunc \tau \\
+          \Gamma \vdash n : \synN \\
           \Gamma \vdash t : \tau }
         {\Gamma \vdash \nrec{f}{n}{t} : \tau}
     \end{mathpar}
@@ -33,18 +33,18 @@
   \end{figure}
 
   \begin{minted}{coq}
-    Inductive tm ~($\Gamma$ : Ctx) : ty $\rightarrow$ Type~ :=
+    Inductive tm ~($\Gamma$ : Ctx) : ty $\to$ Type~ :=
       ...
       (* Sums *)
-      | case : ~forall {$\tau$ $\sigma$ $\rho$},
-        tm $\Gamma$ ($\tau$ <+> $\sigma$) $\rightarrow$
-        tm $\Gamma$ ($\tau \Rightarrow \rho$) $\rightarrow$
-        tm $\Gamma$ ($\sigma \Rightarrow \rho$) $\rightarrow$
+      | case : ~forall $\tau$ $\sigma$ $\rho$,
+        tm $\Gamma$ ($\tau$ $\synPlus$ $\sigma$) $\to$
+        tm $\Gamma$ ($\tau \synFunc \rho$) $\to$
+        tm $\Gamma$ ($\sigma \synFunc \rho$) $\to$
         tm $\Gamma$ $\rho$~
-      | inl : ~forall {$\tau$ $\sigma$},
-        tm $\Gamma$ $\tau$ $\rightarrow$ tm $\Gamma$ ($\tau$ <+> $\sigma$)~
-      | inr : ~forall {$\tau$ $\sigma$},
-        tm $\Gamma$ $\sigma$ $\rightarrow$ tm $\Gamma$ ($\tau$ <+> $\sigma$)~
+      | inl : ~forall $\tau$ $\sigma$,
+        tm $\Gamma$ $\tau$ $\to$ tm $\Gamma$ ($\tau$ $\synPlus$ $\sigma$)~
+      | inr : ~forall $\tau$ $\sigma$,
+        tm $\Gamma$ $\sigma$ $\to$ tm $\Gamma$ ($\tau$ $\synPlus$ $\sigma$)~
   \end{minted}
 
   Binary sum types are included in the language using \<inl> and \<inr> as introducing terms.
@@ -53,13 +53,13 @@
   For convenience, an additional successor function is added in the form of the \<nsucc> term.
 
   \begin{minted}{coq}
-    Inductive tm ~($\Gamma$ : Ctx) : ty $\rightarrow$ Type~ :=
+    Inductive tm ~($\Gamma$ : Ctx) : ty $\to$ Type~ :=
       ...
       (* Primitive recursion *)
-      | nval : ~forall n, tm \Gamma N~
-      | nsucc : ~tm $\Gamma$ N $\rightarrow$ tm $\Gamma$ N~
+      | nval : ~forall n, tm \Gamma \synN~
+      | nsucc : ~tm $\Gamma$ \synN $\to$ tm $\Gamma$ \synN~
       | nrec : ~forall $\tau$,
-        tm $\Gamma$ ($\tau \Rightarrow \tau$) $\rightarrow$ tm $\Gamma$ N $\rightarrow$ tm $\Gamma$ $\tau$ $\rightarrow$ tm $\Gamma$ $\tau$~
+        tm $\Gamma$ ($\tau \synFunc \tau$) $\to$ tm $\Gamma$ \synN $\to$ tm $\Gamma$ $\tau$ $\to$ tm $\Gamma$ $\tau$~
   \end{minted}
 
   In terms of denotations, \<case> expressions will follow the same lines as \<app> as they both involve applying a function to an argument.
@@ -71,8 +71,8 @@
     \centering
     \begin{equation*}
       \begin{split}
-        \llbracket \tau \text{<+>} \sigma \rrbracket &= \llbracket \tau \rrbracket + \llbracket \sigma \rrbracket \\
-        \llbracket N \rrbracket &= \<N> \\
+        \llbracket \tau \synPlus \sigma \rrbracket &= \llbracket \tau \rrbracket \denPlus \llbracket \sigma \rrbracket \\
+        \llbracket \synN \rrbracket &= \denN \\
         \\
         \llbracket \case{e}{t_1}{t_2} \rrbracket &= \lambda x.
           \left\{
@@ -103,15 +103,15 @@
   \end{figure}
 
   Both sums and integer terms are structure preserving with respect to the forward-mode macro.
-  Note that we only take the derivative of values of type \<R>, so when integers are encountered.
-  More specifically, we do not keep track of derivatives at integer types as the tangent space is $0$-dimensional.
+  Note that we only take the derivative of values of type \synR, so when integers are encountered, these are largely ignored.
+  More specifically, we do not keep track of derivatives at natural number types as the tangent space is $0$-dimensional.
 
   \begin{figure}
     \centering
     \begin{equation*}
       \begin{split}
-        \D(\<N>) &= \<N> \\
-        \D(\tau \text{<+>} \sigma) &= \D(\tau) \text{<+>} \D(\sigma) \\
+        \D(\synN) &= \synN \\
+        \D(\tau \synPlus \sigma) &= \D(\tau) \synPlus \D(\sigma) \\
         \D(\inl{t}) &= \inl{\D(t)} \\
         \D(\inr{t}) &= \inr{\D(t)} \\
         \D(\case{e}{t_1}{t_2}) &= \case{\D(e)}{\D(t_1)}{\D(t_2)} \\
@@ -124,7 +124,7 @@
     \label{eqn:macro_sums_prim}
   \end{figure}
 
-  For a similar reason, the logical relation at integer types only needs establish that denotations of integer terms are constant.
+  For a similar reason, the logical relation at integer types only needs to establish that the denotations of integer terms tracked by the logical relation, which will be of type $\denR \to \denN$, are constant.
   For sum terms, the functions tracked are either the left or right tag of the sum.
   This is neatly defined using a logical disjunction.
 
@@ -134,16 +134,12 @@
         \begin{array}{ll}
           f = g \wedge
             \exists n. f = const(n)
-            & : \tau = \<N> \\
-          (\exists f_1, f_2,
-            & : \tau = \sigma \text{<+>} \rho \\
-            \;\;\;\;S_\sigma(f_1, f_2) \wedge \\
-            \;\;\;\;f = inl \circ f_1 \wedge \\
-            \;\;\;\;g = inl \circ g_1) \vee \\
+            & : \tau = \synN \\
+          (\exists f_1, f_2, \\
+            \;\;\;\;S_\sigma(f_1, f_2) \wedge f = inl \circ f_1 \wedge g = inl \circ g_1) \\
+            \;\;\;\;\;\;\;\;\vee & : \tau = \sigma \synPlus \rho \\
           (\exists f_1, f_2,\\
-            \;\;\;\;S_\rho(f_1, f_2) \wedge \\
-            \;\;\;\;f = inr \circ f_1 \wedge \\
-            \;\;\;\;g = inr \circ g_1) \\
+            \;\;\;\;S_\rho(f_1, f_2) \wedge f = inr \circ f_1 \wedge g = inr \circ g_1) \\
         \end{array}
       \right.
   \label{eqn:lr_sums_prim}

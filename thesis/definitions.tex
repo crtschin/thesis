@@ -16,14 +16,21 @@
 
 % lang
 \newcommand{\var}[1]{\texttt{var}\ #1}
+\newcommand{\Pop}[1]{\texttt{Pop}\ #1}
+\newcommand{\Top}[0]{\texttt{Top}}
 \newcommand{\rval}[1]{\texttt{rval}\ #1}
 \newcommand{\abs}[1]{\texttt{abs}\ #1}
 \newcommand{\first}[1]{\texttt{first}\ #1}
 \newcommand{\second}[1]{\texttt{second}\ #1}
-\newcommand{\add}[2]{\texttt{add}\ #1\ #2}
 \newcommand{\build}[2]{\texttt{build}\ #1\ #2}
 \newcommand{\get}[2]{\texttt{get}\ #1\ #2}
+
+\newcommand{\add}[2]{\texttt{add}\ #1\ #2}
 \newcommand{\mul}[2]{\texttt{mul}\ #1\ #2}
+\newcommand{\vecadd}[2]{\texttt{vector\_add}\ #1\ #2}
+\newcommand{\vecscale}[2]{\texttt{vector\_scale}\ #1\ #2}
+
+
 \newcommand{\app}[2]{\texttt{app}\ #1\ #2}
 \newcommand{\tuple}[2]{\texttt{tuple}\ #1\ #2}
 \newcommand{\case}[3]{\texttt{case}\ #1\ #2\ #3}
@@ -33,19 +40,42 @@
 \renewcommand{\nsucc}[1]{\texttt{nsucc}\ #1}
 \newcommand{\nrec}[3]{\texttt{nrec}\ #1\ #2\ #3}
 
-\newcommand{\tm}[2]{tm\ #1\ #2}
-\newcommand{\Fin}[1]{Fin\ #1}
-\newcommand{\Array}[2]{Array\ #1\ #2}
+\newcommand{\ifold}[3]{\texttt{ifold}\ #1\ #2\ #3}
+\newcommand{\letin}[2]{\texttt{let}\ #1\ #2}
+\newcommand{\substitute}[2]{\texttt{substitute}\ #1\ #2}
+
+\newcommand{\tm}[2]{\texttt{tm}\ #1\ #2}
+\newcommand{\Fin}[1]{\texttt{Fin}\ #1}
+\newcommand{\Array}[2]{\texttt{Array}\ #1\ #2}
 
 \newcommand{\denR}[0]{\mathcal{R}}
 \newcommand{\denN}[0]{\mathcal{N}}
+\newcommand{\denStar}[0]{\star}
+\newcommand{\denPlus}[0]{+}
+\newcommand{\denFunc}[0]{\rightarrow}
 
-% Keywords and shortcuts
-\newcommand{\Coq}[0]{\textbf{Coq}}
+\newcommand{\denGet}[2]{#1\ !\ #2}
+\newcommand{\denNil}[0]{[\ ]}
+\newcommand{\denCons}[2]{#1\ ::\ #2}
+
+\newcommand{\synR}[0]{\texttt{R}}
+\newcommand{\synN}[0]{\texttt{N}}
+\newcommand{\synStar}[0]{\times}
+\newcommand{\synPlus}[0]{{<}\!{+}\!{>}}
+\newcommand{\synFunc}[0]{\Rightarrow}
+
+\newcommand{\inst}[1]{inst_{#1}}
+\newcommand{\synRepeat}[2]{\texttt{repeat}\ #1\ #2}
+\newcommand{\synConst}[1]{\texttt{const}\ #1}
+
+\newcommand{\evals}[0]{\Downarrow}
+\newcommand{\Fsmooth}[0]{\textit{\~{F}}}
+
+\newcommand{\D}[0]{\overrightarrow{\mathcal{D}}}
+\newcommand{\Dc}[0]{\D^c}
 
 % Syntactic terms
 \def\Vakar{V\'{a}k\'{a}r}
-\def\D{\overrightarrow{\mathcal{D}}}
 \def\lambdaBase{\Lambda_{\delta}^{\times, \rightarrow, \mathds{R}}}
 \def\<#1>{\csname keyword@@#1\endcsname}
 \begingroup
@@ -55,9 +85,8 @@
 \def\keyword@style#1{\textit{#1}}
 \do{Coq}
 \do{Agda}
+\do{Fortran}
 \def\keyword@style#1{\texttt{#1}}
-\do{R}
-\do{N}
 \do{bottom}
 \do{Equations}
 \do{Coquelicot}
@@ -91,4 +120,6 @@
 \do{Pop}
 \do{hd}
 \do{tl}
+\do{ifold}
+\do{let}
 \endgroup

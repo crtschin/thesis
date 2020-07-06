@@ -4,13 +4,13 @@
   % Something about Λ_δ^{+, *, R}
   % Give examples of functions
   % talk about denotations and
-  As mentioned in background section~\ref{sec:language_repr}, we will make use of De-Bruijn indices in a intrinsic representation to formulate our language.
-  Both addition and multiplication are included as example operations on the real numbers, but the proofs can be easily extended to other primitive operations.
+  As mentioned in the background section~\ref{sec:language_repr}, we will make use of De-Bruijn indices in an intrinsic representation to formulate our language.
+  We include both addition and multiplication as example operations on the real numbers, but the proofs are easily extensible to other primitive operations.
   Our base language consists of the classic simply-typed lambda calculus with product types and real numbers.
 
-  Both the language constructs and the typing rules for this language are common for a simply typed lambda calculus, as shown in figure~\ref{fig:base_infer}.
-  As expected, we include variables, applications and abstractions in the language using, respectively, the \<var>, \<app> and \<abs> constructors.
-  We work with projection products, whose elimination rules are encoded in the  \<first> and \<second> constructors. The \<tuple> constructor is used to represent the introduction rule.
+  Both the language constructs and the typing rules for this language are common for a simply-typed lambda calculus, as shown in figure~\ref{fig:base_infer}.
+  As expected, we include variables, applications, and abstractions in the language using, respectively, the \<var>, \<app>, and \<abs> terms.
+  We work with projection products, whose elimination rules are encoded in the  \<first> and \<second> terms. The \<tuple> term is used to represent the introduction rule.
   For real numbers, \<rval> is used to introduce real numbered constants and \<add> and \<mul> will be used to respectively encode addition and multiplication.
 
   \begin{figure}
@@ -37,27 +37,27 @@
         {\Gamma \vdash \second{t} : \sigma} \\ \and
       \inferrule*[Right=\textsc{TRVal}]
         {r \in \denR}
-        {\Gamma \vdash \rval{r} : \<R>} \\ \and
+        {\Gamma \vdash \rval{r} : \synR} \\ \and
       \inferrule*[Right=\textsc{TAdd}]
-        {\Gamma \vdash r1 : \<R> \\
-          \Gamma \vdash r2 : \<R> \\ }
-        {\Gamma \vdash \add{r1}{r2} : \<R>} \and
+        {\Gamma \vdash r1 : \synR \\
+          \Gamma \vdash r2 : \synR \\ }
+        {\Gamma \vdash \add{r1}{r2} : \synR} \and
       \inferrule*[Right=\textsc{TMull}]
-        {\Gamma \vdash r1 : \<R> \\
-        \Gamma \vdash r2 : \<R> \\ }
-      {\Gamma \vdash \mul{r1}{r2} : \<R>} \and
+        {\Gamma \vdash r1 : \synR \\
+        \Gamma \vdash r2 : \synR \\ }
+      {\Gamma \vdash \mul{r1}{r2} : \synR} \and
     \end{mathpar}
     \caption{Type-inference rules for the base simply-typed lambda calculus}
     \label{fig:base_infer}
   \end{figure}
 
   % How we translated this into the well-typed intrinsic representation
-  These can be translated into Coq definitions in a reasonably straightforward manner, with each case keeping track of both how the typing context and types change.
-  In the \<var> case we need some way to determine what type the variable is referencing.
-  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied with a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in code snippet~\ref{lst:strong_stlc}.
-  The cases for \<app> and \<abs> are as expected, where variables in the body of abstractions are able to reference their respective arguments.
+  These can be translated into \<Coq> definitions in a reasonably straightforward manner, with each case keeping track of both how the typing context and types change.
+  In the \<var> case, we need some way to determine what type the variable is referencing.
+  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied by a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in code snippet~\ref{lst:strong_stlc}.
+  The cases for \<app> and \<abs> are as expected, where variables in the body of abstractions can reference their respective arguments.
 
-  Note that in the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they made use of n-ary products accompanied with pattern matching expressions.
+  Note that in the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they made use of n-ary products accompanied by pattern matching expressions.
   We opted to implement binary projection products, as these are conceptually simpler while still retaining much of the same functionality expected of product types.
 
   \begin{minted}{coq}
@@ -67,13 +67,13 @@
       | tuple : ~forall {\tau \sigma},
         tm \Gamma \tau \rightarrow
         tm \Gamma \sigma \rightarrow
-        tm \Gamma (\tau \times \sigma)~
-      | first : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \tau~
-      | second : ~forall {\tau \sigma}, tm \Gamma (\tau \times \sigma) \rightarrow tm \Gamma \sigma~
+        tm \Gamma (\tau \synStar \sigma)~
+      | first : ~forall {\tau \sigma}, tm \Gamma (\tau \synStar \sigma) \rightarrow tm \Gamma \tau~
+      | second : ~forall {\tau \sigma}, tm \Gamma (\tau \synStar \sigma) \rightarrow tm \Gamma \sigma~
       (* Operations on reals *)
-      | rval : ~forall r, tm \Gamma R~
-      | add : ~tm \Gamma R \rightarrow tm \Gamma R \rightarrow tm \Gamma \tau~
-      | mul : ~tm \Gamma R \rightarrow tm \Gamma R \rightarrow tm \Gamma \sigma~
+      | rval : ~forall r, tm \Gamma $\synR$~
+      | add : ~tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$~
+      | mul : ~tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$~
   \end{minted}
 
   % \begin{listing}
@@ -122,11 +122,11 @@
     \centering
     \begin{equation*}
       \begin{split}
-        \D(\<R>) &= \<R> \times \<R> \\
-        \D(\tau \times \sigma) &= \D(\tau) \times \D(\sigma) \\
-        \D(\tau \rightarrow \sigma) &= \D(\tau) \rightarrow \D(\sigma)
+        \D(\synR) &= \synR \synStar \synR \\
+        \D(\tau \synStar \sigma) &= \D(\tau) \synStar \D(\sigma) \\
+        \D(\tau \synFunc \sigma) &= \D(\tau) \synFunc \D(\sigma)
       \end{split}
-      \;\;\;
+      \;\;\;\;\;\;
       \begin{split}
         \D(\rval{n}) &= \tuple{(\rval{n})}{(\rval{0})} \\
         \D(\add{n}{m}) &= \tuple{(\add{n}{m})}{(\add{n'}{m'})} \\
@@ -143,22 +143,22 @@
   Note that applying the macro to the case for variables does nothing as the macro is also applied to the typing context, so variables implicitly already reference macro-applied terms.
 
   As we restrict our language to total constructions and excluding concepts such as general recursion and iteration, it suffices to give our language a set-theoretic denotational semantics.
-  In this case the types $\<R>, \Rightarrow, \times$ directly correspond to their Coq equivalent, respectively $\denR, \rightarrow, \star$.
-  Like the type evidences, well-typed terms of type $\tau$ given typing context $\Gamma$ will denotate to functions $\llbracket \Gamma \rrbracket \rightarrow \llbracket \tau \rrbracket$.
+  In this case the types $\synR, \synFunc, \synStar$ directly correspond to their \<Coq> equivalent, respectively $\denR, \denFunc, \denStar$.
+  Well-typed terms of type $\tau$, given typing context $\Gamma$, will denotate to functions $\llbracket \Gamma \rrbracket \to \llbracket \tau \rrbracket$.
 
   \begin{figure}
     \centering
     \begin{equation*}
       \begin{split}
-        \llbracket \<R> \rrbracket &= \<denoteR> \\
-        \llbracket \tau \times \sigma \rrbracket &=
-          \llbracket \tau \rrbracket \star \llbracket \sigma \rrbracket \\
-        \llbracket \tau \rightarrow \sigma \rrbracket &= \llbracket \tau \rrbracket \rightarrow \llbracket \sigma \rrbracket \\
+        \llbracket \synR \rrbracket &= \denR \\
+        \llbracket \tau \synStar \sigma \rrbracket &=
+          \llbracket \tau \rrbracket \denStar \llbracket \sigma \rrbracket \\
+        \llbracket \tau \synFunc \sigma \rrbracket &= \llbracket \tau \rrbracket \denFunc \llbracket \sigma \rrbracket \\
         \\
         \llbracket \<Top> \rrbracket &= \<hd> \\
-        \llbracket \<Pop>\ v \rrbracket &= \<tl> \circ \llbracket v \rrbracket \\
+        \llbracket \<Pop>\ v \rrbracket &= \llbracket v \rrbracket \circ \<tl> \\
       \end{split}
-      \;\;\;
+      \;\;\;\;\;\;
       \begin{split}
         \llbracket \var{v} \rrbracket &=
           \lambda x. lookup\ \llbracket v \rrbracket\ x \\
@@ -187,16 +187,18 @@
   The appropriate way to denotate these would be to map the denotation function over the list.
   The resulting heterogeneous list contains the denotations of each type in the list in the correct order.
   The specific implementation of heterogeneous lists used in the proof corresponds to the one given by Adam Chlipala\cite{ChlipalaCPDT}.
-  In this implementation, heterogeneous lists consist of an underlying list of some type $A$ and an accompanying function $A \rightarrow Set$, which in our use case are, respectively, the typing context and the denotation function.
+  In this implementation, heterogeneous lists consist of an underlying list of some type $A$ and an accompanying function $A \to Set$, which in our use case are, respectively, the typing context and the denotation function.
 
   When giving the constructs in our language their proper denotations, most of the cases are straightforward.
   Notable is the case for variables, where we made use of the inductively defined type evidence to type our terms.
-  As denotations, these evidences correspond to lookups into our heterogeneous lists to their appropriate types.
+  Remember that to type variables in our term language, we have to also give the exact position of the type we are referencing in the typing context.
+  Similarly as denotations, we are able to transform this positional information to generate a specialized lookup function, which given a valid typing context, gives a term denotation with the correct type.
+  Essentially, we do a lookup into the heterogeneous list of denotations corresponding to the typing context.
 
   \begin{minted}{coq}
     Equations denote_v ~$\Gamma$~ ~$\tau$~ (v: ~$\tau \in \Gamma$~) : ~$\llbracket \Gamma \rrbracket \rightarrow \llbracket \tau \rrbracket$~ :=
-    denote_v (Top ~$\Gamma$~ ~$\tau$~) (HCons h t) := h;
-    denote_v (Pop ~$\Gamma$~ ~$\tau$~ ~$\sigma$~ v) (HCons h t) := denote_v v t.
+    denote_v (Top ~$\Gamma$~ ~$\tau$~) := hd;
+    denote_v (Pop ~$\Gamma$~ ~$\tau$~ ~$\sigma$~ v) := denote_v v ~$\circ$~ tl.
   \end{minted}
 
   % \begin{listing}
@@ -237,56 +239,59 @@
 
   % TODO: give reasonable examples
 
-  As we work with denotations, smooth functions $f : \<R>^n -> \<R>$ can be interpreted as the denotations of a corresponding syntactic term $x_1, \dots, x_n \vdash t : R$.
-  Intuitively, the free variables in the term $t$ denote the usages of the parameters of the function and as such are restricted to terms of type $R$, same as each of the arguments in the function $f$.
+  Using the denotation rules in Figure~\ref{eqn:denotation_base}, syntactically well-typed terms in our language of the form $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ can be interpreted as their corresponding smooth functions $f : \denR^n \to \denR$.
+  Intuitively, the free variables in the syntactic term $t$ correspond to the parameters of the denotation function $f$.
 
-  Although Barthe, et. al.\cite{barthe2020versatility} gave a syntactic proof of correctness of the macro, our proof follows the more denotational style of proof given by Huot, Staton and \Vakar{}\cite{huot2020correctness}.
+  Although Barthe, et. al.\cite{barthe2020versatility} gave a syntactic proof of correctness of the macro, our formal proof follows the more denotational style of proof given by Huot, Staton and \Vakar{}\cite{huot2020correctness}.
   Likewise, our proof of correctness will follow a similar logical relations argument.
-  Correctness of the forward-mode macro consists of the assertion that the denotation of any macro-applied term of type $x_1 : R, \dots, x_n : R \vdash t : \<R>$ will result in a pair of both the denotation of the original term and the derivative of that denotation.
-  Note that while both the arguments and result type of $t$ are restricted to $\<R>$, $t$ itself can consist of higher order types.
-  This hints at the need for a more generalized statement.
+  While both approaches have their merits, the proof using the denotational semantics requires less technical bookkeeping of open and closed terms.
+
+  Informally, the correctness statement of the forward-mode macro will consists of the assertion that the denotation of any macro-applied term of type $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ will result in a pair of both the denotation of the original term and the derivative of that denotation.
+  Note that while both the free variables and result type of the term $t$ are restricted to type $\synR$, $t$ itself can contain subterms of higher-order types.
 
   The logical relation will ensure that both the smoothness property and the derivatives are preserved over higher-order types.
   We define the logical relation as a type-indexed relation between denotations of both terms and their macro-applied variants, so for any type $\tau$, $S_\tau$ is the relation between functions $R \rightarrow \llbracket \tau \rrbracket$ and $R \rightarrow \llbracket \D(\tau) \rrbracket$.
 
-  When $\tau = \<R>$, the denotation of the macro-applied term should give both the original denotation and its derivative.
+  When $\tau = \synR$, the denotation of the macro-applied term should give both the original denotation and its derivative.
   With function types, as long as the relation is valid for the argument, applying these argument functions to the tracked denotations should preserve the relation.
   Some care has to be taken in the case for products.
   Notably, the denotations of the subterms, $R \rightarrow \llbracket \tau \rrbracket$ and $R \rightarrow \llbracket \sigma \rrbracket$, should be existentially quantified as these are dependent on the original denotation $R \rightarrow \llbracket \tau \times \sigma \rrbracket$.
 
-  \begin{equation}
-    S_\tau(f, g) =
-      \left\{
-        \begin{array}{ll}
-          smooth\ f \wedge
-            g = \lambda x. (f(x), \frac{\partial f}{\partial x}(x))
-            & : \tau = R \\
-          \exists f_1, f_2, g_1, g_2,
-            & : \tau = \sigma \times \rho \\
-            \;\;\;\;S_\sigma(f_1, f_2), S_\sigma(g_1, g_2). \\
-            \;\;\;\;f = \lambda x. (f_1(x), g_1(x)) \wedge \\
-            \;\;\;\;g = \lambda x. (f_2(x), g_2(x)) \\
-          \forall f_1, f_2.
-            & : \tau = \sigma \rightarrow \rho \\
-            \;\;\;\;S_\sigma(f_1, f_2) \Rightarrow \\
-            \;\;\;\;S_\rho(\lambda x. f(x)(f_1(x)),\lambda x. f(x)(f_2(x)))
-        \end{array}
-      \right.
-  \label{eqn:lr_base}
-  \end{equation}
+  \begin{definition}(Logical relation)
+    Denotation functions $f$ and their corresponding derivatives $g$ are inductively defined on the structure of our types such that they follow the relation
+    \begin{equation}
+      S_\tau(f, g) =
+        \left\{
+          \begin{array}{ll}
+            smooth\ f \wedge
+              g = \lambda x. (f(x), \frac{\partial f}{\partial x}(x))
+              & : \tau = R \\
+            \exists f_1, f_2, g_1, g_2,
+              & : \tau = \sigma \times \rho \\
+              \;\;\;\;S_\sigma(f_1, f_2), S_\sigma(g_1, g_2). \\
+              \;\;\;\;f = \lambda x. (f_1(x), g_1(x)) \wedge \\
+              \;\;\;\;g = \lambda x. (f_2(x), g_2(x)) \\
+            \forall f_1, f_2.
+              & : \tau = \sigma \rightarrow \rho \\
+              \;\;\;\;S_\sigma(f_1, f_2) \Rightarrow \\
+              \;\;\;\;S_\rho(\lambda x. f(x)(f_1(x)),\lambda x. f(x)(f_2(x)))
+          \end{array}
+        \right.
+    \label{eqn:lr_base}
+    \end{equation}
+  \end{definition}
 
   The next step involves proving that syntactically well-typed terms are semantically correct.
-  In other words, the relation needs to be proven valid for any term $x_1 : R, \dots, x_n : R \vdash t : \tau$ and argument function $f : R \rightarrow R^n$ such that $S_\tau(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f)$.
-
-  To properly instantiate the arguments to the denotation of the macro-applied term, an auxiliary function is needed that pairs each constant with their derivative $0$. So it transforms $f : R \rightarrow \llbracket R^n \rrbracket$ into $\D_n(f, x) : R \rightarrow \llbracket \D(R)^n \rrbracket$.
-  The full type signature of the function becomes $\D_n : (R \rightarrow \llbracket R^n \rrbracket) \rightarrow R \rightarrow \llbracket \D(R)^n \rrbracket$, which essentially accompanies each argument supplied by $f$ with its accompanying derivative.
+  In other words, the relation needs to be proven valid for any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \tau$ and argument function $f : \denR \rightarrow \denR^n$ such that $S_\tau(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f)$.
+  To properly instantiate the arguments to the denotation of the macro-applied term, an auxiliary function is needed that pairs each constant with their derivative $0$. So it transforms the argument function $f : \denR \rightarrow \llbracket \synR^n \rrbracket$ into one that supplies both the original input value and its accompanying derivative.
+  The full type signature of this auxiliary function is $\D_n : (\denR \rightarrow \llbracket \synR^n \rrbracket) \rightarrow \denR \rightarrow \llbracket \D(\synR)^n \rrbracket$. Note that $\tau^n$ is used as syntactic sugar for $\synRepeat{\tau}{n}$ and is simply a typing context consisting of the type $\tau$ repeated $n$ times.
 
   \begin{equation}
     \D_n(f, x) =
       \left\{
         \begin{array}{ll}
           f(x) & : n = 0 \\
-          ((hd \circ f)(x)), \frac{\partial{(hd \circ f)}}{\partial{x}}(x)) :: \D_{n'}(tl \circ f, x) & : n = S(n') \\
+          ((hd \circ f)(x), \frac{\partial{(hd \circ f)}}{\partial{x}}(x)) :: \D_{n'}(tl \circ f, x) & : n = n' + 1 \\
         \end{array}
       \right.
   \label{eqn:argument_df}
@@ -295,71 +300,70 @@
   Proving this statement directly by induction on the typing derivation, however, does not work.
   As expected in a logical relations proof, the indicative issue lies in both the case for applications and abstractions.
   To make this work, the correctness statement needs to be generalized to arbitrary contexts and implicitly, substitutions.
+  If this were a syntactic proof, one would need to show that the relation is preserved when applying substitutions consisting of arbitrary terms, possibly containing higher-order constructs.
+  In this style of proof, however, the same concept needs to be formulated in a denotational manner.
 
-  If this were a syntactic proof, one would need to show that relation is preserved when applying substitutions consisting of arbitrary terms, possibly containing higher-order constructs.
-  In this style of proof, the same concept needs to be incorporated in the argument function $f$, which intuitively speaking, supplies the terms referenced by variables through the typing context.
-
-  % TODO: attempt to do this?
-
-  To prove this statement, it first needs to be generalized to arbitrary substitutions.
-  The key in formulating these denotationally lies in what was previously the argument function $f : R \rightarrow R^n$.
+  The key in formulating these denotationally lies in the argument function $f : \denR \to \denR^n$.
   Previously the function was used to indicate the open variables or function arguments.
-  If generalized to $\Gamma = x_1 : \tau_1, \dots, x_n : \tau_n$, this same function could be seen as a function which supplies terms foreach open variable $x_1, \dots, x_n$ with their appropriate types.
-  So the argument function now becomes the pair of functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$.
-  Note that the functions $s$ and $s_D$ are built out of the denotations of terms such that these same denotations follow the logical relation (\ref{eqn:lr_base}) for our language.
+  Generalized to $\Gamma = x_1 : \tau_1, \dots, x_n : \tau_n$, this function can be interpreted as supplying for each open variable $x_1, \dots, x_n$ a corresponding denotated term with type $\llbracket \tau_1 \rrbracket, \dots, \llbracket \tau_n \rrbracket$.
+  So the argument function now becomes the pair of functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$, which intuitively speaking, form the denotational counterparts of syntactic substitutions.
+  Notably, for the functions $s$ and $s_D$ to be valid with respect to the logical relation, they are required to be built from the denotations of terms such that these denotations also follow the logical relation.
   We phrase this requirement as a definition.
 
   \begin{definition}(Instantiation)
-    Substitutional functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ are inductively instantiated such that they follow
+    Instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ are inductively defined such that they follow
     \begin{equation}
       inst_\Gamma(f, g) =
         \left\{
           \begin{array}{ll}
-            f = const([]) \wedge g = const([])
-              & : \Gamma = [] \\
+            f = (\lambda x. \denNil) \wedge g = (\lambda x. \denNil)
+              & : \Gamma = \denNil \\
             \forall f_1, f_2, g_1, g_2.
               & : \Gamma = (\tau :: \Gamma') \\
               \;\;inst_{\Gamma'}(f_1, g_1) \wedge S_\tau(f_2, g_2) \\
-              \;\;\;\; \implies f = \lambda x. (f_2(x) :: f_1(x)) \wedge \\
-              \;\;\;\;\;\; g = \lambda x. (g_2(x) :: g_1(x))
+              \;\;\;\; \to f = (\lambda x. f_2(x) :: f_1(x)) \wedge \\
+              \;\;\;\;\;\; g = (\lambda x. g_2(x) :: g_1(x))
           \end{array}
         \right.
     \label{eqn:inst_base}
     \end{equation}
   \end{definition}
 
-  Using this notion of instantiations we can now formulate our substitution lemma.
+  Using this notion of instantiations we can now formulate our fundamental lemma. Informally, this states that given correct instantiation functions any well-typed term is semantically correct with respect to the logical relation.
 
   \begin{lemma}[Substitution]\label{thm:substitution_lemma}
-    For any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s_D)$, then $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
+    For any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s_D)$, we have that $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
   \end{lemma}
 
-  The proof proceeds by induction on the typing derivation of the well-typed term $t$.
-  The majority of cases follow from the induction hypothesis.
-  The case for \<var> follows from $inst$ which ensures that any term referenced is semantically well-typed with respect to the relation.
-  Proving the cases used to encode the operators on reals such as \<add> and \<mul> involve proving both smoothness and giving the witness of the derivative.
-
   % \input{proof_base.tex}
+
+  \begin{proof}
+    This is proven by induction on the typing derivation of the well-typed term $t$. The majority of cases follow from the induction hypothesis.
+    The case for \<var> follows from $inst$ which ensures that any term referenced is semantically well-typed with respect to the relation.
+    Proving the cases used to encode the operators on reals such as \<add> and \<mul> involve proving both smoothness and giving the witness of the derivative.
+  \end{proof}
 
   We can derive the fundamental property of the base logical relation directly from the substitution lemma.
   This involves proving the prerequisite $inst$ we used previously.
   Note that the correctness of both the macro and the fundamental property is dependent on the requirement that the denotations supplied by the argument function are smooth.
 
-  \begin{lemma}[Fundamental property]\label{thm:fundamental_property}
-    For any term $x_1 : R, ..., x_n : R \vdash t : R$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : R \rightarrow R^n$, then $S_\tau(\llbracket t\rrbracket \circ f, \llbracket \D(t)\rrbracket \circ \D_n \circ f)$.
-  \end{lemma}
+  \begin{corrollary}[Fundamental property]\label{thm:fundamental_property}
+    For any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : \denR \to \denR^n$, we have that $S_\tau(\llbracket t\rrbracket \circ f, \llbracket \D(t)\rrbracket \circ \D_n \circ f)$.
+  \end{corrollary}
 
-  This is proven using the substitution lemma.
-  The remaining goal of $inst_{R^n}$ is proven by induction on the number of arguments, $n$.
-  With the case where $n = 0$, the goal is trivial due to the argument function $f$ being extensionally equal to $const\ []$, which directly corresponds to $inst_{[]}$.
-  Similarly the induction step is proven by both the induction hypothesis and the assumption that the denotations of the arguments supplied are smooth.
+  \begin{proof}
+    This follows from the substitution lemma. We lastly need to prove $\inst{(\synRepeat{\synR}{n})}$.
+    This is proven by induction on $n$.
+    If $n = 0$, the goal is trivial due to the argument function $f$ being extensionally equal to $\synConst{[]}$, which directly corresponds to $\inst{[]}$.
+    The induction step is proven by both the induction hypothesis and the assumption that the denotations of the arguments supplied are smooth.
+  \end{proof}
 
   \begin{theorem}[Macro correctness]
-    For any term $x_1 : R, ..., x_n : R \vdash t : R$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : R \rightarrow R^n$, then $\llbracket \D(t) \rrbracket \circ \D_n \circ f = \lambda x. (\llbracket t \rrbracket \circ f, \sfrac{\partial{(\llbracket t \rrbracket \circ f)}}{\partial{x}})$.
+    For any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : \denR \rightarrow \denR^n$, we have that $\llbracket \D(t) \rrbracket \circ \D_n \circ f = \lambda x. (\llbracket t \rrbracket \circ f, \sfrac{\partial{(\llbracket t \rrbracket \circ f)}}{\partial{x}})$.
   \end{theorem}
 
   \begin{proof}
-    This is proven by showing that the goal follows from the logical relation which itself implied by the fundamental property (\ref{thm:fundamental_property}) for well-typed terms.
+    This is proven by showing that the goal follows from the logical relation which itself is implied by the fundamental property.
 
     \begin{align*}
       \llbracket \D(t) &\rrbracket \circ \D_n \circ f = \lambda x. (\llbracket t \rrbracket \circ f, \sfrac{\partial{(\llbracket t \rrbracket \circ f)}}{\partial{x}}) \\

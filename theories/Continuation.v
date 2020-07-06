@@ -30,7 +30,6 @@ Local Open Scope type_scope.
 Fixpoint Dt_c (n : nat) (σ : ty) : ty :=
   match σ with
   | Real => Real × (Real → Array n Real)
-  (* | Nat => Nat *)
   | Array m τ => Array m (Dt_c n τ)
   | τ1 × τ2 => (Dt_c n τ1 × Dt_c n τ2)
   | τ1 → τ2 => (Dt_c n τ1 → Dt_c n τ2)
@@ -47,31 +46,32 @@ Fixpoint Dv_c n {Γ τ} (v: τ ∈ Γ) : (Dt_c n τ) ∈ (map (Dt_c n) Γ) :=
   end.
 
 Equations Dtm_c n {Γ τ} : tm Γ τ -> tm (map (Dt_c n) Γ) (Dt_c n τ) :=
+Dtm_c n (Γ:=Γ) (τ:=τ) t with t := {
 (* STLC *)
-Dtm_c n (Γ:=Γ) (τ:=τ) (var Γ τ v) := var _ _ (Dv_c n v);
-Dtm_c n (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) := app _ _ _ (Dtm_c n t1) (Dtm_c n t2);
-Dtm_c n (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm_c n f);
+  | (var Γ τ v) := var _ _ (Dv_c n v);
+  | (app Γ τ σ t1 t2) := app _ _ _ (Dtm_c n t1) (Dtm_c n t2);
+  | (abs Γ τ σ f) := abs _ _ _ (Dtm_c n f);
 (* Arrays *)
-Dtm_c n (Γ:=Γ) (τ:=τ) (build Γ τ m ta) =>
+  | (build Γ τ m ta) =>
   build _ _ _ (Dtm_c n ∘ ta);
-Dtm_c n (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm_c n ta);
+  | (get Γ ti ta) => get _ ti (Dtm_c n ta);
 (* Reals *)
-Dtm_c n (Γ:=Γ) (τ:=τ) (rval Γ r) :=
+  | (rval Γ r) :=
   tuple _ (rval _ r) (abs _ _ _ (build _ _ _ (const (rval _ 0))));
-Dtm_c n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm_c n t1 := {
-  Dtm_c n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 with Dtm_c n t2 := {
-    Dtm_c n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 d2 :=
+  | (add Γ t1 t2) with Dtm_c n t1 := {
+    | d1 with Dtm_c n t2 := {
+      | d2 :=
       tuple _
         (add _ (first _ d1) (first _ d2))
         (abs _ _ _
           (vector_add
             ((app _ _ _ (shift (second _ d1)) (var _ _ (Top _ _))))
             ((app _ _ _ (shift (second _ d2)) (var _ _ (Top _ _))))))
-  }
-};
-Dtm_c n (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) with Dtm_c n t1 := {
-  Dtm_c n (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) d1 with Dtm_c n t2 := {
-    Dtm_c n (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) d1 d2 :=
+    }
+  };
+  | (mul Γ t1 t2) with Dtm_c n t1 := {
+    | d1 with Dtm_c n t2 := {
+      | d2 :=
       tuple _
         (mul _ (first _ d1) (first _ d2))
         (abs _ _ _
@@ -80,17 +80,18 @@ Dtm_c n (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) with Dtm_c n t1 := {
               (mul _ (shift (first _ d2)) (var _ _ (Top _ _)))))
             ((app _ _ _ (shift (second _ d2))
               (mul _ (shift (first _ d1)) (var _ _ (Top _ _)))))))
-  }
-};
+    }
+  };
 (* Products *)
-Dtm_c n (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) := tuple _ (Dtm_c n t1) (Dtm_c n t2);
-Dtm_c n (Γ:=Γ) (τ:=τ) (first Γ p) := first _ (Dtm_c n p);
-Dtm_c n (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm_c n p);
-Dtm_c n (Γ:=Γ) (τ:=τ) (case Γ e t1 t2) :=
+  | (tuple Γ t1 t2) := tuple _ (Dtm_c n t1) (Dtm_c n t2);
+  | (first Γ p) := first _ (Dtm_c n p);
+  | (second Γ p) := second _ (Dtm_c n p);
+(* Sums *)
+  | (case Γ e t1 t2) :=
   case _ (Dtm_c n e) (Dtm_c n t1) (Dtm_c n t2);
-Dtm_c n (Γ:=Γ) (τ:=τ) (inl Γ p) := inl _ (Dtm_c n p);
-Dtm_c n (Γ:=Γ) (τ:=τ) (inr Γ p) := inr _ (Dtm_c n p)
-.
+  | (inl Γ p) := inl _ (Dtm_c n p);
+  | (inr Γ p) := inr _ (Dtm_c n p)
+}.
 
 (* Forward *)
 Fixpoint Dt n τ : ty :=
@@ -112,49 +113,44 @@ Fixpoint Dv {Γ τ n} (v: τ ∈ Γ) : (Dt n τ) ∈ (Dctx n Γ) :=
   end.
 
 Equations Dtm {Γ τ} n : tm Γ τ -> tm (map (Dt n) Γ) (Dt n τ) :=
+Dtm n (Γ:=Γ) (τ:=τ) v with v := {
 (* STLC *)
-Dtm n (Γ:=Γ) (τ:=τ) (var Γ τ v) := var _ _ (Dv v);
-Dtm n (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) := app _ _ _ (Dtm n t1) (Dtm n t2);
-Dtm n (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) := abs _ _ _ (Dtm n f);
+  | (var Γ τ v) := var _ _ (Dv v);
+  | (app Γ τ σ t1 t2) := app _ _ _ (Dtm n t1) (Dtm n t2);
+  | (abs Γ τ σ f) := abs _ _ _ (Dtm n f);
 (* Arrays *)
-(* Dtm n (Γ:=Γ) (τ:=τ) (build_nil Γ τ) => build_nil _ _; *)
-Dtm n (Γ:=Γ) (τ:=τ) (build Γ τ m ta) =>
+  | (build Γ τ m ta) =>
   build _ _ _ (Dtm n ∘ ta);
-Dtm n (Γ:=Γ) (τ:=τ) (get Γ ti ta) => get _ ti (Dtm n ta);
-(* Nat *)
-(* Dtm n (Γ:=Γ) (τ:=τ) (nval Γ m) := nval _ m;
-Dtm n (Γ:=Γ) (τ:=τ) (nsucc Γ m) := nsucc _ (Dtm n m);
-Dtm n (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti t) :=
-  nrec _ _ (Dtm n tf) (Dtm n ti) (Dtm n t); *)
+  | (get Γ ti ta) => get _ ti (Dtm n ta);
 (* Reals *)
-Dtm n (Γ:=Γ) (τ:=τ) (rval Γ r) :=
+  | (rval Γ r) :=
   tuple _ (rval _ r) (build _ _ n (fun _ => rval _ 0));
-Dtm n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) with Dtm n t1 := {
-  Dtm n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 with Dtm n t2 := {
-    Dtm n (Γ:=Γ) (τ:=τ) (add Γ t1 t2) d1 d2 :=
-      tuple _
+  | (add Γ t1 t2) with Dtm n t1 := {
+    | d1 with Dtm n t2 := {
+      | d2 := tuple _
         (add _ (first _ d1) (first _ d2))
         (vector_add (second _ d1) (second _ d2))
-  }
-};
-Dtm n (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) with Dtm n t1 := {
-  Dtm n (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) d1 with Dtm n t2 := {
-    Dtm n (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) d1 d2 :=
+    }
+  };
+  | (mul Γ t1 t2) with Dtm n t1 := {
+    | d1 with Dtm n t2 := {
+      | d2 :=
       tuple _
         (mul _ (first _ d1) (first _ d2))
         (vector_add
           (vector_map (second _ d1) (mul _ (first _ d2)))
           (vector_map (second _ d2) (mul _ (first _ d1))))
-  }
-};
+    }
+  };
 (* Products *)
-Dtm n (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) := tuple _ (Dtm n t1) (Dtm n t2);
-Dtm n (Γ:=Γ) (τ:=τ) (first Γ p) := first _ (Dtm n p);
-Dtm n (Γ:=Γ) (τ:=τ) (second Γ p) := second _ (Dtm n p);
+  | (tuple Γ t1 t2) := tuple _ (Dtm n t1) (Dtm n t2);
+  | (first Γ p) := first _ (Dtm n p);
+  | (second Γ p) := second _ (Dtm n p);
 (* Sums *)
-Dtm n (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) := case _ (Dtm n e) (Dtm n c1) (Dtm n c2);
-Dtm n (Γ:=Γ) (τ:=τ) (inl Γ e) := inl _ (Dtm n e);
-Dtm n (Γ:=Γ) (τ:=τ) (inr Γ e) := inr _ (Dtm n e).
+  | (case Γ e c1 c2) := case _ (Dtm n e) (Dtm n c1) (Dtm n c2);
+  | (inl Γ e) := inl _ (Dtm n e);
+  | (inr Γ e) := inr _ (Dtm n e)
+}.
 
 Lemma vector_eq : forall A n (h h' : A) (t t' : vector A n),
   h = h' -> t = t' -> Vcons h t = Vcons h' t'.

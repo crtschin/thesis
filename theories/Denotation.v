@@ -67,8 +67,8 @@ Lemma denote_ctx_eq :
 Proof. intros; rewrites. Qed.
 
 Equations denote_v {Γ τ} (v: τ ∈ Γ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ :=
-denote_v (Top Γ τ) (HCons h t) := h;
-denote_v (Pop Γ τ σ v) (HCons h t) := denote_v v t.
+denote_v (Top Γ τ) := denote_ctx_hd;
+denote_v (Pop Γ τ σ v) := denote_v v ∘ @denote_ctx_tl (σ::Γ).
 Notation "⟦ v ⟧ᵥ" := (denote_v v).
 
 Fixpoint vector_nth {s : Set} {n}

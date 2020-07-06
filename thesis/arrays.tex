@@ -1,9 +1,21 @@
-\subsection{Arrays}
-  Rarely is automatic differentiation done on mono-valued real numbers, due to the massive computational power available in GPUs in the form of array operations.
+\subsection{Arrays}\label{sec:arrays}
+  % TODO: Mention something about Shaikhha, et. al.'s system of optimizations and how this is able to let the performance of forward-mode AD approach reverse-mode levels.
+  Automatic differentiation is rarely done on mono-valued real numbers, due to the massive computational power available on GPUs in the form of array operations.
   So the next extension worth considering in our language are the array types.
-  To be more specific we will be considering the array types and terms presented by Shaikhha, et. al.\cite{Shaikha2019}.
-  The well-typed nature of our presentation allows us to avoid much of the hairy details associated with bounds checking both indexing and array creation constructions.
-  This is possible using the finite datatype, \<Fin>, which is indexed by the upper-bound and represents for some $n$, the range of $[1..n]$.
+  To be more specific, we will be considering the array types and terms presented by Shaikhha, et. al.\cite{Shaikha2019}.
+
+  This final iteration of our simply-typed lambda calculus differs from the \Fsmooth{} language given by Shaikha, et. al. only superficially.
+  We can define both their \<ifold> and \<let> constructs as syntactic sugar:
+  \begin{gather*}
+    \letin{e}{t} \equiv \app{(\abs{t})}{e} \\
+    \ifold{f}{n}{d} \equiv
+    \nrec{(\app{(\abs{(\app{f}{(\nsucc{(\var{\Top})})})})}{(\nval{0})})}{n}{d}
+  \end{gather*}
+  Note that due to our nameless representation, \<let> terms lose much of their original usefulness in writing programs.
+  Nonetheless, we included it to help formulate some of the program optimizations used in the final system.
+  We also omit much of their cardinality and indexing constructions due to our shallow embedding of arrays.
+  The well-typed nature of our representation allows us to avoid much of the hairy details associated with bounds checking both indexing and array creation.
+  To accomplish this, we use the \<Fin> inductive datatype which is indexed by an upper-bound and represents for some $n$, the range $[1..n]$.
 
   \begin{figure}
     \begin{mathpar}
@@ -20,7 +32,6 @@
   \end{figure}
 
   Both the macro and denotation functions deviate slightly from how the previous terms were defined.
-  % While it sufficed to recurse down the datatype and apply the appropriate functions at each level previously, this is not possible as with the \<build> term as it contains a function.
   When looking at the macro, while it previously sufficed to recursively call the macro on subterms, this is not possible as the subterm of interest is now a function.
   This can be solved by substituting the function by a composition of itself combined with the forward-mode macro, essentially applying the macro to every possible result of the function.
 
@@ -40,31 +51,30 @@
   Similarly for denotations, the denotation function, instantiated to the correct type, has to be passed along to an auxiliary function that builds up a vector of denotation terms.
   Appropriately, array types will denotate to vectors indexed by length.
   There is some additional boilerplate necessary to circumvent the structurally recursive requirement imposed by the \<Coq> type checker.
-  Note that in the definition of $vect$, the $Fin$ and $nat$ types are treated interchangeably, where $\Fin{n}$ is interpreted as $n$.
-  The recursive call to $vect$ also transforms the function by incrementing the bounded integer given as its argument.
+  Note that in the definition of $vect$, the $Fin$ and $nat$ types are treated interchangeably, where $\Fin{n}$ is treated as the type level integer corresponding to a $n : \denN$.
+  So every $n : \denN$ is transformed to $1$ in the corresponding $\Fin{n}$, and any $i : \Fin{n}$ is transformed to $n$.
 
   \begin{figure}
-    \centering
-    \begin{gather}
-      \begin{align*}
+    \begin{gather*}
+      \begin{aligned}
       \llbracket \Array{n}{\tau} \rrbracket &=
         vector(n, \llbracket \tau \rrbracket) \\
       \llbracket \build{n}{f} \rrbracket &=
         \lambda x.
         vect(n, \llbracket \rrbracket \circ f, x) \\
       \llbracket \get{i}{t} \rrbracket &=
-        \lambda x. \llbracket t \rrbracket(x) ! i \\
-      \end{align*} \\
-      \begin{align*}
+        \lambda x. \denGet{\llbracket t \rrbracket(x)}{i} \\
+      \end{aligned}\\ \\
+      \begin{aligned}
       vect(i, f, x) &=
         \begin{cases}
-          []
+          \denNil
             &: i = 0 \\
-          f(i, x) :: vect(i', \lambda j. f(j + 1), x)
-            &: i = S(i')
+          \denCons{f(i, x)}{vect(i', \lambda j. f(j + 1), x)}
+            &: i = i' + 1
         \end{cases}
-      \end{align*}
-    \end{gather}
+      \end{aligned}
+    \end{gather*}
     \caption{Denotations of the array construction and indexing terms}
     \label{eqn:denotation_array}
   \end{figure}

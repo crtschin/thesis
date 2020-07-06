@@ -1,0 +1,75 @@
+\subsection{Formalizing Continuation-Based AD}\label{sec:continuation_based}
+  The guiding principle in this algorithm is to build up the reverse pass as a continuation using a macro on the program.
+  Like the forward-mode macro $\D$, the continuation-based macro $\Dc$ is structure preserving and works with tuples at ground type $\synR$.
+  But unlike the forward-mode macro, which uses these tuples to represent dual-numbers, the continuation-based macro pairs the primal values with a continuation calculating all of the perturbation values.
+  Notably, because the macro calculates the perturbation values with respect to each of the input variables, the macro is also indexed by the number of input variables.
+
+  \begin{figure}[H]
+    \centering
+    \begin{equation*}
+      \begin{split}
+        \Dc_n(\synR) &= \synR \synStar (\synR \synFunc \Array{n}{\synR}) \\
+        \Dc_n(\tau \synStar \sigma) &= \D(\tau) \synStar \D(\sigma) \\
+        \Dc_n(\tau \synPlus \sigma) &= \D(\tau) \synPlus \D(\sigma) \\
+        \Dc_n(\tau \synFunc \sigma) &= \D(\tau) \synFunc \D(\sigma) \\
+        \Dc_n(\Array{m}{\tau}) &= \Array{m}{\Dc_n(\tau)}
+      \end{split}
+      \;\;\;\;\;\;
+      \begin{split}
+        \Dc_n(\rval{r}) &= \tuple{(\rval{r})}{(\rval{0})} \\
+        \Dc_n(\add{r_1}{r_2}) &= \tuple{(\add{r_1}{r_2})}{(\add{r_1'}{r_2'})} \\
+        \Dc_n(\mul{r_1}{r_2}) &= \tuple{(\mul{r_1}{r_2})} \\
+          &{(\add{(\mul{r_1'}{r_2})}{(\mul{r_2'}{r_1})})})
+      \end{split}
+    \end{equation*}
+    \caption{Continuation-based macro on the simply-typed lambda calculus extended with array types}
+    \label{eqn:macro_base}
+  \end{figure}
+
+  As we will phrase correctness in terms of the forward-mode macro, the forward-mode macro used in Section~\ref{sec:formal_stlc} has to be slightly altered to calculate the partial derivatives with respect to all of the input variables.
+  This change is slight, and merely swaps what was previously the tangent value for a vector of the tangent values corresponding to the input variables.
+  The operations of reals are then swapped out for their vector element-wise counterparts.
+  The modified forward-mode macro is shown in Figure~\ref{fig:forward_mode_cont}.
+
+  \begin{figure}[H]
+    \centering
+    \begin{subfigure}{1\textwidth}
+      \begin{gather*}
+        \begin{aligned}
+          \D_n(\synR) &= \synR \synStar \Array{n}{\synR} \\
+          \D_n(\tau \synStar \sigma) &= \D(\tau) \synStar \D(\sigma) \\
+          \D_n(\tau \synPlus \sigma) &= \D(\tau) \synPlus \D(\sigma) \\
+          \D_n(\tau \synFunc \sigma) &= \D(\tau) \synFunc \D(\sigma) \\
+          \D_n(\Array{m}{\tau}) &= \Array{m}{\Dc_n(\tau)}
+        \end{aligned} \\ \\
+        \begin{aligned}
+          \D_n(\rval{r}) &= \tuple{(\rval{r})}{(\build{n}{(\texttt{fun \_ => 0})})} \\
+          \D_n(\add{r_1}{r_2}) &= \tuple{(\add{r_1}{r_2})}{(\vecadd{r_1'}{r_2'})} \\
+          \D_n(\mul{r_1}{r_2}) &= \tuple{(\mul{r_1}{r_2})}
+            {\\&(\vecadd{(\vecscale{r_2}{r_1'})}{(\vecscale{r_1}{r_2'})})}
+        \end{aligned}
+      \end{gather*}
+      \caption{Forward-mode macro calculating all partial derivatives}
+    \end{subfigure}
+    \begin{subfigure}{1\textwidth}
+      \begin{minted}{coq}
+        Definition vector_map ~$\Gamma$~ ~$\tau$~ ~$\sigma$~ n ( a : tm ~$\Gamma$~ (Array n ~$\tau$~) )
+          ( f : tm ~$\Gamma$~ ~$\tau$~ ~$\rightarrow$~ tm ~$\Gamma$~ ~$\sigma$~ ) : tm ~$\Gamma$~ (Array n ~$\sigma$~) :=
+          build n (fun i => f (get i a)).
+        Definition vector_map2 ~$\Gamma$~ ~$\tau$~ ~$\sigma$~ ~$\rho$~ n
+          ( a1 : tm ~$\Gamma$~ (Array n ~$\tau$~) ) ( a2 : tm ~$\Gamma$~ (Array n ~$\sigma$~) )
+          ( f : tm ~$\Gamma$~ ~$\tau$~ ~$\rightarrow$~ tm ~$\Gamma$~ ~$\sigma$~ ~$\rightarrow$~ tm ~$\Gamma$~ ~$\rho$~ ) : tm ~$\Gamma$~ (Array n ~$\rho$~) :=
+          build n (fun i => f (get i a1) (get i a2)).
+        Definition vector_add ~$\Gamma$~ n
+          ( a1 a2 : tm ~$\Gamma$~ (Array n ~$\synR$~) ) : tm ~$\Gamma$~ (Array n ~$\synR$~) := vector_map2 a1 a2 add.
+        Definition vector_scale ~$\Gamma$~ n ( s : tm ~$\Gamma$~ ~$\synR$~ )
+          ( a : tm ~$\Gamma$~ (Array n ~$\synR$~) ) : tm ~$\Gamma$~ (Array n ~$\synR$~) := vector_map a (mul s).
+      \end{minted}
+      \caption{Helper functions on array types}
+      \end{subfigure}
+    \caption{Continuation-based macro on the simply-typed lambda calculus extended with array types}
+    \label{fig:forward_mode_cont}
+  \end{figure}
+
+  As we work with the same denotational semantics as in our proof in Section~\ref{sec:formal_stlc}, the usage of an argument supplying function $f : \denR \denFunc \denR^n$ makes a reappearance.
+  Unlike last time, however, the arguments have to be massaged to fit both the forward and the reverse-mode macro.

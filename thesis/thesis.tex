@@ -34,9 +34,9 @@
 \input{coq.tex}
 \input{logical_relation.tex}
 \input{related_work.tex}
-\input{notations.tex}
+% \input{notations.tex}
 
-\section{Formalizing Forward-Mode AD}
+\section{Formalizing Forward-Mode AD}\label{sec:forward}
   We will explain our formalization of the forward-mode automatic differentiation macro in the following sections.
   The formal proof will start from a base simply-typed lambda calculus extended with product types and incrementally add both sum and array types.
   Also included in the final language are natural number types with a primitive recursion principle.
@@ -45,14 +45,26 @@
   \input{sums_prim.tex}
   \input{arrays.tex}
 \section{Optimization}
-  \subsection{Program Transformations}
+  Shaikhha, et. al. have presented a small system which has proven to be very performant\cite{Shaikha2019}.
+  They empirically showed that forward-mode AD can approach the performance of reverse-mode AD, even if the forward-mode algorithm has to be executed $n$ times to calculate the $n$ partial derivatives of a function.
+  In Section~\ref{sec:arrays} we already formalized one of the critical components of their system, namely their usage of array types.
+  Next, we will prove that the various program transformation rules they use to drastically reduce the number of calculations needed, are sound.
+  \input{program_transformation.tex}
 \section{Towards Formalizing Reverse-Mode AD}
-  \subsection{Formalizing Continuation-Based AD}
-  \subsection{Combinator-Based Source Code Transformation}
+  % TODO: Find/read more about this
+  % Eliott paper
+  There have been attempts at reverse-mode algorithms that operate on simply-typed lambda calculi\cite{ShiftReset:Backpropagator}\cite{Brunel2020BackpropagationIT}\cite{PearlmutterSiskind2008}, but these often make use of unconventional semantics such as mutable state or delimited continuations.
+
+  Huot, Staton and \Vakar{} showed the versatility of their denotational semantics on a continuation-based automatic differentiation algorithm, whose origin can be traced back to the implementation given by Karczmarczuk\cite{Karczmarczuk98functionaldifferentiation}.
+  While this algorithm does calculate gradients, it is not true a reverse-mode AD algorithm, as their resulting computation graphs differ\cite{PearlmutterSiskind2008}.
+  Nonetheless, it is useful to prove correctness of this algorithm in terms of what we have already established, to show the versatility of our proofs and, by extension, the simple simple set-theoretic denotational semantics.
+  This is done in Section~\ref{sec:continuation_based}.
+  A novel reverse-mode algorithm posed by \Vakar{}\cite{} along with an attempt at a formal proof in \<Coq>, is discussed in Section~\ref{sec:combinator_based}. % TODO: find out how to cite the unpublished paper
+  \input{continuation.tex}
+  \input{combinator.tex}
 \section{Discussion}
-  \subsection{Problems}
   \input{future_work.tex}
-\section{Conclusion}
+  \subsection{Conclusion}
 
 \appendix
 \section{Language Definitions}

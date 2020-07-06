@@ -1,0 +1,142 @@
+\subsection{Program Transformations}
+The transformation rules consist of several algebraic identities, along with compile time optimization techniques such as partial evaluation and deforestation or loop fusion.
+
+\begin{figure}[]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \begin{align*}
+      \add{t_1}{t_2} &\leadsto \add{t_2}{t_1} \\
+      \add{0}{t} &\leadsto t \\
+      \add{t}{(-t)} &\leadsto 0 \\
+      \mul{t_1}{t_2} &\leadsto \mul{t_2}{t_1} \\
+      \add{(\mul{t}{t_1})}{(&\mul{t}{t_2})} \\
+        \leadsto \mul{t}{&(\add{t_1}{t_2})} \\
+      \mul{0}{t} &\leadsto 0 \\
+      \mul{1}{t} &\leadsto t
+    \end{align*}
+    \caption{Algebraic laws}
+  \end{subfigure}
+  \begin{subfigure}{0.48\textwidth}
+    \begin{subfigure}{1\textwidth}
+      \begin{align*}
+        t \evals t' \to t \leadsto t'
+      \end{align*}
+      \caption{Reuse rewriting rules from operational semantics}
+    \end{subfigure}
+    \begin{subfigure}{1\textwidth}
+      \begin{align*}
+        t \leadsto t' \to \abs{t} \leadsto \abs{t'}
+      \end{align*}
+      \caption{Partial evaluation on functions}
+    \end{subfigure}
+    \begin{subfigure}{1\textwidth}
+      \begin{align*}
+        \get{i}{(\build{n}{f})}\leadsto f\ i
+      \end{align*}
+      \caption{Loop fusion}
+    \end{subfigure}
+  \end{subfigure}
+  \begin{subfigure}{1\textwidth}
+    \begin{align*}
+      \ifold{
+        &(\abs{(\abs{
+          (\tuple
+          {\\&\hspace{-0.5cm}(\app{(\app{f}{(\var{(\Pop{\Top}))}})}
+              {(\first{(\var{\Top})})})}
+          {\\&\hspace{-0.5cm}(\app{(\app{f}{(\var{(\Pop{\Top}))}})}
+              {(\second{(\var{\Top})})})})})})}
+        {i}{(\tuple{z_1}{z_2})} \\
+        & \leadsto \tuple{(\ifold{f}{i}{z_1})}{(\ifold{f}{i}{z_2})}
+    \end{align*}
+    \caption{Loop fission}
+  \end{subfigure}
+  \caption{Included rewrite rules for the simply-typed lambda calculus extended with sum, product, number and array types}
+  \label{fig:rewrite_rules}
+\end{figure}
+
+As a small deviation from the rules given by Shaikhha, et. al.\cite{Shaikha2019}, we explicitly included some simplification rules in the style of a natural semantics. Figures \ref{fig:rewrite_rules} and \ref{fig:natural_infer} show, respectively, the rewrite rules we included in our language and the inference rules we used for our simplification rules.
+
+\begin{figure}
+  \begin{mathpar}
+    \inferrule*[Right=\textsc{EVAppAbs}]
+      {t_1 \evals \abs{t_1'} \\
+        t_2 \evals t_2'}
+      {\app{t_1}{t_2} \evals \substitute{t_2'}{t_1'}} \and
+    \inferrule*[Right=\textsc{EVSucc}]
+      {t \evals \nval{n}}
+      {\nsucc{t} \evals \nval{(n + 1)}} \\ \and
+    \inferrule*[Right=\textsc{EVNRec0}]
+      {t_1 \evals t_1' \\
+        t_2 \evals \nval{0} \\
+        t_3 \evals t_3'}
+      {\nrec{t_1}{t_2}{t_3} \evals t_3} \\ \and
+    \inferrule*[Right=\textsc{EVNRecS}]
+      {t_1 \evals t_1' \\
+        t_2 \evals \nval{(n + 1)} \\
+        t_3 \evals t_3'}
+      {\nrec{t_1}{t_2}{t_3} \evals \app{t_1'}{(\nrec{t_1'}{(\nval{n})}{t_3'})}} \\ \and
+    \inferrule*[Right=\textsc{EVAdd}]
+      {t_1 \evals \rval{r_1} \\
+        t_2 \evals \rval{r_2}}
+      {\add{t_1}{t_2} \evals \rval{r_1 + r_2}} \and
+    \inferrule*[Right=\textsc{EVMult}]
+      {t_1 \evals \rval{r_1} \\
+        t_2 \evals \rval{r_2}}
+      {\mul{t_1}{t_2} \evals \rval{r_1 * r_2}} \\ \and
+      \inferrule*[Right=\textsc{EVTuple}]
+        {t_1 \evals t_1' \\
+          t_2 \evals t_2'}
+        {\tuple{t_1}{t_2} \evals \tuple{t_1'}{t_2'}} \\ \and
+      \inferrule*[Right=\textsc{EVFst}]
+        {t \evals \tuple{t_1}{t_2}}
+        {\first{t} \evals t_1} \and
+      \inferrule*[Right=\textsc{EVSnd}]
+        {t \evals \tuple{t_1}{t_2}}
+        {\second{t} \evals t_2} \\ \and
+      \inferrule*[Right=\textsc{EVInl}]
+        {t \evals t'}
+        {\inl{t} \evals \inl{t'}} \and
+      \inferrule*[Right=\textsc{EVInr}]
+        {t \evals t'}
+        {\inr{t} \evals \inr{t'}} \\ \and
+      \inferrule*[Right=\textsc{EVCaseInl}]
+        {t \evals \inl{t'} \\
+          t_1 \evals t_1' \\
+          t_2 \evals t_2'}
+        {\case{t}{t_1}{t_2} \evals \app{t_1'}{t'}} \\ \and
+      \inferrule*[Right=\textsc{EVCaseInr}]
+        {t \evals \inr{t'} \\
+          t_1 \evals t_1' \\
+          t_2 \evals t_2'}
+        {\case{t}{t_1}{t_2} \evals \app{t_2'}{t'}}
+  \end{mathpar}
+  \caption{Inference rules for the evaluation relation}
+  \label{fig:natural_infer}
+\end{figure}
+
+Before we can prove soundness of our rewrite rules, we have to prove soundness of our natural semantics.
+We reuse the denotational semantics from Section~\ref{sec:forward} we used to prove the forward-mode algorithm correct.
+
+\begin{lemma}[Soundness of natural semantics]\label{lem:natural_soundness}
+  For any well-typed terms $t, t'$ such that $t \Downarrow t'$ holds, we have $\llbracket t \rrbracket = \llbracket t' \rrbracket$.
+\end{lemma}
+\begin{proof}
+  This is proven by induction on the evaluation relation $\Downarrow$.
+  All of the cases follow from the induction hypotheses after simplification.
+\end{proof}
+
+\begin{theorem}[Soundness of program transformations]
+  For any well-typed terms $t, t'$ such that $t \leadsto t'$ holds, we have $\llbracket t \rrbracket = \llbracket t' \rrbracket$.
+\end{theorem}
+\begin{proof}
+  This is proven by induction on the rewriting relation $\Downarrow$.
+  Most of the cases follow from the induction hypothesis.
+  The rewrite rule where we incorporated the evaluation relation is proven by Lemma~\ref{lem:natural_soundness}.
+  The rewrite rules associated with algebraic identities are proven by exactly those identities after simplifying using the denotational semantics.
+
+  For the loop fusion rule, we first do induction on the index, $i$.
+  For $i = 0$, we use case-analysis on $n$ along with simple rewriting to prove the goal. The induction step is proven by the induction hypothesis.
+  Similarly for the loop fission rule, we have to do induction on the denotation of the term used to encode the number of iterations.
+  The base case is trivial and the induction step is proven by the induction hypothesis.
+\end{proof}

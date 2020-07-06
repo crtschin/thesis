@@ -25,9 +25,9 @@ Natural.vos Natural.vok Natural.required_vos: Natural.v Tactics.vos Definitions.
 Normalization.vo Normalization.glob Normalization.v.beautified Normalization.required_vo: Normalization.v Tactics.vo Definitions.vo Denotation.vo
 Normalization.vio: Normalization.v Tactics.vio Definitions.vio Denotation.vio
 Normalization.vos Normalization.vok Normalization.required_vos: Normalization.v Tactics.vos Definitions.vos Denotation.vos
-Rewrite.vo Rewrite.glob Rewrite.v.beautified Rewrite.required_vo: Rewrite.v DepList.vo Tactics.vo Definitions.vo Normalization.vo Macro.vo Denotation.vo
-Rewrite.vio: Rewrite.v DepList.vio Tactics.vio Definitions.vio Normalization.vio Macro.vio Denotation.vio
-Rewrite.vos Rewrite.vok Rewrite.required_vos: Rewrite.v DepList.vos Tactics.vos Definitions.vos Normalization.vos Macro.vos Denotation.vos
+Rewrite.vo Rewrite.glob Rewrite.v.beautified Rewrite.required_vo: Rewrite.v DepList.vo Tactics.vo Definitions.vo Natural.vo Macro.vo Denotation.vo
+Rewrite.vio: Rewrite.v DepList.vio Tactics.vio Definitions.vio Natural.vio Macro.vio Denotation.vio
+Rewrite.vos Rewrite.vok Rewrite.required_vos: Rewrite.v DepList.vos Tactics.vos Definitions.vos Natural.vos Macro.vos Denotation.vos
 Simply.vo Simply.glob Simply.v.beautified Simply.required_vo: Simply.v Tactics.vo DepList.vo
 Simply.vio: Simply.v Tactics.vio DepList.vio
 Simply.vos Simply.vok Simply.required_vos: Simply.v Tactics.vos DepList.vos

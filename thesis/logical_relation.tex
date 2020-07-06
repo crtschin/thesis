@@ -1,9 +1,9 @@
 \subsection{Logical relations}
 % TODO: Work through MV feedback
-Logical relations is a technique often employed when proving programming language properties of statically typed languages\cite{skorstengaard2019introduction}. There are two main ways they are used, namely as unary and binary relations.
+Logical relations arguments are a proof technique often employed when proving programming language properties of statically typed languages\cite{skorstengaard2019introduction}. There are two main ways they are used, namely as unary and binary relations.
 Unary logical relations, also known as logical predicates, are predicates over single terms and are typically used to prove language characteristics such as type safety or strong normalization.
 Binary logical relations on the other hand are used to prove program equivalences, usually in the context of denotational semantics as we will do.
-There have been many variations on the versatile technique from syntactic step-indexed relations which have been used to solve recursive types\cite{Ahmed2006}, to open relations which enable working with terms of non-ground type\cite{barthe2020versatility}\cite{huot2020correctness}.
+There have been many variations on the versatile technique from syntactic step-indexed relations which have been used to reason about recursive types and general references\cite{Ahmed2006}, to open relations which enable working with terms of non-ground type\cite{barthe2020versatility}\cite{huot2020correctness}.
 Logical relations in essence are relations between terms defined by induction on their types.
 A logical relations proof consists of 2 main steps.
 The first states the terms for which the property is expected to hold are in the relation, while the second states that the property of interest follows from the relation.
@@ -27,6 +27,6 @@ More specifically when applying a function term to an argument term which termin
     SN ~(\tau \Rightarrow \sigma)~ t := halts t ~$\wedge$~
       ~(\forall (s : tm \Gamma \tau), SN \tau s \rightarrow SN \sigma (app \Gamma \sigma \tau t s))~;
   \end{minted}
-  \caption{Example of a logical predicate used in a strong normalizations proof in the intrinsic strongly-typed representation}
+  \caption{Example of a logical predicate used in a strong normalization proof in the strongly-typed intrinsic representation}
   \label{lst:sn_logical_relation}
 \end{listing}

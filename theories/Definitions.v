@@ -471,3 +471,6 @@ Definition vector_fill { Γ τ } ( n : nat ) ( e : tm Γ τ )
 Definition vector_add {Γ n}
   ( a1 a2 : tm Γ (Array n Real) ) : tm Γ (Array n Real) :=
   vector_map2 a1 a2 (add Γ).
+Definition vector_scale {Γ n} ( s : tm Γ Real )
+  ( a : tm Γ (Array n Real) ) : tm Γ (Array n Real) :=
+  vector_map a (mul _ s).

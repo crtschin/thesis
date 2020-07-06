@@ -16,7 +16,7 @@ From Equations Require Import Equations.
 From AD Require Import DepList.
 From AD Require Import Tactics.
 From AD Require Import Definitions.
-From AD Require Import Normalization.
+From AD Require Import Natural.
 From AD Require Import Macro.
 From AD Require Import Denotation.
 
@@ -38,25 +38,14 @@ Definition swap {Γ τ σ ρ} (t : tm (ρ::σ::Γ) τ) : tm (σ::ρ::Γ) τ
 
 Reserved Notation "t ~> s" (at level 30).
 Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
-  | RW_Id : forall Γ τ (t: tm Γ τ),
-    t ~> t
   (* Inherit normalization rules from stepping relation *)
   | RW_Mstep : forall Γ τ (t t': tm Γ τ),
-    t -->* t' ->
+    t ⇓ t' ->
     t ~> t'
   (* Function PE *)
   | RW_Abs : forall Γ τ σ (t t': tm (σ::Γ) τ),
     t ~> t' ->
     abs _ _ _ t ~> abs _ _ _ t'
-  (* Tuple PE *)
-  | RW_Tuple : forall Γ τ σ (t1 t1': tm Γ τ) (t2 t2': tm Γ σ),
-    t1 ~> t1' ->
-    t2 ~> t2' ->
-    tuple _ t1 t2 ~> tuple _ t1' t2'
-  | RW_First : forall Γ τ σ (t1: tm Γ τ) (t2: tm Γ σ),
-    first _ (tuple _ t1 t2) ~> t1
-  | RW_Second : forall Γ τ σ (t1: tm Γ τ) (t2: tm Γ σ),
-    second _ (tuple _ t1 t2) ~> t2
   (* Loop Fusion *)
   | RW_LpFusion : forall Γ τ n (i : Fin.t n) (f : Fin.t n -> tm Γ τ),
     get Γ i (build Γ τ n f) ~> f i
@@ -91,26 +80,20 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
     letin e0 (letin (shift e1) (swap e2)) ~>
       letin e1 (letin (shift e0) e2)
   (* Ring operations *)
-  | RW_add : forall Γ (t1 t1' t2 t2' : tm Γ ℝ),
-    t1 ~> t1' ->
-    t2 ~> t2' ->
-    add _ t1 t2 ~> add _ t1' t2'
-  | RW_add0L : forall Γ (t2 t2': tm Γ ℝ),
-    t2 ~> t2' ->
+  | RW_add_comm : forall Γ (t1 t2 : tm Γ ℝ),
+    add _ t1 t2 ~> add _ t2 t1
+  | RW_add_0 : forall Γ (t2: tm Γ ℝ),
     add _ (rval _ 0) t2 ~> t2
-  | RW_add0R : forall Γ (t1 t1': tm Γ ℝ),
-    t1 ~> t1' ->
-    add _ t1 (rval _ 0) ~> t1
-  | RW_add_R : forall Γ r (t1 t2: tm Γ ℝ),
-    t1 ~> rval Γ r ->
-    t2 ~> rval Γ (-r) ->
-    add Γ t1 t2 ~> rval Γ 0
-  | RW_add_L : forall Γ r (t1 t2: tm Γ ℝ),
-    t1 ~> rval Γ (-r) ->
-    t2 ~> rval Γ r ->
-    add Γ t1 t2 ~> rval Γ 0
+  | RW_add_neg : forall Γ r,
+    add Γ (rval Γ (-r)) (rval Γ r) ~> rval Γ 0
+  | RW_mul_comm : forall Γ (t1 t2: tm Γ ℝ),
+    mul _ t1 t2 ~> mul _ t2 t1
   | RW_mul_distr : forall Γ (t t1 t2: tm Γ ℝ),
     add Γ (mul Γ t t1) (mul Γ t t2) ~> mul Γ t (add Γ t1 t2)
+  | RW_mul_0 : forall Γ (t2: tm Γ ℝ),
+    mul _ (rval _ 0) t2 ~> rval _ 0
+  | RW_mul_1 : forall Γ (t2: tm Γ ℝ),
+    mul _ (rval _ 1) t2 ~> t2
 where "t ~> s" := (rwrt t s).
 
 Lemma denote_shift2 :
@@ -159,17 +142,19 @@ Proof with quick.
   intros.
   dependent induction H; quick;
     try solve [extensionality ctx; simp denote_tm; rewrites; trivial]...
-  { apply soundness... }
+  { apply natural_soundness... }
   all: extensionality ctx; simp denote_tm; rewrites.
   { unfold compose. induction i...
-    { induction n... }
+    { induction n; simpl... }
     { unfold shave_fin. rewrite IHi... } }
   { unfold ifold. simp denote_tm.
     induction (⟦ ti ⟧ₜₘ ctx)...
     rewrite_c IHd...
     rewrite 3 denote_shift...
     simp denote_tm...
-    rewrite 4 denote_shift... }
+    rewrite 4 denote_shift. simpl.
+    simp denote_v. simpl.
+    reflexivity. }
   { unfold letin.
     simp denote_tm.
     erewrite <- denote_shift2... }
@@ -179,11 +164,11 @@ Proof with quick.
   { unfold letin.
     simp denote_tm.
     rewrite denote_swap... }
+  { rewrite Rplus_comm... }
   { apply Rplus_0_l. }
-  { rewrite Rplus_comm.
-    apply Rplus_0_l. }
-  { apply Rplus_opp_r. }
-  { rewrite Rplus_comm.
-    apply Rplus_opp_r. }
+  { apply Rplus_opp_l. }
+  { rewrite Rmult_comm... }
   { rewrite Rmult_plus_distr_l... }
+  { rewrite Rmult_0_l... }
+  { rewrite Rmult_1_l... }
 Qed.

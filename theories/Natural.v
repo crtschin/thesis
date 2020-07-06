@@ -48,6 +48,10 @@ Inductive eval : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       t1 ⇓ (rval Γ t1') ->
       t2 ⇓ (rval Γ t2') ->
       add Γ t1 t2 ⇓ rval Γ (Rdefinitions.Rplus t1' t2')
+  | EV_Mul : forall Γ t1 t1' t2 t2',
+      t1 ⇓ (rval Γ t1') ->
+      t2 ⇓ (rval Γ t2') ->
+      mul Γ t1 t2 ⇓ rval Γ (Rdefinitions.Rmult t1' t2')
 
   (* Pairs *)
   | EV_Tuple1 : forall Γ τ σ t1 t1' t2 t2',
@@ -73,11 +77,11 @@ Inductive eval : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
       (t2 ⇓ t2') ->
       (@case Γ τ σ ρ e t1 t2) ⇓ (app Γ ρ σ t2' e')
   | EV_Inl : forall Γ τ σ t1 t1',
-        t1 ⇓ t1' ->
-        (@inl Γ τ σ t1) ⇓ (@inl Γ τ σ t1')
+      t1 ⇓ t1' ->
+      (@inl Γ τ σ t1) ⇓ (@inl Γ τ σ t1')
   | EV_Inr : forall Γ τ σ t1 t1',
-        t1 ⇓ t1' ->
-        (@inr Γ τ σ t1) ⇓ (@inr Γ τ σ t1')
+      t1 ⇓ t1' ->
+      (@inr Γ τ σ t1) ⇓ (@inr Γ τ σ t1')
 where "t  ⇓  v" := (eval t v).
 
 Lemma natural_soundness : forall Γ τ (t1 : tm Γ τ) (t2 : tm Γ τ),
@@ -92,7 +96,6 @@ Proof with quick.
     unfold hd_sub. simp cons_sub.
     rewrite denote_sub_tl_cons...
     fold (@id_sub Γ).
-    simp denote_sub.
     rewrite denote_sub_id_ctx...
     rewrites. }
   { simp denote_tm.
