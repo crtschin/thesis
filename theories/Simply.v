@@ -24,7 +24,7 @@ Local Open Scope program_scope.
 
 Inductive ty : Type :=
   | Real : ty
-  (* | Nat : ty *)
+  | Nat : ty
   | Array : nat -> ty -> ty
   | Arrow : ty -> ty -> ty
   | Prod  : ty -> ty -> ty
@@ -32,7 +32,7 @@ Inductive ty : Type :=
 .
 
 Notation "'ℝ'" := (Real).
-(* Notation "'ℕ'" := (Nat). *)
+Notation "'ℕ'" := (Nat).
 Notation "A × B" := (Prod A B) (left associativity, at level 89).
 Notation "A <+> B" := (Sum A B) (left associativity, at level 89).
 Notation "A → B" := (Arrow A B) (right associativity, at level 90).
@@ -79,10 +79,10 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | mul : tm Γ ℝ -> tm Γ ℝ -> tm Γ ℝ
 
   (* Nat *)
-  (* | nsucc : tm Γ ℕ -> tm Γ ℕ
+  | nsucc : tm Γ ℕ -> tm Γ ℕ
   | nval : forall (n : nat), tm Γ ℕ
   | nrec : forall τ,
-    tm Γ (τ → τ) -> tm Γ ℕ -> tm Γ τ -> tm Γ τ *)
+    tm Γ (τ → τ) -> tm Γ ℕ -> tm Γ τ -> tm Γ τ
 
   (* Products (currently using projection instead of pattern matching) *)
   | tuple : forall {τ σ},
@@ -212,9 +212,9 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | get _ _ ti ta => get _ ti (rename r ta)
 
   (* Nat *)
-  (* | nval _ n => nval _ n
-  | nsucc _ t => nsucc _ (rename r t)
-  | nrec _ _ f i d => nrec _ _ (rename r f) (rename r i) (rename r d) *)
+  | nval n => nval _ n
+  | nsucc t => nsucc _ (rename r t)
+  | nrec _ f i d => nrec _ _ (rename r f) (rename r i) (rename r d)
 
   (* Reals *)
   | rval r => rval _ r
@@ -255,9 +255,9 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | get _ _ ti ta => get _ ti (substitute s ta)
 
   (* Nat *)
-  (* | nval _ n => nval _ n
-  | nsucc _ t => nsucc _ (substitute s t)
-  | nrec _ _ f i d => nrec _ _ (substitute s f) (substitute s i) (substitute s d) *)
+  | nval n => nval _ n
+  | nsucc t => nsucc _ (substitute s t)
+  | nrec _ f i d => nrec _ _ (substitute s f) (substitute s i) (substitute s d)
 
   (* Reals *)
   | rval r => rval _ r
@@ -453,7 +453,7 @@ Reserved Notation "⟦ τ ⟧ₜ".
 Fixpoint denote_t τ : Set :=
   match τ with
   | Real => R
-  (* | Nat => nat *)
+  | Nat => nat
   | Array n τ => vector ⟦ τ ⟧ₜ n
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
@@ -520,10 +520,10 @@ denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n f) ctx :=
   denote_array n (denote_tm ∘ f) ctx;
 denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := vector_nth i (⟦ ta ⟧ₜₘ ctx);
 (* Nat *)
-(* denote_tm (Γ:=Γ) (τ:=τ) (nval Γ n) ctx := n;
+denote_tm (Γ:=Γ) (τ:=τ) (nval Γ n) ctx := n;
 denote_tm (Γ:=Γ) (τ:=τ) (nsucc Γ t) ctx := Datatypes.S (⟦t⟧ₜₘ ctx);
 denote_tm (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti ta) ctx :=
-  iterate (⟦ ti ⟧ₜₘ ctx) (⟦ tf ⟧ₜₘ ctx) (⟦ ta ⟧ₜₘ ctx); *)
+  iterate (⟦ ti ⟧ₜₘ ctx) (⟦ tf ⟧ₜₘ ctx) (⟦ ta ⟧ₜₘ ctx);
 (* Reals *)
 denote_tm (Γ:=Γ) (τ:=τ) (rval Γ r) ctx := r;
 denote_tm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx;

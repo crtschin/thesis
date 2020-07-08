@@ -20,7 +20,6 @@ From Equations Require Import Equations.
 From AD Require Import Tactics.
 From AD Require Import DepList.
 From AD Require Import Simply.
-From AD Require Direct.
 
 Local Open Scope program_scope.
 Local Open Scope type_scope.
@@ -30,6 +29,7 @@ Local Open Scope type_scope.
 Fixpoint Dt_c (n : nat) (σ : ty) : ty :=
   match σ with
   | Real => Real × (Real → Array n Real)
+  | Nat => Nat
   | Array m τ => Array m (Dt_c n τ)
   | τ1 × τ2 => (Dt_c n τ1 × Dt_c n τ2)
   | τ1 → τ2 => (Dt_c n τ1 → Dt_c n τ2)
@@ -55,6 +55,10 @@ Dtm_c n (Γ:=Γ) (τ:=τ) t with t := {
   | (build Γ τ m ta) =>
   build _ _ _ (Dtm_c n ∘ ta);
   | (get Γ ti ta) => get _ ti (Dtm_c n ta);
+(* Nat *)
+  | (nval Γ n) => nval _ n;
+  | (nsucc Γ t) => nsucc _ (Dtm_c n t);
+  | (nrec Γ τ tf ti td) => nrec _ _ (Dtm_c n tf) (Dtm_c n ti) (Dtm_c n td);
 (* Reals *)
   | (rval Γ r) :=
   tuple _ (rval _ r) (abs _ _ _ (build _ _ _ (const (rval _ 0))));
@@ -97,7 +101,7 @@ Dtm_c n (Γ:=Γ) (τ:=τ) t with t := {
 Fixpoint Dt n τ : ty :=
   match τ with
   | Real => Real × Array n Real
-  (* | Nat => Nat *)
+  | Nat => Nat
   | Array m t => Array m (Dt n t)
   | t1 × t2 => Dt n t1 × Dt n t2
   | t1 → t2 => Dt n t1 → Dt n t2
@@ -122,6 +126,10 @@ Dtm n (Γ:=Γ) (τ:=τ) v with v := {
   | (build Γ τ m ta) =>
   build _ _ _ (Dtm n ∘ ta);
   | (get Γ ti ta) => get _ ti (Dtm n ta);
+(* Nat *)
+  | (nval Γ n) => nval _ n;
+  | (nsucc Γ t) => nsucc _ (Dtm n t);
+  | (nrec Γ τ tf ti td) => nrec _ _ (Dtm n tf) (Dtm n ti) (Dtm n td);
 (* Reals *)
   | (rval Γ r) :=
   tuple _ (rval _ r) (build _ _ n (fun _ => rval _ 0));
@@ -358,6 +366,7 @@ Equations S n τ :
   (R -> ⟦ Dt n τ ⟧ₜ) -> (R -> ⟦ Dt_c n τ ⟧ₜ) -> Prop :=
 S n ℝ f g := ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
   (fun r => (snd (f r))) = fun r => (snd (g r)) 1;
+S n ℕ f g := f = g /\ exists n, f = fun _ => n;
 S n (Array m τ) f g := forall i,
   exists f1 g1,
     S n τ f1 g1 /\
@@ -553,15 +562,14 @@ Proof with quick.
       apply IHv.
     all: extensionality x; simp denote_tm... } }
   { (* App *)
-    simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as IHt1.
     pose proof (IHt2 sb sb_c H) as IHt2.
     simp S in IHt1.
     erewrite S_eq.
     apply IHt1...
   all: extensionality x; simp denote_tm... }
-  { (* App *)
-    intros. simp S Dtm Dtm_c...
+  { (* Abs *)
+    intros. simp S...
     specialize IHt with
       (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: sb_c r))...
     eapply IHt. constructor; assumption. }
@@ -599,16 +607,18 @@ Proof with quick.
       rewrite_c H'.
       apply denote_array_eq_const_correct. } }
   { (* Add *)
-    simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as [IHeq1 IHeq1'].
     pose proof (IHt2 sb sb_c H) as [IHeq2 IHeq2'].
     clear IHt1 IHt2.
     simp S in *. split; extensionality r;
       eapply equal_f in IHeq1; eapply equal_f in IHeq2;
-      eapply equal_f in IHeq1'; eapply equal_f in IHeq2';
+      eapply equal_f in IHeq1'; eapply equal_f in IHeq2'...
+    { simp Dtm in *; simp Dtm_c in *.
       simp denote_tm...
-    { rewrites. }
-    { unfold vector_add, vector_map2...
+      rewrites. }
+    { simp Dtm; simp Dtm_c.
+      unfold vector_add, vector_map2...
+      simp denote_tm; unfold compose...
       simp denote_tm; unfold compose...
       erewrite denote_array_eq...
       erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
@@ -625,24 +635,26 @@ Proof with quick.
       rewrite <- Heqd in IHeq2', IHeq1';
         rewrite <- Heqd0 in IHeq2', IHeq1'.
       clear Heqd Heqd0 sb sb_c H r.
-      apply (denote_array_eq_add_correct n n Γ
+      pose proof (denote_array_eq_add_correct n n Γ
         (fun d => snd (⟦ Dtm n t1 ⟧ₜₘ d))
         (fun d => snd (⟦ Dtm n t2 ⟧ₜₘ d))
         (fun d x => snd (⟦ Dtm_c n t1 ⟧ₜₘ d) x)
         (fun d x => snd (⟦ Dtm_c n t2 ⟧ₜₘ d) x)
-        d d0 IHeq1' IHeq2'). } }
+        d d0 IHeq1' IHeq2').
+      simp Dtm in *; simp Dtm_c in *. } }
   { (* Mul *)
-    simp Dtm Dtm_c.
     pose proof (IHt1 sb sb_c H) as [IHeq1 IHeq1'].
     pose proof (IHt2 sb sb_c H) as [IHeq2 IHeq2'].
     clear IHt1 IHt2.
     simp S in *.
     split; extensionality r;
       eapply equal_f in IHeq1; eapply equal_f in IHeq2;
-      eapply equal_f in IHeq1'; eapply equal_f in IHeq2';
-      simp denote_tm...
-    { rewrites. }
-    { unfold vector_add, vector_map2...
+      eapply equal_f in IHeq1'; eapply equal_f in IHeq2'...
+    { simp Dtm in *; simp Dtm_c in *;
+        simp denote_tm.
+      rewrites. }
+    { simp Dtm; simp Dtm_c; simp denote_tm.
+      unfold vector_add, vector_map2...
       simp denote_tm; unfold compose...
       remember (sb r); remember (sb_c r).
       rewrite <- Heqd in IHeq1', IHeq2', IHeq1, IHeq2.
@@ -660,15 +672,15 @@ Proof with quick.
       simp denote_tm. unfold vector_map.
       simp denote_tm. unfold compose.
       erewrite (denote_array_eq _ _ _ (fun x : Fin.t n =>
-       ⟦ mul (map (Dt n) Γ) (first (map (Dt n) Γ) (Dtm n t1))
-           (get (map (Dt n) Γ) x (second (map (Dt n) Γ) (Dtm n t2))) ⟧ₜₘ))...
+       ⟦ mul (map (Dt n) Γ) (first (map (Dt n) Γ) (Dtm_clause_1 _ _ _ t1 t1 n))
+           (get (map (Dt n) Γ) x (second (map (Dt n) Γ) (Dtm_clause_1 _ _ _ t2 t2 n))) ⟧ₜₘ))...
     2:{ extensionality x; extensionality ctx'.
         simp denote_tm. reflexivity. }
         erewrite denote_array_eq...
     2:{ extensionality x; extensionality ctx'.
         simp denote_tm. reflexivity. }
       reflexivity. }
-      apply (denote_array_eq_mul_correct
+      pose proof (denote_array_eq_mul_correct
         n n Γ t1 t2 (fst ∘ ⟦ Dtm n t1 ⟧ₜₘ) (fst ∘ ⟦ Dtm n t2 ⟧ₜₘ)
         (fun ctx x => fst (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
         (fun ctx x => fst (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
@@ -677,9 +689,57 @@ Proof with quick.
         (fun ctx => snd (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
         (fun ctx => snd (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
         d d0 eq_refl eq_refl eq_refl eq_refl
-        IHeq2 IHeq1 IHeq1' IHeq2'). } }
+        IHeq2 IHeq1 IHeq1' IHeq2').
+      simp Dtm in *; simp Dtm_c in *. } }
+  { (* Nsucc *)
+    pose proof (IHt sb sb_c H) as [eqf eqc].
+    clear IHt.
+    simp Dtm in *; simp Dtm_c in *; simp S in *.
+    split.
+    { extensionality x; simp denote_tm.
+      apply equal_f with x in eqf.
+      rewrites. }
+    { destruct eqc as [n' eq].
+      exists (1 + n')%nat...
+      extensionality x...
+      apply equal_f with x in eq.
+      simp denote_tm. rewrites. } }
+  { (* Nval *)
+    simp S.
+    split.
+    { extensionality x.
+      simp Dtm; simp Dtm_c. simp denote_tm... }
+    { exists n. extensionality x. simp Dtm. simp denote_tm... } }
+  { (* Nrec *)
+    pose proof (IHt1 sb sb_c H) as IHt1;
+      pose proof (IHt2 sb sb_c H) as IHt2;
+      pose proof (IHt3 sb sb_c H) as IHt3.
+    simp Dtm; simp Dtm_c.
+    erewrite S_eq.
+2,3: extensionality x; simp denote_tm; reflexivity.
+    simp S in *.
+    destruct IHt2 as [eq1 [n' eq2]].
+    destruct n'.
+    { erewrite S_eq. apply IHt3.
+    all: extensionality x;
+      apply equal_f with x in eq1;
+      apply equal_f with x in eq2;
+      simp Dtm in *; simp Dtm_c in *.
+    all: try rewrite <- eq1; rewrite eq2... }
+    { pose proof equal_f eq2...
+      pose proof equal_f eq1...
+      clear eq1 eq2; rename H0 into eq2; rename H1 into eq1.
+      simp Dtm in *; simp Dtm_c in *.
+      erewrite S_eq.
+      all: try (extensionality x;
+        try rewrite <- eq1; rewrite eq2; reflexivity)...
+      clear eq1 eq2 H.
+      erewrite S_eq.
+      apply IHt1.
+      all: try (extensionality x; simp Dtm; simp Dtm_c; reflexivity)...
+      induction n'... } }
   { (* Products *)
-    simp Dtm Dtm_c.
+    simp Dtm; simp Dtm_c.
     pose proof (IHt1 sb sb_c H) as IHt1.
     pose proof (IHt2 sb sb_c H) as IHt2.
     simp S.
@@ -688,9 +748,10 @@ Proof with quick.
     exists (fun x : R => ⟦ Dtm n t2 ⟧ₜₘ (sb x));
       exists (fun x : R => ⟦ Dtm_c n t2 ⟧ₜₘ (sb_c x)).
     exists IHt1; exists IHt2.
-    split... }
+    split; extensionality x;
+      simp denote_tm; simp Dtm; simp Dtm_c... }
   { (* Projection 1 *)
-    simp Dtm Dtm_c.
+    simp Dtm in *; simp Dtm_c in *.
     pose proof (IHt sb sb_c H) as IHt.
     simp S in IHt.
     destruct IHt as [f1 [f2 [g1 [g2 [S1 [S2 [Heq1 Heq2]]]]]]].
@@ -698,7 +759,7 @@ Proof with quick.
     { eapply equal_f in Heq1. simp denote_tm. erewrite Heq1... }
     { eapply equal_f in Heq2. simp denote_tm. erewrite Heq2... } }
   { (* Projection 2 *)
-    simp Dtm Dtm_c.
+    simp Dtm in *; simp Dtm_c in *.
     pose proof (IHt sb sb_c H) as IHt.
     simp S in IHt.
     destruct IHt as [f1 [f2 [g1 [g2 [S1 [S2 [Heq1 Heq2]]]]]]].
@@ -710,7 +771,7 @@ Proof with quick.
     pose proof (IHt1 sb sb_c H) as IHt1.
     pose proof (IHt2 sb sb_c H) as IHt2.
     pose proof (IHt3 sb sb_c H) as IHt3.
-    simp S in *. simp Dtm Dtm_c.
+    simp S in *. simp Dtm in *; simp Dtm_c in *.
     (* Either term denotates to inl or inr *)
     destruct IHt1 as [[g1 [g2 H']]|[g1 [g2 H']]].
     { (* Scrutinee is inl *)

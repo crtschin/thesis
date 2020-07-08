@@ -4,7 +4,7 @@
 ##   \VV/  #                                                                 ##
 ##    //   #                                                                 ##
 ###############################################################################
-## GNUMakefile for Coq 8.11.1
+## GNUMakefile for Coq 8.11.2
 
 # For debugging purposes (must stay here, don't move below)
 INITIAL_VARS := $(.VARIABLES)
@@ -41,7 +41,7 @@ HASNATDYNLINK     := $(COQMF_HASNATDYNLINK)
 OCAMLWARN         := $(COQMF_WARN)
 
 CoqMakefile.conf: 
-	coq_makefile -Q . AD Continuation.v CpdtTactics.v Definitions.v Denotation.v DepList.v Direct.v Macro.v Natural.v Normalization.v Rewrite.v Simply.v Tactics.v
+	coq_makefile -Q . AD Continuation.v CpdtTactics.v Definitions.v Denotation.v DepList.v Direct.v Extract.v Macro.v Natural.v Normalization.v Rewrite.v Simply.v Tactics.v
 
 # This file can be created by the user to hook into double colon rules or
 # add any other Makefile code he may need
@@ -191,7 +191,7 @@ COQDOCLIBS?=$(COQLIBS_NOML)
 # The version of Coq being run and the version of coq_makefile that
 # generated this makefile
 COQ_VERSION:=$(shell $(COQC) --print-version | cut -d " " -f 1)
-COQMAKEFILE_VERSION:=8.11.1
+COQMAKEFILE_VERSION:=8.11.2
 
 COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)/$(d)")
 
