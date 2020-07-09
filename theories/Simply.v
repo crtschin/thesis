@@ -114,43 +114,6 @@ Lemma build_eq : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
   ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
 Proof. intros; rewrites. Qed.
 
-(* Examples *)
-Definition real_id :=
-  abs [] Real Real
-    (var [Real] Real (Top _ _)).
-
-Definition ex_const :=
-  abs [] (Real → Real) Real
-    (abs [Real] (Real) (Real)
-      (var [Real;Real] Real (Top [Real] Real))).
-
-Definition ex_plus :=
-  (add [Real;Real]
-    (var [Real;Real] Real (Top [Real] Real))
-      (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))).
-
-Definition square_plus :=
-  (add [Real;Real]
-    (var [Real;Real] Real (Pop [Real] Real Real (Top [] Real)))
-      (mul _
-        (var [Real;Real] Real (Top [Real] Real))
-        (var [Real;Real] Real (Top [Real] Real)))).
-
-Definition neuron :=
-  abs [] (Real → Real → Real) Real
-    (abs [Real] (Real → Real) Real
-      (abs [Real;Real] Real Real
-        (add [Real;Real;Real]
-          (add [Real;Real;Real]
-            (var [Real;Real;Real] Real
-              (Pop [Real;Real] Real Real (Top [Real] Real)))
-            (var [Real;Real;Real] Real (Top [Real;Real] Real)))
-          (var [Real;Real;Real] Real
-            (Pop [Real;Real] Real Real
-              (Pop [Real] Real Real
-                (Top [] Real))))))).
-(* End Examples *)
-
 (*
   Context Substitution
 

@@ -123,13 +123,15 @@ Definition ex_square {Γ} :=
       (var _ Real (Top _ Real))
       (var _ Real (Top _ Real))).
 
+Definition square_plus {Γ : Ctx} :=
+  app (ℝ::ℝ::Γ) _ _
+  ((app _ _ _
+    ex_plus
+    (var _ Real (Pop _ Real Real (Top _ Real)))))
+  (app _ _ _ ex_square (var _ Real (Top _ Real))).
+
 Definition ex_square_plus {Γ} :=
-  abs Γ _ _ (abs _ _ _
-    (app _ _ _
-    ((app _ _ _
-      ex_plus
-      (var _ Real (Pop _ Real Real (Top _ Real)))))
-    (app _ _ _ ex_square (var _ Real (Top _ Real))))).
+  abs Γ _ _ (abs _ _ _ square_plus).
 
 Definition ex_neuron :=
   abs [] (Real → Real → Real) Real
@@ -448,23 +450,32 @@ Definition ifold {Γ τ} (tf : tm Γ (ℕ → τ → τ)) (n : tm Γ ℕ) (td : 
     n td.
 Definition vector_hot ( Γ : list ty ) ( n : nat ) ( i : Fin.t n ) :=
   build Γ ℝ n (fun j => if Fin.eqb i j then rval Γ 1 else rval Γ 0).
-Definition vector_map { Γ τ σ n } ( a : tm Γ (Array n τ) )
-  ( f : tm Γ τ -> tm Γ σ ) : tm Γ (Array n σ) :=
-  build Γ σ n (fun i => f (get Γ i a)).
+Definition vector_map { Γ τ σ n } ( f : tm Γ (τ → σ) )
+  ( a : tm Γ (Array n τ) ) : tm Γ (Array n σ) :=
+  build Γ σ n (fun i => app Γ σ τ f (get Γ i a)).
 Definition vector_map2 { Γ τ σ ρ n }
   ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
-  ( f : tm Γ τ -> tm Γ σ -> tm Γ ρ ) : tm Γ (Array n ρ) :=
-  build Γ ρ n (fun i => f (get Γ i a1) (get Γ i a2)).
+  ( f : tm Γ (τ → σ → ρ) ) : tm Γ (Array n ρ) :=
+  build Γ ρ n (fun i => app _ _ _ (app _ _ _ f (get Γ i a1)) (get Γ i a2)).
 Definition vector_zip { Γ τ σ n }
   ( a1 : tm Γ (Array n τ) ) ( a2 : tm Γ (Array n σ) )
   : tm Γ (Array n ( τ × σ )) :=
-  vector_map2 a1 a2 (tuple Γ).
+  vector_map2 a1 a2 (abs _ _ _ (abs _ _ _
+    (tuple _
+      (var _ _ (Pop _ _ _ (Top _ _)))
+      (var _ _ (Top _ _))))).
 Definition vector_fill { Γ τ } ( n : nat ) ( e : tm Γ τ )
   : tm Γ (Array n τ) :=
   build Γ τ n (fun _ => e).
 Definition vector_add {Γ n}
   ( a1 a2 : tm Γ (Array n Real) ) : tm Γ (Array n Real) :=
-  vector_map2 a1 a2 (add Γ).
+  vector_map2 a1 a2 (abs _ _ _ (abs _ _ _
+    (add _
+      (var _ _ (Pop _ _ _ (Top _ _)))
+      (var _ _ (Top _ _))))).
 Definition vector_scale {Γ n} ( s : tm Γ Real )
   ( a : tm Γ (Array n Real) ) : tm Γ (Array n Real) :=
-  vector_map a (mul _ s).
+  vector_map (abs _ _ _ (mul _ (shift s) (var _ _ (Top _ _)))) a.
+Definition tm_compose {Γ τ σ ρ} : tm Γ (τ → σ) -> tm Γ (σ → ρ) -> tm Γ (τ → ρ)
+  := fun f g =>
+  abs _ _ _ (app _ _ _ (shift g) (app _ _ _ (shift f) (var _ _ (Top _ _)))).

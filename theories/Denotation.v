@@ -131,6 +131,34 @@ denote_array 0 f ctx := Vnil;
 denote_array (S n) f ctx := Vcons (f (nat_to_fin n) ctx)
   ((denote_array n (shave_fin f)) ctx).
 
+Lemma denote_array_eq :
+  forall Γ τ n f1 f1' (ctx : ⟦ Γ ⟧ₜₓ) (ctx' : ⟦ Γ ⟧ₜₓ),
+    f1 = f1' -> ctx = ctx' ->
+    denote_array (τ:=τ) n f1 ctx = denote_array (τ:=τ) n f1' ctx'.
+Proof. intros; rewrites. Qed.
+
+Lemma Vcons_eq' : forall A n (t t': A) (tl tl': vector A n),
+  Vcons t tl = Vcons t' tl' -> t = t' /\ tl = tl'.
+Proof with quick.
+  intros. split; dependent destruction H...
+Qed.
+
+Lemma vector_nth_eq : forall (A : Set) n (i : Fin.t n) (v v': vector A n),
+  v = v' -> vector_nth i v = vector_nth i v'.
+Proof with quick.
+  intros. rewrites.
+Qed.
+
+Lemma denote_loop_fusion : forall Γ τ n f i (v : ⟦ Γ ⟧ₜₓ),
+  vector_nth i (denote_array (τ:=τ) n f v) = f i v.
+Proof with quick.
+  intros.
+  induction i...
+  { destruct n... }
+  { unfold shave_fin.
+    eapply IHi. }
+Qed.
+
 Reserved Notation "⟦ s ⟧ₑ".
 Equations denote_env {Γ} (G : Env Γ): ⟦ Γ ⟧ₜₓ :=
 denote_env env_nil => HNil;
@@ -172,8 +200,7 @@ Lemma denote_ren_commutes :
 Proof with quick.
   intros. generalize dependent Γ'.
   induction t; quick; try solve [simp denote_tm in *; rewrites]...
-  { simp denote_tm in *. induction v; simp denote_v...
-    simp denote_v. }
+  { simp denote_tm in *. induction v; simp denote_v... }
   { simp denote_tm in *. specialize IHt with (r:=rename_lifted r).
     simpl in IHt. simp rename_lifted in IHt.
     apply functional_extensionality...
@@ -196,8 +223,6 @@ Proof with quick.
   induction Γ... extensionality ctx.
   apply denote_ctx_eq;
     simp denote_tm...
-  { unfold hd_ren. dependent elimination ctx.
-    simp denote_v... }
   { unfold tl_ren. rewrite IHΓ... }
 Qed.
 

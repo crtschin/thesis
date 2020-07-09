@@ -19,7 +19,8 @@ Require Import micromega.Lia.
 From Equations Require Import Equations.
 From AD Require Import Tactics.
 From AD Require Import DepList.
-From AD Require Import Simply.
+From AD Require Import Definitions.
+From AD Require Import Denotation.
 
 Local Open Scope program_scope.
 Local Open Scope type_scope.
@@ -93,8 +94,8 @@ Dtm_c n (Γ:=Γ) (τ:=τ) t with t := {
 (* Sums *)
   | (case Γ e t1 t2) :=
   case _ (Dtm_c n e) (Dtm_c n t1) (Dtm_c n t2);
-  | (inl Γ p) := inl _ (Dtm_c n p);
-  | (inr Γ p) := inr _ (Dtm_c n p)
+  | (inl Γ _ p) := inl _ _ _ (Dtm_c n p);
+  | (inr Γ _ p) := inr _ _ _ (Dtm_c n p)
 }.
 
 (* Forward *)
@@ -146,8 +147,8 @@ Dtm n (Γ:=Γ) (τ:=τ) v with v := {
       tuple _
         (mul _ (first _ d1) (first _ d2))
         (vector_add
-          (vector_map (second _ d1) (mul _ (first _ d2)))
-          (vector_map (second _ d2) (mul _ (first _ d1))))
+          (vector_scale (first _ d2) (second _ d1))
+          (vector_scale (first _ d1) (second _ d2)))
     }
   };
 (* Products *)
@@ -156,8 +157,8 @@ Dtm n (Γ:=Γ) (τ:=τ) v with v := {
   | (second Γ p) := second _ (Dtm n p);
 (* Sums *)
   | (case Γ e c1 c2) := case _ (Dtm n e) (Dtm n c1) (Dtm n c2);
-  | (inl Γ e) := inl _ (Dtm n e);
-  | (inr Γ e) := inr _ (Dtm n e)
+  | (inl Γ _ e) := inl _ _ _ (Dtm n e);
+  | (inr Γ _ e) := inr _ _ _ (Dtm n e)
 }.
 
 Lemma vector_eq : forall A n (h h' : A) (t t' : vector A n),
@@ -419,24 +420,6 @@ Lemma S_eq : forall n τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S n τ f1 f2 = S n τ g1 g2.
 Proof. intros; rewrites. Qed.
 
-Lemma denote_array_eq :
-  forall Γ τ n f1 f1' (ctx : ⟦ Γ ⟧ₜₓ) (ctx' : ⟦ Γ ⟧ₜₓ),
-    f1 = f1' -> ctx = ctx' ->
-    denote_array (τ:=τ) n f1 ctx = denote_array (τ:=τ) n f1' ctx'.
-Proof. intros; rewrites. Qed.
-
-Lemma Vcons_eq' : forall A n (t t': A) (tl tl': vector A n),
-  Vcons t tl = Vcons t' tl' -> t = t' /\ tl = tl'.
-Proof with quick.
-  intros. split; dependent destruction H...
-Qed.
-
-Lemma vector_nth_eq : forall (A : Set) n (i : Fin.t n) (v v': vector A n),
-  v = v' -> vector_nth i v = vector_nth i v'.
-Proof with quick.
-  intros. rewrites.
-Qed.
-
 Lemma denote_array_eq_const_correct :
   forall Γ m n (ctx : ⟦ Dctx m Γ ⟧ₜₓ) (ctx_c : ⟦ Dctx_c m Γ ⟧ₜₓ),
   @denote_array (Dctx m Γ) ℝ n (const (const 0)) ctx =
@@ -492,27 +475,17 @@ Lemma denote_array_eq_mul_correct :
   x1 d = f1 d0 1 ->
   x1' d = f1' d0 1 ->
   x2' d = f2' d0 1 ->
-    @denote_array (Dctx m Γ) ℝ n
-      (fun (i : Fin.t n) (ctx : ⟦ Dctx m Γ ⟧ₜₓ) =>
-      (vector_nth i
-          (@denote_array (Dctx m Γ) ℝ n
-            (fun (x : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
-              x2 ctx' *
-              vector_nth x (x1' ctx')) ctx) +
-        vector_nth i
-          (@denote_array (Dctx m Γ) ℝ n
-            (fun (x : Fin.t n) (ctx' : ⟦ Dctx m Γ ⟧ₜₓ) =>
-              x1 ctx' *
-              vector_nth x (x2' ctx')) ctx))%R) d =
+  @denote_array (Dctx m Γ) ℝ n
+    (fun (i : Fin.t n) (ctx : ⟦ Dctx m Γ ⟧ₜₓ) =>
+      ((x2 ctx * vector_nth i (x1' ctx))%R +
+      (x1 ctx * vector_nth i (x2' ctx))%R)%R) d =
     @denote_array (ℝ :: Dctx_c m Γ) ℝ n
       (fun (i : Fin.t n) (ctx : ⟦ ℝ :: Dctx_c m Γ ⟧ₜₓ) =>
-    (vector_nth i
-        ((f1' (htl ctx)
+      (vector_nth i ((f1' (htl ctx)
           ((f2 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))) +
-    vector_nth i
-      ((f2' (htl ctx)
-         ((f1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))))%R)
-      (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 d0).
+      vector_nth i ((f2' (htl ctx)
+          ((f1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))))%R)
+        (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 d0).
 Proof with quick.
   intros... unfold compose, const in *.
   fold denote_t in *.
@@ -522,8 +495,8 @@ Proof with quick.
     rewrite (IHn m Γ t1 t2 x1 x2 f1 f2
       (fun x => Vtail (x1' x)) (fun x => Vtail (x2' x))
       (fun x => @Vtail _ _ ∘ (f1' x)) (fun x => @Vtail _ _ ∘ (f2' x))
-      d d0)...
-    clear IHn.
+      d d0);
+    clear IHn...
   all: unfold compose.
   all: rewrites.
     split...
@@ -663,34 +636,27 @@ Proof with quick.
       erewrite denote_array_eq...
       erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
   2:{ extensionality i. extensionality ctx.
-      simp denote_tm. rewrite 4 denote_shift.
-      simp denote_tm.
-      eassert (⟦ Top (map (Dt_c n) Γ) ℝ ⟧ᵥ = denote_ctx_hd).
-      { extensionality xs. dependent destruction xs... }
-      rewrite_c H. reflexivity. }
+      simp denote_tm. simp denote_v; unfold compose...
+      rewrite 4 denote_shift.
+      simp denote_tm. reflexivity. }
   2:{ extensionality i. extensionality ctx.
-      simp denote_tm. unfold vector_map.
-      simp denote_tm. unfold compose.
-      erewrite (denote_array_eq _ _ _ (fun x : Fin.t n =>
-       ⟦ mul (map (Dt n) Γ) (first (map (Dt n) Γ) (Dtm_clause_1 _ _ _ t1 t1 n))
-           (get (map (Dt n) Γ) x (second (map (Dt n) Γ) (Dtm_clause_1 _ _ _ t2 t2 n))) ⟧ₜₘ))...
-    2:{ extensionality x; extensionality ctx'.
-        simp denote_tm. reflexivity. }
-        erewrite denote_array_eq...
-    2:{ extensionality x; extensionality ctx'.
-        simp denote_tm. reflexivity. }
-      reflexivity. }
-      pose proof (denote_array_eq_mul_correct
-        n n Γ t1 t2 (fst ∘ ⟦ Dtm n t1 ⟧ₜₘ) (fst ∘ ⟦ Dtm n t2 ⟧ₜₘ)
-        (fun ctx x => fst (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
-        (fun ctx x => fst (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
-        (snd ∘ ⟦ Dtm n t1 ⟧ₜₘ)
-        (snd ∘ ⟦ Dtm n t2 ⟧ₜₘ)
-        (fun ctx => snd (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
-        (fun ctx => snd (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
-        d d0 eq_refl eq_refl eq_refl eq_refl
-        IHeq2 IHeq1 IHeq1' IHeq2').
-      simp Dtm in *; simp Dtm_c in *. } }
+      simp denote_tm; unfold vector_scale; unfold vector_map.
+      simp denote_tm; simp denote_v; unfold compose...
+      erewrite 2 (denote_loop_fusion (map (Dt n) Γ) ℝ n).
+      simp denote_tm; simp denote_v.
+      rewrite 2 denote_shift...
+      simp denote_tm; reflexivity. }
+    pose proof (denote_array_eq_mul_correct
+      n n Γ t1 t2 (fst ∘ ⟦ Dtm n t1 ⟧ₜₘ) (fst ∘ ⟦ Dtm n t2 ⟧ₜₘ)
+      (fun ctx x => fst (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
+      (fun ctx x => fst (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
+      (snd ∘ ⟦ Dtm n t1 ⟧ₜₘ)
+      (snd ∘ ⟦ Dtm n t2 ⟧ₜₘ)
+      (fun ctx => snd (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
+      (fun ctx => snd (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
+      d d0 eq_refl eq_refl eq_refl eq_refl
+      IHeq2 IHeq1 IHeq1' IHeq2').
+    simp Dtm in *; simp Dtm_c in *. } }
   { (* Nsucc *)
     pose proof (IHt sb sb_c H) as [eqf eqc].
     clear IHt.

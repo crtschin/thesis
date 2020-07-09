@@ -1,6 +1,6 @@
-Continuation.vo Continuation.glob Continuation.v.beautified Continuation.required_vo: Continuation.v Tactics.vo DepList.vo Simply.vo
-Continuation.vio: Continuation.v Tactics.vio DepList.vio Simply.vio
-Continuation.vos Continuation.vok Continuation.required_vos: Continuation.v Tactics.vos DepList.vos Simply.vos
+Continuation.vo Continuation.glob Continuation.v.beautified Continuation.required_vo: Continuation.v Tactics.vo DepList.vo Definitions.vo Denotation.vo
+Continuation.vio: Continuation.v Tactics.vio DepList.vio Definitions.vio Denotation.vio
+Continuation.vos Continuation.vok Continuation.required_vos: Continuation.v Tactics.vos DepList.vos Definitions.vos Denotation.vos
 CpdtTactics.vo CpdtTactics.glob CpdtTactics.v.beautified CpdtTactics.required_vo: CpdtTactics.v 
 CpdtTactics.vio: CpdtTactics.v 
 CpdtTactics.vos CpdtTactics.vok CpdtTactics.required_vos: CpdtTactics.v 

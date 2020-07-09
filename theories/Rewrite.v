@@ -8,6 +8,7 @@ Require Vector.
 Require Import Arith.PeanoNat.
 Require Import Coq.Program.Equality.
 Require Import Coq.Program.Basics.
+Require Import CoLoR.Util.Vector.VecUtil.
 Require Import Reals.
 
 Local Open Scope program_scope.
@@ -46,7 +47,7 @@ Inductive rwrt : forall {Γ τ}, tm Γ τ -> tm Γ τ -> Prop :=
   | RW_Abs : forall Γ τ σ (t t': tm (σ::Γ) τ),
     t ~> t' ->
     abs _ _ _ t ~> abs _ _ _ t'
-  (* Loop Fusion *)
+  (* Deforestation *)
   | RW_LpFusion : forall Γ τ n (i : Fin.t n) (f : Fin.t n -> tm Γ τ),
     get Γ i (build Γ τ n f) ~> f i
   (* Loop Fission *)
@@ -144,9 +145,14 @@ Proof with quick.
     try solve [extensionality ctx; simp denote_tm; rewrites; trivial]...
   { apply natural_soundness... }
   all: extensionality ctx; simp denote_tm; rewrites.
-  { unfold compose. induction i...
-    { induction n; simpl... }
-    { unfold shave_fin. rewrite IHi... } }
+  { apply denote_loop_fusion... }
+  (* { unfold vector_map; unfold tm_compose.
+    simp denote_tm; unfold compose.
+    erewrite denote_array_eq... clear ctx.
+    extensionality i; extensionality ctx.
+    simp denote_tm; unfold compose.
+    simp denote_v; repeat rewrite denote_shift...
+    rewrite denote_loop_fusion... } *)
   { unfold ifold. simp denote_tm.
     induction (⟦ ti ⟧ₜₘ ctx)...
     rewrite_c IHd...
