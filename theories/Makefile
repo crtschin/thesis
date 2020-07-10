@@ -41,7 +41,7 @@ HASNATDYNLINK     := $(COQMF_HASNATDYNLINK)
 OCAMLWARN         := $(COQMF_WARN)
 
 CoqMakefile.conf: 
-	coq_makefile -Q . AD Continuation.v CpdtTactics.v Definitions.v Denotation.v DepList.v Direct.v Extract.v Macro.v Natural.v Normalization.v Rewrite.v Simply.v Tactics.v
+	coq_makefile -Q . AD Continuation.v CpdtTactics.v Definitions.v Denotation.v DepList.v Direct.v Extract.v Macro.v Natural.v Normalization.v Rewrite.v Tactics.v
 
 # This file can be created by the user to hook into double colon rules or
 # add any other Makefile code he may need

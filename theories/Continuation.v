@@ -276,39 +276,30 @@ trigger_ctx_c (S m) (t ::: xs) =>
   @denote_ctx_cons (repeat (Array n ℝ) m) (Array n ℝ)
   (t 1) (trigger_ctx_c m xs).
 
-Lemma vector_one_hot'_same : forall j i n,
-  vector_one_hot' j i n = vector_one_hot_c' j i n 1.
+Lemma vector_one_hot'_same : forall x j i n,
+  Vmap (Rmult x) (vector_one_hot' j i n) = vector_one_hot_c' j i n x.
 Proof with quick.
-  intros i j n.
-  generalize dependent i.
-  generalize dependent j.
+  intros.
+  generalize dependent i;
+    generalize dependent j.
   induction n...
   simp vector_one_hot' vector_one_hot_c'.
-  apply Vcons_eq. splits.
-  rewrite IHn...
+  apply Vcons_eq.
+  splits.
+  { destruct (i =? j)...
+    { rewrite Rmult_1_r... }
+    { rewrite Rmult_0_r... } }
+  { rewrite IHn... }
 Qed.
 
-Lemma vector_one_hot_same : forall i n,
-  vector_one_hot i n = vector_one_hot_c i n 1.
+Lemma vector_one_hot_same : forall x i n,
+  Vmap (Rmult x) (vector_one_hot i n) = vector_one_hot_c i n x.
 Proof with quick.
   intros.
   simp vector_one_hot vector_one_hot_c.
   generalize dependent i.
   induction n...
   apply vector_one_hot'_same.
-Qed.
-
-Lemma one_hots_same : forall i n m,
-  one_hots i n m = trigger_ctx_c m (one_hots_c i n m).
-Proof with quick.
-  intros.
-  generalize dependent i.
-  generalize dependent n.
-  induction m; quick; simp one_hots; simp one_hots_c;
-    simp trigger_ctx_c.
-  { unfold denote_ctx_cons. simp trigger_ctx_c.
-    unfold denote_ctx_cons.
-    rewrites. rewrite vector_one_hot_same... }
 Qed.
 
 Ltac eval_denote :=
@@ -362,11 +353,12 @@ Qed.
   Logical relations proof between the denotations given by the
   forward and reverse mode macros
 *)
-
 Equations S n τ :
   (R -> ⟦ Dt n τ ⟧ₜ) -> (R -> ⟦ Dt_c n τ ⟧ₜ) -> Prop :=
 S n ℝ f g := ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
-  (fun r => (snd (f r))) = fun r => (snd (g r)) 1;
+  forall x,
+    (fun r => Vmap (Rmult x) (snd (f r)))
+      = fun r => (snd (g r)) x;
 S n ℕ f g := f = g /\ exists n, f = fun _ => n;
 S n (Array m τ) f g := forall i,
   exists f1 g1,
@@ -421,100 +413,105 @@ Lemma S_eq : forall n τ f1 f2 g1 g2,
 Proof. intros; rewrites. Qed.
 
 Lemma denote_array_eq_const_correct :
-  forall Γ m n (ctx : ⟦ Dctx m Γ ⟧ₜₓ) (ctx_c : ⟦ Dctx_c m Γ ⟧ₜₓ),
-  @denote_array (Dctx m Γ) ℝ n (const (const 0)) ctx =
+  forall Γ m n i (ctx : ⟦ Dctx m Γ ⟧ₜₓ) (ctx_c : ⟦ Dctx_c m Γ ⟧ₜₓ),
+  Vmap (Rmult i) (@denote_array (Dctx m Γ) ℝ n (const (const 0)) ctx) =
     @denote_array (ℝ::Dctx_c m Γ) ℝ n (const (const 0))
-      (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 ctx_c).
+      (@denote_ctx_cons (Dctx_c m Γ) ℝ i ctx_c).
 Proof with quick.
   unfold const.
   intros; induction n...
   - apply Vcons_eq. split...
+    rewrite Rmult_0_r...
 Qed.
 
 Lemma denote_array_eq_add_correct :
-  forall n m Γ x1 x2 f1 f2
+  forall n m i Γ x1 x2 f1 f2
     (d: ⟦ Dctx_c m Γ ⟧ₜₓ) (d0: ⟦ Dctx m Γ ⟧ₜₓ),
-  x1 d0 = f1 d 1 -> x2 d0 = f2 d 1 ->
-  @denote_array (Dctx m Γ) ℝ n
-    (fun i ctx => (vector_nth i (x1 ctx) + vector_nth i (x2 ctx))%R) d0 =
+  Vmap (Rmult i) (x1 d0) = f1 d i ->
+  Vmap (Rmult i) (x2 d0) = f2 d i ->
+  Vmap (Rmult i) (@denote_array (Dctx m Γ) ℝ n
+    (fun i ctx => (vector_nth i (x1 ctx) + vector_nth i (x2 ctx))%R) d0) =
   @denote_array (ℝ :: Dctx_c m Γ) ℝ n
     (fun i ctx => (vector_nth i (f1 (htl ctx) (denote_ctx_hd ctx)) +
       vector_nth i (f2 (htl ctx) (denote_ctx_hd ctx)))%R)
-    (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 d).
+    (@denote_ctx_cons (Dctx_c m Γ) ℝ i d).
 Proof with quick.
   intros; induction n...
   { apply Vcons_eq. split; rewrites...
+    { rewrite <- H; rewrite <- H0.
+      destruct n; clear IHn;
+        remember (x1 d0);
+        remember (x2 d0);
+        rewrite Rmult_plus_distr_l;
+        dependent destruction t;
+        dependent destruction t0... }
     { unfold shave_fin...
       erewrite (IHn (fun x => Vtail (x1 x)) (fun x => Vtail (x2 x))
         (fun ctx x => Vtail (f1 ctx x)) (fun ctx x => Vtail (f2 ctx x)))...
-      all: apply f_equal... } }
+      all: remember (x1 d0);
+        remember (x2 d0);
+        dependent destruction t;
+        dependent destruction t0;
+        (rewrite <- H || rewrite <- H0)... } }
 Qed.
 
 Lemma denote_array_eq_mul_correct :
-  forall (n: nat) m (Γ: Ctx)
-    (t1 t2: tm Γ ℝ)
+  forall (n m: nat) (Γ: Ctx) (r x : R)
     x1 x2 f1 f2
     x1' x2' f1' f2'
-    (d: ⟦ Dctx m Γ ⟧ₜₓ)
-    (d0: ⟦ Dctx_c m Γ ⟧ₜₓ),
-    x1 = fst ∘ ⟦ Dtm m t1 ⟧ₜₘ ->
-    x2 = fst ∘ ⟦ Dtm m t2 ⟧ₜₘ ->
-    f1 = (fun x => const (fst (⟦ Dtm_c m t1 ⟧ₜₘ x))) ->
-    f2 = (fun x => const (fst (⟦ Dtm_c m t2 ⟧ₜₘ x))) ->
-    (* x1' = (fun x => snd (⟦ Dtm m t1 ⟧ₜₘ x)) ->
-    x2' = (fun x => snd (⟦ Dtm m t2 ⟧ₜₘ x)) ->
-    f1' = (fun x => snd (⟦ Dtm_c m t1 ⟧ₜₘ x)) ->
-    f2' = (fun x => snd (⟦ Dtm_c m t2 ⟧ₜₘ x)) -> *)
-(*
-  IHeq2': snd (⟦ Dtm n t2 ⟧ₜₘ d) = snd (⟦ Dtm_c n t2 ⟧ₜₘ d0) 1
-  IHeq1': snd (⟦ Dtm n t1 ⟧ₜₘ d) = snd (⟦ Dtm_c n t1 ⟧ₜₘ d0) 1
-  IHeq2: fst (⟦ Dtm n t2 ⟧ₜₘ d) = fst (⟦ Dtm_c n t2 ⟧ₜₘ d0)
-  IHeq1: fst (⟦ Dtm n t1 ⟧ₜₘ d) = fst (⟦ Dtm_c n t1 ⟧ₜₘ d0)
-*)
-  x2 d = f2 d0 1 ->
-  x1 d = f1 d0 1 ->
-  x1' d = f1' d0 1 ->
-  x2' d = f2' d0 1 ->
-  @denote_array (Dctx m Γ) ℝ n
+    (sb : R -> ⟦ Dctx m Γ ⟧ₜₓ)
+    (sb_c : R -> ⟦ Dctx_c m Γ ⟧ₜₓ),
+  (fun x => x2 (sb x)) = (fun x => f2 (sb_c x)) ->
+  (fun x => x1 (sb x)) = (fun x => f1 (sb_c x)) ->
+  (forall r, (fun x => Vmap (Rmult r) (x1' (sb x)))
+    = fun x => f1' (sb_c x) r) ->
+  (forall r, (fun x => Vmap (Rmult r) (x2' (sb x)))
+    = fun x => f2' (sb_c x) r) ->
+  Vmap (Rmult r) (@denote_array (Dctx m Γ) ℝ n
     (fun (i : Fin.t n) (ctx : ⟦ Dctx m Γ ⟧ₜₓ) =>
       ((x2 ctx * vector_nth i (x1' ctx))%R +
-      (x1 ctx * vector_nth i (x2' ctx))%R)%R) d =
+      (x1 ctx * vector_nth i (x2' ctx))%R)%R) (sb x)) =
     @denote_array (ℝ :: Dctx_c m Γ) ℝ n
       (fun (i : Fin.t n) (ctx : ⟦ ℝ :: Dctx_c m Γ ⟧ₜₓ) =>
       (vector_nth i ((f1' (htl ctx)
-          ((f2 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))) +
+          ((f2 (htl ctx)) * denote_ctx_hd ctx))) +
       vector_nth i ((f2' (htl ctx)
-          ((f1 (htl ctx) (denote_ctx_hd ctx)) * denote_ctx_hd ctx))))%R)
-        (@denote_ctx_cons (Dctx_c m Γ) ℝ 1 d0).
+          ((f1 (htl ctx)) * denote_ctx_hd ctx))))%R)
+        (@denote_ctx_cons (Dctx_c m Γ) ℝ r (sb_c x)).
 Proof with quick.
   intros... unfold compose, const in *.
   fold denote_t in *.
   dependent induction n...
   { apply Vcons_eq.
     unfold shave_fin...
-    rewrite (IHn m Γ t1 t2 x1 x2 f1 f2
+    rewrite (IHn m Γ r x x1 x2 f1 f2
       (fun x => Vtail (x1' x)) (fun x => Vtail (x2' x))
       (fun x => @Vtail _ _ ∘ (f1' x)) (fun x => @Vtail _ _ ∘ (f2' x))
-      d d0);
+      sb sb_c);
     clear IHn...
-  all: unfold compose.
-  all: rewrites.
     split...
-    { repeat rewrite Rmult_1_r.
+    { eapply equal_f in H1; eapply equal_f in H2.
+      eapply equal_f in H; eapply equal_f in H0.
+      rewrite <- H1; rewrite <- H2.
+      rewrite <- H0; rewrite <- H.
+      clear H H0 H1 H2.
+      remember (x1' (sb x)); remember (x2' (sb x)).
+      dependent destruction t; dependent destruction t0...
+      eassert (forall (a b c : R),
+        Rmult a (Rmult b c) = Rmult (Rmult b a) c).
+      { intros. rewrite Rmult_comm.
+        rewrite Rmult_assoc. rewrite (Rmult_comm c a).
+        rewrite Rmult_assoc... }
       dependent destruction n...
-      eassert (@Vhead R 0 ∘ (f1' d0) = fun x => Vhead (f1' d0 x))
-        by (unfold compose; quick).
-      eassert (@Vhead R 0 ∘ (f2' d0) = fun x => Vhead (f2' d0 x))
-        by (unfold compose; quick).
-      pose proof (@equal_f _ _ _ _ H7);
-        pose proof (@equal_f _ _ _ _ H8); clear H7 H8...
-      repeat rewrite <- H9; repeat rewrite <- H10.
-      rewrite Rmult_comm;
-        rewrite (@Rmult_comm (fst (⟦ Dtm_c m t1 ⟧ₜₘ d0))).
-      subst.
-      { admit. }
-      { admit. } } }
-Admitted.
+      all: rewrite Rmult_plus_distr_l.
+      all: rewrite 2 H... }
+    { extensionality y; unfold compose.
+      eapply equal_f in H1; rewrite <- H1.
+      remember (x1' (sb y)); dependent destruction t... }
+    { extensionality y; unfold compose.
+      eapply equal_f in H2; rewrite <- H2.
+      remember (x2' (sb y)); dependent destruction t... } }
+Qed.
 
 Lemma S_subst :
   forall Γ τ n,
@@ -565,25 +562,25 @@ Proof with quick.
     destruct IHt as [f1 [g1 [Hs1 [Heq1 Heq2]]]]; subst.
     erewrite S_eq... }
   { (* Const *)
-    simp S. split;
+    simp S. split; try intros i;
       extensionality x; simp Dtm Dtm_c; simp denote_tm...
     { clear r. simp denote_tm.
       unfold compose.
       unfold const.
       eassert (H': (fun (i : Fin.t n) =>
         ⟦ rval (map (Dt n) Γ) 0 ⟧ₜₘ) = const (const 0)).
-      { extensionality i. extensionality ctx. simp denote_tm... }
+      { extensionality y. extensionality ctx. simp denote_tm... }
       rewrite_c H'. unfold compose.
       eassert (H': (fun _ : Fin.t n =>
         ⟦ rval (ℝ :: map (Dt_c n) Γ) 0 ⟧ₜₘ) = const (const 0)).
-      { extensionality i. extensionality ctx. unfold const. simp denote_tm... }
+      { extensionality y. extensionality ctx. unfold const. simp denote_tm... }
       rewrite_c H'.
       apply denote_array_eq_const_correct. } }
   { (* Add *)
     pose proof (IHt1 sb sb_c H) as [IHeq1 IHeq1'].
     pose proof (IHt2 sb sb_c H) as [IHeq2 IHeq2'].
     clear IHt1 IHt2.
-    simp S in *. split; extensionality r;
+    simp S in *. split; try intros i; extensionality r;
       eapply equal_f in IHeq1; eapply equal_f in IHeq2;
       eapply equal_f in IHeq1'; eapply equal_f in IHeq2'...
     { simp Dtm in *; simp Dtm_c in *.
@@ -595,20 +592,21 @@ Proof with quick.
       simp denote_tm; unfold compose...
       erewrite denote_array_eq...
       erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
-    2:{ extensionality i. extensionality ctx. simp denote_tm.
+    2:{ extensionality y. extensionality ctx. simp denote_tm.
         rewrite 2 denote_shift. simp denote_tm.
         eassert (⟦ Top (map (Dt_c n) Γ) ℝ ⟧ᵥ = denote_ctx_hd).
         { extensionality xs. dependent destruction xs... }
-        rewrite H0.
+        rewrite H0. simp denote_v. unfold compose...
         reflexivity. }
-    2:{ extensionality i. extensionality ctx. simp denote_tm.
+    2:{ extensionality y. extensionality ctx. simp denote_tm.
+        simp denote_v. unfold compose...
         reflexivity. }
       clear IHeq1 IHeq2.
       remember (sb_c r); remember (sb r).
       rewrite <- Heqd in IHeq2', IHeq1';
         rewrite <- Heqd0 in IHeq2', IHeq1'.
       clear Heqd Heqd0 sb sb_c H r.
-      pose proof (denote_array_eq_add_correct n n Γ
+      pose proof (denote_array_eq_add_correct n n i Γ
         (fun d => snd (⟦ Dtm n t1 ⟧ₜₘ d))
         (fun d => snd (⟦ Dtm n t2 ⟧ₜₘ d))
         (fun d x => snd (⟦ Dtm_c n t1 ⟧ₜₘ d) x)
@@ -620,19 +618,14 @@ Proof with quick.
     pose proof (IHt2 sb sb_c H) as [IHeq2 IHeq2'].
     clear IHt1 IHt2.
     simp S in *.
-    split; extensionality r;
-      eapply equal_f in IHeq1; eapply equal_f in IHeq2;
-      eapply equal_f in IHeq1'; eapply equal_f in IHeq2'...
+    split; intros; extensionality r.
     { simp Dtm in *; simp Dtm_c in *;
-        simp denote_tm.
+        simp denote_tm...
+      eapply equal_f in IHeq1; eapply equal_f in IHeq2...
       rewrites. }
     { simp Dtm; simp Dtm_c; simp denote_tm.
       unfold vector_add, vector_map2...
       simp denote_tm; unfold compose...
-      remember (sb r); remember (sb_c r).
-      rewrite <- Heqd in IHeq1', IHeq2', IHeq1, IHeq2.
-      rewrite <- Heqd0 in IHeq1', IHeq2', IHeq1, IHeq2.
-      clear sb sb_c H Heqd Heqd0 r.
       erewrite denote_array_eq...
       erewrite (denote_array_eq (ℝ :: map (Dt_c n) Γ))...
   2:{ extensionality i. extensionality ctx.
@@ -647,15 +640,14 @@ Proof with quick.
       rewrite 2 denote_shift...
       simp denote_tm; reflexivity. }
     pose proof (denote_array_eq_mul_correct
-      n n Γ t1 t2 (fst ∘ ⟦ Dtm n t1 ⟧ₜₘ) (fst ∘ ⟦ Dtm n t2 ⟧ₜₘ)
-      (fun ctx x => fst (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
-      (fun ctx x => fst (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
-      (snd ∘ ⟦ Dtm n t1 ⟧ₜₘ)
-      (snd ∘ ⟦ Dtm n t2 ⟧ₜₘ)
+      n n Γ x r
+      (fst ∘ ⟦ Dtm n t1 ⟧ₜₘ) (fst ∘ ⟦ Dtm n t2 ⟧ₜₘ)
+      (fst ∘ ⟦ Dtm_c n t1 ⟧ₜₘ) (fst ∘ ⟦ Dtm_c n t2 ⟧ₜₘ)
+      (snd ∘ ⟦ Dtm n t1 ⟧ₜₘ) (snd ∘ ⟦ Dtm n t2 ⟧ₜₘ)
       (fun ctx => snd (⟦ Dtm_c n t1 ⟧ₜₘ ctx))
       (fun ctx => snd (⟦ Dtm_c n t2 ⟧ₜₘ ctx))
-      d d0 eq_refl eq_refl eq_refl eq_refl
-      IHeq2 IHeq1 IHeq1' IHeq2').
+      sb sb_c IHeq2 IHeq1 IHeq1' IHeq2').
+    unfold compose, denote_ctx_hd, denote_ctx_cons in *.
     simp Dtm in *; simp Dtm_c in *. } }
   { (* Nsucc *)
     pose proof (IHt sb sb_c H) as [eqf eqc].
@@ -805,11 +797,12 @@ Proof with quick.
       apply inst_cons...
     2,3: extensionality x; unfold denote_ctx_cons; reflexivity.
       unfold compose, denote_ctx_hd...
-      simp S; splits; extensionality x; simpl.
+      simp S; splits; intros; extensionality y; simpl.
+      clear y.
       (* Finally we have to prove equivalence between the continuation
         and forward-mode format input vectors
       *)
-      apply vector_one_hot_same. }
+      rewrite vector_one_hot_same... }
     (* Prove that we can rewrite the goal we had to the form we proved
       above. Done using simple rewriting.
     *)
@@ -858,18 +851,31 @@ Proof with quick.
 Qed.
 
 Lemma S_correctness_R :
-  forall n
+  forall n i
     (t : tm (repeat ℝ n) ℝ)
     (ctx : R -> ⟦ repeat ℝ n ⟧ₜₓ),
   S n ℝ
     (⟦ Dtm n t ⟧ₜₘ ∘ Dtm_ctx ∘ ctx)
     (⟦ Dtm_c n t ⟧ₜₘ ∘ Dtm_ctx_c ∘ ctx) ->
-  (fun r => snd (⟦ Dtm n t ⟧ₜₘ (Dtm_ctx (ctx r)))) =
-    fun r => (snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c (ctx r)))) 1.
+  (fun r => Vmap (Rmult i) (snd (⟦ Dtm n t ⟧ₜₘ (Dtm_ctx (ctx r))))) =
+    fun r => (snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c (ctx r)))) i.
 Proof with quick.
   intros.
   simp S in *. destruct H as [Heq1 Heq2].
   apply Heq2.
+Qed.
+
+Lemma perturbation_correctness :
+  forall n x
+    (t : tm (repeat ℝ n) ℝ) (ctx : ⟦ repeat ℝ n ⟧ₜₓ),
+  Vmap (Rmult x) (snd (⟦ Dtm n t ⟧ₜₘ (Dtm_ctx ctx))) =
+    snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c ctx)) x.
+Proof with quick.
+  intros.
+  pose proof (S_correctness_R n x t (const ctx)) as H.
+  unfold const, compose in *.
+  apply equal_f in H...
+  apply fundamental_property.
 Qed.
 
 Lemma correctness :
@@ -879,14 +885,13 @@ Lemma correctness :
     snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c ctx)) 1.
 Proof with quick.
   intros.
-  pose proof (S_correctness_R n t (const ctx)) as H.
-  unfold const in *.
-  assert (H': forall A (x y : A),
-    @const A R x = const y -> x = y).
-  { intros. unfold const in *.
-    pose proof 0. apply equal_f in H0... }
-  apply_c H'.
-  unfold const.
-  apply H.
-  apply fundamental_property.
+  rewrite <- (perturbation_correctness n 1).
+  remember (snd (⟦ Dtm n t ⟧ₜₘ (Dtm_ctx ctx))).
+  fold denote_t in *.
+  clear Heqt0 t ctx.
+  induction t0...
+  rewrite Vcons_eq.
+  split.
+  { rewrite Rmult_1_l... }
+  { eapply IHt0... }
 Qed.
