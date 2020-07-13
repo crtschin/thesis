@@ -1,0 +1,253 @@
+\subsubsection{Core Combinator Language}\label{sec:combinator-core}
+  A well-known fact is the connection between CCC and simply-typed lambda calculi\cite{10.1007/3-540-15198-2_10}.
+  We can define a simple core combinator language inspired by the various categorical laws related to CCC.
+  The requirement for a combinator language to be able to do reverse-mode AD comes from the need to make explicit, the contraction and weakening rules usually kept implicit in the typing contexts of typed lambda calculi.
+  Translating from a simply-typed lambda calculus necessitates a translation between the implicit manipulation of the typing context to access variables, to one that is explicit in its usage of specific combinators.
+
+  The core combinator language we will be using is shown in Figure~\ref{fig:combinator_core_lang}.
+  Note the combinator language contains no typing context and are defined as terms $c : Hom(\tau, \sigma)$, where $\tau$ and $\sigma$ are, respectively, the input and output typed of the combinator $c$.
+  As programming in the combinator language can quickly become cumbersome and unreadable, we make repeated usage of some syntactic niceties.
+
+  \begin{figure}[]
+    \centering
+    \begin{minted}{coq}
+    Inductive ty : Type :=
+      | ~$\synR\texttt{\^{}}$~ : nat ~$\rightarrow$~ ty
+      | ~$\synR$~ : ty
+      | ~$\synUnit$~ : ty
+      | ~$\synFunc$~ : ty ~$\rightarrow$~ ty ~$\rightarrow$~ ty
+      | ~$\synStar$~  : ty ~$\rightarrow$~ ty ~$\rightarrow$~ ty
+    .
+
+    Inductive comb : ty ~$\rightarrow$~ ty ~$\rightarrow$~ Type :=
+      (* Category laws *)
+      | id : forall A, comb A A
+      | seq : forall A B C,
+        comb A B ~$\rightarrow$~ comb B C ~$\rightarrow$~ comb A C
+      (* Monoidal *)
+      | cross : forall A B C D,
+        comb A B ~$\rightarrow$~ comb C D ~$\rightarrow$~ comb (A ~$\synStar$~ C) (B ~$\synStar$~ D)
+      (* Terminal *)
+      | neg : forall A,
+        comb A ~$\synUnit$~
+      (* Cartesian *)
+      | exl : forall A B,
+        comb (A ~$\synStar$~ B) A
+      | exr : forall A B,
+        comb (A ~$\synStar$~ B) B
+      | dupl : forall A,
+        comb A (A ~$\synStar$~ A)
+      (* Closed *)
+      | ev : forall A B,
+        comb ((A ~$\synFunc$~ B) ~$\synStar$~ A) B
+      | curry : forall A B C,
+        comb (A ~$\synStar$~ B) C ~$\rightarrow$~ comb A (B ~$\synFunc$~ C)
+      (* Reals *)
+      | cplus : comb (~$\synR$~ ~$\synStar$~ ~$\synR$~) ~$\synR$~
+      | crval : forall (r : ~$\denR$~), comb ~$\synUnit$~ ~$\synR$~
+      | cmplus : forall n, comb (~$\synRn$~ ~$\synStar$~ ~$\synRn$~) (~$\synRn$~)
+      | cmrval : forall n (a : vector ~$\denR$~ n), comb ~$\synUnit$~ (~$\synRn$~)
+    .
+    \end{minted}
+    \caption{Core combinator language inspired by Cartesian closed categories}
+    \label{fig:combinator_core_lang}
+  \end{figure}
+
+  \begin{minted}{coq}
+    Notation "A ;; B" := (seq A B).
+    Notation "< A , B >" := (dupl ;; cross A B).
+    Definition assoc1 {A B C} : comb ((A ~$\synStar$~ B) ~$\synStar$~ C) (A ~$\synStar$~ (B ~$\synStar$~ C)) :=
+      <exl;;exl, <exl;;exr, exr>>.
+    Definition assoc2 {A B C} : comb (A ~$\synStar$~ (B ~$\synStar$~ C)) ((A ~$\synStar$~ B) ~$\synStar$~ C) :=
+      <<exl, exr;;exl>, exr;;exr>.
+    Definition sym {A B} : comb (A ~$\synStar$~ B) (B ~$\synStar$~ A) :=
+      <exr, exl>.
+  \end{minted}
+
+  We will next describe a translation from a simply-typed lambda calculus to this combinator language.
+  Like the combinator language, the simply-typed lambda calculus will be restricted to function types, product types, and types for real numbers, vectors specialized to real numbers and unit, which is shown in Figure~\ref{fig:stlc_combinator}.
+  Note that we omitted the terms related to typing contexts, function types and product types, as these were identical to the ones used in Section~\ref{sec:forward}.
+
+  \begin{figure}
+    \centering
+    \begin{minted}{coq}
+      Inductive tm ~($\Gamma$ : Ctx) : ty $\to$ Type~ :=
+        ...
+        (* Operations on reals *)
+        | rval : ~forall r, \rightarrow tm \Gamma \synR~
+        | plus :
+          ~tm \Gamma \synR \rightarrow tm \Gamma \synR \rightarrow tm \Gamma \synR~
+        (* Operations on real vectors *)
+        | mrval : ~forall n, vector $\denR$ n \rightarrow tm \Gamma ($\synRn$)~
+        | mplus : forall n,
+          ~tm \Gamma ($\synRn$) \rightarrow tm \Gamma ($\synRn$) \rightarrow tm \Gamma ($\synRn$)~
+        (* $\synUnit$ *)
+        | it : ~tm \Gamma \synUnit~
+      .
+    \end{minted}
+    \caption{Simply-typed lambda calculus with unit and specialized real arrays}
+    \label{fig:stlc_combinator}
+  \end{figure}
+
+  Using the same technique as Curien\cite{10.1007/3-540-15198-2_10}, we make use of an auxiliary language to smoothen the process.
+  This auxiliary language, the typed categorical combinatory logic \textit{(CCL)} will contain terms related to both the combinator language and the simply-typed lambda calculus, such as variable access, function application and function abstraction.
+  While this CCL can be used to facilitate both back and forth translations, we will only describe the translation from the combinator language to the simply-typed lambda calculus.
+
+  The \cclenv combinator in CCL is most notable.
+  In essence we transition each type in the typing context to become an additional argument in the resulting function type.
+  Repeated usage of this specific combinator makes from the previously open term, a closed one.
+
+  \begin{figure}[]
+    \centering
+    \begin{minted}{coq}
+      Inductive ccl (~$\Gamma$~ : Ctx) : ty ~$\rightarrow$~ Type :=
+      (* Variables *)
+      | ccl_var : forall ~$\tau$~,
+        ~$\tau$~ ~$\in$~ ~$\Gamma$~ ~$\rightarrow$~ ccl ~$\tau$~
+      (* Reals *)
+      | ccl_plus : ccl (~$\synR$~ ~$\synStar$~ ~$\synR$~ ~$\synFunc$~ ~$\synR$~)
+      | ccl_rval : ~$\denR$~ ~$\rightarrow$~ ccl ~$\synR$~
+      | ccl_mplus : forall n,
+        ccl (~$\synRn$~ ~$\synStar$~ ~$\synRn$~ ~$\synFunc$~ ~$\synRn$~)
+      | ccl_mrval : forall n, vector ~$\denR$~ n ~$\rightarrow$~ ccl (~$\synRn$~)
+      (* Category laws *)
+      | ccl_id : forall A, ccl (A ~$\synFunc$~ A)
+      | ccl_seq : forall A B C,
+        ccl (A ~$\synFunc$~ B) ~$\rightarrow$~ ccl (B ~$\synFunc$~ C) ~$\rightarrow$~ ccl (A ~$\synFunc$~ C)
+      (* Cartesian *)
+      | ccl_exl : forall A B,
+        ccl (A ~$\synStar$~ B ~$\synFunc$~ A)
+      | ccl_exr : forall A B,
+        ccl ((A ~$\synStar$~ B) ~$\synFunc$~ B)
+      (* Monoidal *)
+      | ccl_cross : forall A B C,
+        ccl (A ~$\synFunc$~ B) ~$\rightarrow$~ ccl (A ~$\synFunc$~ C) ~$\rightarrow$~ ccl (A ~$\synFunc$~ B ~$\synStar$~ C)
+      (* Closed *)
+      | ccl_ev : forall A B,
+        ccl ((A ~$\synFunc$~ B) ~$\synStar$~ A ~$\synFunc$~ B)
+      | ccl_env : forall A B C,
+        @ccl (A::~$\Gamma$~) (B ~$\synFunc$~ C) ~$\rightarrow$~ @ccl ~$\Gamma$~ ((B ~$\synFunc$~ A ~$\synFunc$~ C))
+      (* Const *)
+      | ccl_const : forall A B,
+        ccl A ~$\rightarrow$~ ccl (B ~$\synFunc$~ A)
+    .
+    \end{minted}
+    \caption{Auxilliary categorical combinatory logic language used in the translations}
+    \label{fig:combinator_ccl_lang}
+  \end{figure}
+
+  The intrinsic representation we use in our definitions makes defining the exact translations a breeze as it then simply becomes an exercise in type-directed programming.
+  The simply-typed lambda calculus to CCL translation specifically is straightforward, as the CCL language still has access to a typing context.
+  Abstraction, where the argument type is added onto the typing context, is handled by the \cclenv construct.
+  In cases where a value is introduced such as \<var>, \<rval> and \<mrval>, we make use of the \cclconst construct to ensure the term fits the type signature.
+  Note that an additional domain type of $\synUnit$ is added in the type signature of the translation function to accommodate the combinator-heavy auxiliary language.
+  This translation is shown in Snippet~\ref{lst:combinator_stlc_to_ccl}.
+
+  \begin{listing}
+    \begin{minted}{coq}
+      Fixpoint stlc_ccl {~$\Gamma$~ ~$\tau$~} (t : tm ~$\Gamma$~ ~$\tau$~) : ccl ~$\Gamma$~ (~$\synUnit$~ ~$\synFunc$~ ~$\tau$~) :=
+        match t with
+        (* Base *)
+        | var v => ccl_const (ccl_var v)
+        | app t1 t2 => <stlc_ccl t1, stlc_ccl t2> ;; ccl_ev
+        | abs t' => ccl_env (stlc_ccl t')
+        (* Products *)
+        | tuple t1 t2 => <stlc_ccl t1, stlc_ccl t2>
+        | first t' => stlc_ccl t' ;; ccl_exl
+        | second t => stlc_ccl t ;; ccl_exr
+        (* Reals *)
+        | plus t1 t2 => <stlc_ccl t1, stlc_ccl t2> ;; ccl_plus
+        | rval r => ccl_const (ccl_rval r)
+        | mplus t1 t2 => <stlc_ccl t1, stlc_ccl t2> ;; ccl_mplus
+        | mrval r => ccl_const (ccl_mrval r)
+        (* Unit *)
+        | it => ccl_id
+        end.
+    \end{minted}
+    \caption{Simply-typed lambda calculus to CCL translation}
+    \label{lst:combinator_stlc_to_ccl}
+  \end{listing}
+
+  As with defining the denotations of variables, we also need to define a mechanism to ensure the correct variable is still referenced when translating from the typed lambda calculi to CCL.
+  Consider that the typing context, previously a list, is isomorphic to a single nested product type.
+  Empty lists correspond to the built-in unit type while concatenation becomes nested tupling.
+  This isomorphism is what we use to translate the typing contexts to the input and output type format used by the combinator language.
+
+  \begin{minted}{coq}
+    Fixpoint translate_context (~$\Gamma$~ : Ctx) : ty :=
+      match ~$\Gamma$~ with
+      | nil => ~$\synUnit$~
+      | ~$\tau$~ :: ~$\Gamma'$~ => ~$\tau$~ ~$\synStar$~ translate_context ~$\Gamma'$~
+      end.
+  \end{minted}
+
+  Doing a lookup in such a nested product type then reduces to applying the correct projection combinator.
+
+  \begin{minted}{coq}
+    Fixpoint fetch ~$\Gamma$~ ~$\tau$~ (v : ~$\tau$~ ~$\in$~ ~$\Gamma$~) : comb (translate_context ~$\Gamma$~) ~$\tau$~ :=
+      match v with
+      | Top => exl
+      | Pop v' => exr ;; fetch v'
+      end.
+  \end{minted}
+
+  We also define additional functions to correctly model weakening in the combinator language.
+
+  \begin{minted}{coq}
+    Definition weaken ~$\tau$~ ~$\rho$~ ~$\sigma$~ (c : comb ~$\tau$~ ~$\rho$~): comb (~$\sigma$~ ~$\synStar$~ ~$\tau$~) ~$\rho$~ := exr ;; c.
+    Fixpoint weaken_ctx ~$\Gamma$~ ~$\tau$~ (c : comb ~$\synUnit$~ ~$\tau$~): comb (translate_context ~$\Gamma$~) ~$\tau$~ :=
+      match ~$\Gamma$~ with
+      | nil => c
+      | ~$\tau'$~ :: ~$\Gamma'$~ => weaken ~$\tau'$~ (weaken_ctx ~$\Gamma'$~ c)
+      end.
+  \end{minted}
+
+  % TODO: explain ccl_ccc
+
+  \begin{listing}
+    \begin{minted}{coq}
+      Fixpoint ccl_ccc ~$\Gamma$~ ~$\tau$~ (c : @ccl ~$\Gamma$~ ~$\tau$~) : comb (translate_context ~$\Gamma$~) ~$\tau$~ :=
+        match c with
+        (* Base *)
+        | ccl_var v => fetch v
+
+        (* Reals *)
+        | ccl_plus => curry (exr ;; cplus)
+        | ccl_rval r => weaken_ctx ~$\Gamma$~ (crval r)
+        | ccl_mplus => curry (exr ;; cmplus)
+        | ccl_mrval r => weaken_ctx ~$\Gamma$~ (cmrval r)
+
+        (* Category laws *)
+        | ccl_id => curry exr
+        | ccl_seq t1 t2 =>
+          <ccl_ccc t2, ccl_ccc t1> ;; curry (assoc1 ;; cross id ev ;; ev)
+
+        (* Cartesian *)
+        | ccl_exl => curry (exr ;; exl)
+        | ccl_exr => curry (exr ;; exr)
+
+        (* Monoidal *)
+        | ccl_cross t1 t2 =>
+          < ccl_ccc t1, ccl_ccc t2 > ;;
+            curry (<<exl;;exl, exr>, <exl;;exr, exr>>;; cross ev ev)
+
+        (* Closed *)
+        | ccl_ev => curry (exr ;; ev)
+        | ccl_env t' =>
+          curry (curry (sym ;; assoc2 ;; cross (ccl_ccc t') id ;; ev))
+
+        (* Const *)
+        | ccl_const t' => ccl_ccc t';; curry exl
+        end.
+    \end{minted}
+    \caption{CCL to CCC translation}
+    \label{lst:combinator_ccl_to_ccc}
+  \end{listing}
+
+  The final translation function is the composition of both the translation functions in Snippet~\ref{lst:combinator_stlc_to_ccl} and \ref{lst:combinator_ccl_to_ccc}.
+  Note that we have to remove the extra $\synUnit$ type we added in the simply-typed lambda calculus to CCL translation shown Snippet~\ref{lst:combinator_stlc_to_ccl}.
+
+  \begin{minted}{coq}
+    Definition stlc_ccc ~$\Gamma$~ ~$\tau$~ : tm ~$\Gamma$~ ~$\tau$~ ~$\rightarrow$~ comb (translate_context ~$\Gamma$~) ~$\tau$~ :=
+      fun t => <ccl_ccc (stlc_ccl t), neg> ;; ev.
+  \end{minted}

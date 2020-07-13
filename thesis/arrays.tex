@@ -32,13 +32,17 @@
     \label{fig:array_infer}
   \end{figure}
 
-  \begin{minted}{coq}
-    Inductive tm ~($\Gamma$ : Ctx) : ty $\to$ Type~ :=
-      ...
-      (* Arrays *)
-      | build : ~forall n \tau (f : $\Fin{n}$ $\rightarrow$ $\tm{\Gamma}{\tau}$), tm $\Gamma$ $(\Array{n}{\tau})$~
-      | get : ~forall n \tau (i : $\Fin{n}$), tm $\Gamma$ $(\Array{n}{\tau})$ $\to$ tm $\Gamma$ $\tau$~
-  \end{minted}
+  \begin{listing}
+    \begin{minted}{coq}
+      Inductive tm ~($\Gamma$ : Ctx) : ty $\to$ Type~ :=
+        ...
+        (* Arrays *)
+        | build : ~forall n \tau (f : $\Fin{n}$ $\rightarrow$ $\tm{\Gamma}{\tau}$), tm $\Gamma$ $(\Array{n}{\tau})$~
+        | get : ~forall n \tau (i : $\Fin{n}$), tm $\Gamma$ $(\Array{n}{\tau})$ $\to$ tm $\Gamma$ $\tau$~
+    \end{minted}
+    \caption{The terms related to array types included in our language}
+    \label{lst:tm_array}
+  \end{listing}
 
   Both the macro and denotation functions deviate slightly from how the previous terms were defined.
   When looking at the macro, while it previously sufficed to recursively call the macro on subterms, this is not possible as the subterm of interest is now a function.

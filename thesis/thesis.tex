@@ -60,8 +60,8 @@
   While this algorithm does calculate gradients, it is not a true reverse-mode AD algorithm as the final computation graph differs from what would be expected of reverse-mode AD\cite{PearlmutterSiskind2008}.
   The consequence of which is the excess usage of primitive operations.
   Nonetheless, it is useful to give a formal proof of correctness of this algorithm in terms of what we have already established, to show the versatility of the proof technique used, and by extension, our simple set-theoretic denotational semantics.
-  This is done in Section~\ref{sec:continuation}.
-  A novel reverse-mode algorithm posed by \Vakar{}\cite{} along with an attempt at a formal proof in \<Coq>, is discussed in Section~\ref{sec:combinator-base}.
+  This is done in Section~\ref{sec:continuation-base}.
+  A reverse-mode algorithm posed by \Vakar{}\cite{} along with an attempt at a formal proof in \<Coq>, is discussed in Section~\ref{sec:combinator-base}.
   \input{continuation.tex}
   \input{combinator.tex}
 \section{Discussion}

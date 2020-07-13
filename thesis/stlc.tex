@@ -60,21 +60,25 @@
   Note that in the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they made use of n-ary products accompanied by pattern matching expressions.
   We opted to implement binary projection products, as these are conceptually simpler while still retaining much of the same functionality expected of product types.
 
-  \begin{minted}{coq}
-    Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
-      ...
-      (* Binary projection products *)
-      | tuple : ~forall {\tau \sigma},
-        tm \Gamma \tau \rightarrow
-        tm \Gamma \sigma \rightarrow
-        tm \Gamma (\tau \synStar \sigma)~
-      | first : ~forall {\tau \sigma}, tm \Gamma (\tau \synStar \sigma) \rightarrow tm \Gamma \tau~
-      | second : ~forall {\tau \sigma}, tm \Gamma (\tau \synStar \sigma) \rightarrow tm \Gamma \sigma~
-      (* Operations on reals *)
-      | rval : ~forall r, tm \Gamma $\synR$~
-      | add : ~tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$~
-      | mul : ~tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$~
-  \end{minted}
+  \begin{listing}
+    \begin{minted}{coq}
+      Inductive tm ~(\Gamma : Ctx) : ty \rightarrow Type~ :=
+        ...
+        (* Binary projection products *)
+        | tuple : ~forall {\tau \sigma},
+          tm \Gamma \tau \rightarrow
+          tm \Gamma \sigma \rightarrow
+          tm \Gamma (\tau \synStar \sigma)~
+        | first : ~forall {\tau \sigma}, tm \Gamma (\tau \synStar \sigma) \rightarrow tm \Gamma \tau~
+        | second : ~forall {\tau \sigma}, tm \Gamma (\tau \synStar \sigma) \rightarrow tm \Gamma \sigma~
+        (* Operations on reals *)
+        | rval : ~forall r, tm \Gamma $\synR$~
+        | add : ~tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$~
+        | mul : ~tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$ \rightarrow tm \Gamma $\synR$~
+    \end{minted}
+    \caption{Terms in our language related to product and real types.}
+    \label{lst:stlc_prod_r}
+  \end{listing}
 
   % \begin{listing}
   %   \begin{minted}{coq}

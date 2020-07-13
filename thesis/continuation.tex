@@ -1,4 +1,4 @@
-\subsection{Formalizing Continuation-Based AD}\label{sec:continuation_based}
+\subsection{Formalizing Continuation-Based AD}\label{sec:continuation-based}
   The guiding principle in this algorithm is to build up the reverse pass as a continuation using a structure preserving macro on the program syntax.
   Like the forward-mode macro $\D$, the continuation-based macro $\Dc$ is structure preserving and works with tuples at ground type $\synR$.
   But unlike the forward-mode macro, which uses these tuples to represent dual-numbers, the continuation-based macro pairs the primal values with a continuation calculating an array containing all of the perturbation variables.
@@ -69,7 +69,7 @@
           vector_map (abs (mul s (var Top))) a.
       \end{minted}
       \caption{Helper functions on array types}
-      \end{subfigure}
+    \end{subfigure}
     \caption{Consolidated forward-mode macro on the simply-typed lambda calculus extended with array types}
     \label{fig:forward_mode_cont}
   \end{figure}
