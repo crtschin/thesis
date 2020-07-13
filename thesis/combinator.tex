@@ -1,1 +1,61 @@
-\subsection{Combinator-Based Source Code Transformation}\label{sec:combinator_based}
+\subsection{Combinator-Based Source Code Transformation}\label{sec:combinator-base}
+  Eliott posed a novel and principled approach to defining an AD algorithm using \textit{category theory}\cite{Elliott-2018-ad-icfp}.
+  They take the category theoretical hammer to the problem by approaching it as an algorithm on categories, cartesian closed categories \textit{(CCC)} to be exact, which are known to be equivalent to the simply-typed lambda calculi\cite{Elliott-2017-compiling-to-categories}\cite{10.1007/3-540-15198-2_10}.
+  The algorithm is, however, still restricted to first order programs.
+
+  An extension of this technique is given by \Vakar{}\cite{Vakar-combinator}.
+  They go through first defining a small core combinator-based language.
+  They then define a reverse-mode macro along with an additional auxiliary target language enriched with simple linear types.
+
+  % They make the observation that defining a reverse-mode algorithm requires the dual structures to the contraction and weakening rules usually implicitly present in structural languages.
+  % These lead to the monoidal operations $\Gamma \vdash \synO : \tau$ and $\Gamma \vdash t_1 \synP t_2 : \tau$, where $\Gamma \vdash t_1, t_2 : \tau$.
+  % Ensuring the higher-order types respect $(\synO, \synP)$ requires the usage of minimal linear types.
+  % Notice that these two operations naturally correspond to, respectively, the zeroing and fan-out problems associated with reverse-mode AD.
+
+  \subsubsection{Core Combinator Language}\label{sec:combinator-core}
+    A well-known fact is the connection between CCC and simply-typed lambda calculi\cite{10.1007/3-540-15198-2_10}.
+    We can define a simple core combinator language inspired by the various categorical laws related to CCC.
+    The requirement for a combinator language to be able to do reverse-mode AD comes from the need to make explicit, the contraction and weakening rules usually kept implicit in the typing contexts of typed lambda calculi.
+    Translating from a simply-typed lambda calculus necessitates a translation between the implicit manipulation of the typing context to access variables, to one that is explicit using specific combinators.
+    The core combinator language we will be using is shown in Figure~\ref{fig:combinator_core_lang}.
+
+    \begin{figure}[]
+      \centering
+
+      \caption{Core combinator language inspired by Cartesian closed categories}
+      \label{fig:combinator_core_lang}
+    \end{figure}
+
+    We will next describe a translation from a simply-typed lambda calculus to this combinator language.
+    Like the combinator language, the simply-typed lambda calculus will be restricted to function types, product types, and types for real numbers, vectors specialized to real numbers and unit, which is shown in Figure~\ref{fig:stlc_combinator}. Note that we omitted the terms related to typing contexts, function types and product types, as these were identical to the ones used in Section~\ref{sec:forward}.
+
+    \begin{figure}
+      \centering
+      \begin{minted}{coq}
+        Inductive ty : Type :=
+          | ~$\synR\texttt{\^{}}$~ : nat ~$\rightarrow$~ ty
+          | ~$\synR$~ : ty
+          | ~$\synUnit$~ : ty
+          | ~$\synFunc$~ : ty ~$\rightarrow$~ ty ~$\rightarrow$~ ty
+          | ~$\synStar$~  : ty ~$\rightarrow$~ ty ~$\rightarrow$~ ty
+        .
+
+        Inductive tm ~($\Gamma$ : Ctx) : ty $\to$ Type~ :=
+          ...
+          (* Operations on reals *)
+          | rval : ~forall r, \rightarrow tm \Gamma \synR~
+          | plus :
+            ~tm \Gamma \synR \rightarrow tm \Gamma \synR \rightarrow tm \Gamma \synR~
+          (* Operations on real vectors *)
+          | mrval : ~forall n, vector $\denR$ n \rightarrow tm \Gamma ($\synRn$)~
+          | mplus : forall n,
+            ~tm \Gamma ($\synRn$) \rightarrow tm \Gamma ($\synRn$) \rightarrow tm \Gamma ($\synRn$)~
+          (* Unit *)
+          | it : ~tm \Gamma \synUnit~
+        .
+      \end{minted}
+      \caption{Simply-typed lambda calculus with unit and specialized real arrays}
+      \label{fig:stlc_combinator}
+    \end{figure}
+  \subsubsection{Macro and Target Language}\label{sec:combinator-macro}
+  \subsubsection{Attempt at a Formalized Proof}\label{sec:combinator-proof}

@@ -1,5 +1,4 @@
 \subsection{Automatic differentiation}
-
 Automatic differentiation (\textit{AD}) has a long and rich history, where its driving motivation is to efficiently calculate the derivatives of functions in a manner that is both correct and fast\cite{Baydin2015AutomaticDI}.
 There are several different methods of implementing AD algorithms, such as source-code transformations or operator overloading.
 These algorithms usually transform any program which implements some function to one that calculates its derivative.
@@ -29,7 +28,7 @@ We can also see that it follows the chain rule for function composition.
   f(g(x + x' \epsilon)) &= f(g(x) + g'(x)x'\epsilon)) \\
     &= f(g(x)) + f'(g(x))g'(x)x'\epsilon
 \end{align*}
-Using this, we can essentially calculate the derivative of any derivable function by interpreting the non-dual number input $x$ as its dual number counterpart of $x + 0\epsilon$.
+Using this, we can essentially calculate the derivative of any derivable function by interpreting any non-dual number $x$ as its dual number counterpart of either $x + 1\epsilon$ or $x + 0\epsilon$. We interpret constant values as $x + 0\epsilon$, while input variables we take the partial derivative of are interpreted as $x + 1\epsilon$.
 
 To give a more elaborate example of how this works in forward-mode AD, take the function $f(x, y) = x^2 + (x - y)$ as an example.
 The dependencies between the terms and operations of the function is visible in the computational graph in Figure~\ref{fig:func_trace}.

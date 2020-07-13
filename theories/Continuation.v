@@ -99,6 +99,7 @@ Dtm_c n (Γ:=Γ) (τ:=τ) t with t := {
 }.
 
 (* Forward *)
+
 Fixpoint Dt n τ : ty :=
   match τ with
   | Real => Real × Array n Real
@@ -161,10 +162,6 @@ Dtm n (Γ:=Γ) (τ:=τ) v with v := {
   | (inr Γ _ e) := inr _ _ _ (Dtm n e)
 }.
 
-Lemma vector_eq : forall A n (h h' : A) (t t' : vector A n),
-  h = h' -> t = t' -> Vcons h t = Vcons h' t'.
-Proof. rewrites. Qed.
-
 (*
   For some arguments (ctx = x_1, ..., x_n : ⟦ repeat ℝ n ⟧ₜₓ)
   Need to augment ctx for Dtm with arguments to get all
@@ -198,7 +195,7 @@ vector_one_hot' j i 0 := Vnil;
 vector_one_hot' j i (S n') :=
   Vcons (if Nat.eqb i j then 1 else 0) (vector_one_hot' (S j) i n').
 
-(* Create a one-hot encoding of length n with the one at position i *)
+(* Create a one-hot encoded vector of length n with the one at position i *)
 Equations vector_one_hot (i n : nat) : vector R n :=
 vector_one_hot i n := vector_one_hot' 0 i n.
 
@@ -230,19 +227,22 @@ Equations Dtm_ctx {n m} (ctx : ⟦repeat ℝ n⟧ₜₓ) : ⟦map (Dt m) (repeat
 Dtm_ctx ctx := Dtm_ctx' n m ctx (one_hots 0 m n).
 
 (* Helper function for creating one-hot id encoding vectors with variable start
-    indices *)
+    indices.
+*)
 Equations vector_one_hot_c' (j i n : nat) : R -> vector R n  :=
 vector_one_hot_c' j i 0 r := Vnil;
 vector_one_hot_c' j i (S n) r :=
   Vcons (if Nat.eqb i j then r else 0) (vector_one_hot_c' (S j) i n r).
 
-(* Create a one-hot id encoding matrix of with width n and height m.
-    Current row-index is tracked in i.
+(* Create a one-hot id encoding vector of length n with the variable at
+    position i.
 *)
 Equations vector_one_hot_c (i n : nat) : R -> vector R n :=
 vector_one_hot_c i n r := vector_one_hot_c' 0 i n r.
 
-(* Create a one-hot id encoding vector of length n with the id at position i *)
+(* Create a one-hot id encoding matrix of with width n and height m.
+    Current row-index is tracked in i.
+*)
 Equations one_hots_c (i n m : nat) : ⟦repeat (ℝ → Array n ℝ) m⟧ₜₓ :=
 one_hots_c i n 0 := HNil;
 one_hots_c i n (S m) :=
@@ -269,13 +269,7 @@ Equations Dtm_ctx_c {n m} (ctx : ⟦repeat ℝ n⟧ₜₓ)
   : ⟦map (Dt_c m) (repeat ℝ n)⟧ₜₓ :=
 Dtm_ctx_c ctx := Dtm_ctx_c' n m ctx (one_hots_c 0 m n).
 
-Equations trigger_ctx_c {n} m (ctx : ⟦ repeat (ℝ → Array n ℝ) m ⟧ₜₓ)
-  : ⟦ repeat (Array n ℝ) m ⟧ₜₓ :=
-trigger_ctx_c 0 HNil => HNil;
-trigger_ctx_c (S m) (t ::: xs) =>
-  @denote_ctx_cons (repeat (Array n ℝ) m) (Array n ℝ)
-  (t 1) (trigger_ctx_c m xs).
-
+(* Generalized variant of the lemma below *)
 Lemma vector_one_hot'_same : forall x j i n,
   Vmap (Rmult x) (vector_one_hot' j i n) = vector_one_hot_c' j i n x.
 Proof with quick.
@@ -292,6 +286,7 @@ Proof with quick.
   { rewrite IHn... }
 Qed.
 
+(* States equivalence between forward and continuation format input vectors *)
 Lemma vector_one_hot_same : forall x i n,
   Vmap (Rmult x) (vector_one_hot i n) = vector_one_hot_c i n x.
 Proof with quick.
@@ -412,6 +407,10 @@ Lemma S_eq : forall n τ f1 f2 g1 g2,
   g1 = f1 -> g2 = f2 -> S n τ f1 f2 = S n τ g1 g2.
 Proof. intros; rewrites. Qed.
 
+(* Need generalized variants for each of the operations on reals
+    This is needed as the number of partial derivatives being calculated
+    needs to be detached from the number elements being operated on.
+*)
 Lemma denote_array_eq_const_correct :
   forall Γ m n i (ctx : ⟦ Dctx m Γ ⟧ₜₓ) (ctx_c : ⟦ Dctx_c m Γ ⟧ₜₓ),
   Vmap (Rmult i) (@denote_array (Dctx m Γ) ℝ n (const (const 0)) ctx) =
@@ -440,18 +439,14 @@ Proof with quick.
   { apply Vcons_eq. split; rewrites...
     { rewrite <- H; rewrite <- H0.
       destruct n; clear IHn;
-        remember (x1 d0);
-        remember (x2 d0);
+        remember (x1 d0); remember (x2 d0);
         rewrite Rmult_plus_distr_l;
-        dependent destruction t;
-        dependent destruction t0... }
+        dependent destruction t; dependent destruction t0... }
     { unfold shave_fin...
       erewrite (IHn (fun x => Vtail (x1 x)) (fun x => Vtail (x2 x))
         (fun ctx x => Vtail (f1 ctx x)) (fun ctx x => Vtail (f2 ctx x)))...
-      all: remember (x1 d0);
-        remember (x2 d0);
-        dependent destruction t;
-        dependent destruction t0;
+      all: remember (x1 d0); remember (x2 d0);
+        dependent destruction t; dependent destruction t0;
         (rewrite <- H || rewrite <- H0)... } }
 Qed.
 
@@ -473,10 +468,8 @@ Lemma denote_array_eq_mul_correct :
       (x1 ctx * vector_nth i (x2' ctx))%R)%R) (sb x)) =
     @denote_array (ℝ :: Dctx_c m Γ) ℝ n
       (fun (i : Fin.t n) (ctx : ⟦ ℝ :: Dctx_c m Γ ⟧ₜₓ) =>
-      (vector_nth i ((f1' (htl ctx)
-          ((f2 (htl ctx)) * denote_ctx_hd ctx))) +
-      vector_nth i ((f2' (htl ctx)
-          ((f1 (htl ctx)) * denote_ctx_hd ctx))))%R)
+      (vector_nth i ((f1' (htl ctx) ((f2 (htl ctx)) * denote_ctx_hd ctx))) +
+      vector_nth i ((f2' (htl ctx) ((f1 (htl ctx)) * denote_ctx_hd ctx))))%R)
         (@denote_ctx_cons (Dctx_c m Γ) ℝ r (sb_c x)).
 Proof with quick.
   intros... unfold compose, const in *.
@@ -885,7 +878,7 @@ Lemma correctness :
     snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c ctx)) 1.
 Proof with quick.
   intros.
-  rewrite <- (perturbation_correctness n 1).
+  erewrite <- (perturbation_correctness n 1).
   remember (snd (⟦ Dtm n t ⟧ₜₘ (Dtm_ctx ctx))).
   fold denote_t in *.
   clear Heqt0 t ctx.

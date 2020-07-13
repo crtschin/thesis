@@ -2,7 +2,8 @@
 \declaretheorem{example}
 \declaretheorem{theorem}
 \declaretheorem{lemma}
-\declaretheorem{corrollary}
+\declaretheorem{corollary}
+\declaretheorem{proposition}
 \renewcommand{\headrulewidth}{0.5pt}
 \renewcommand{\footrulewidth}{0.5pt}
 \renewcommand{\listingscaption}{Code snippet}
@@ -29,7 +30,6 @@
 \newcommand{\mul}[2]{\texttt{mul}\ #1\ #2}
 \newcommand{\vecadd}[2]{\texttt{vector\_add}\ #1\ #2}
 \newcommand{\vecscale}[2]{\texttt{vector\_scale}\ #1\ #2}
-
 
 \newcommand{\app}[2]{\texttt{app}\ #1\ #2}
 \newcommand{\tuple}[2]{\texttt{tuple}\ #1\ #2}
@@ -58,7 +58,9 @@
 \newcommand{\denNil}[0]{[\ ]}
 \newcommand{\denCons}[2]{#1\ ::\ #2}
 
+\newcommand{\synUnit}[0]{\texttt{U}}
 \newcommand{\synR}[0]{\texttt{R}}
+\newcommand{\synRn}[0]{\texttt{R\^{}n}}
 \newcommand{\synN}[0]{\texttt{N}}
 \newcommand{\synStar}[0]{\times}
 \newcommand{\synPlus}[0]{{<}\!{+}\!{>}}
@@ -73,6 +75,9 @@
 
 \newcommand{\D}[0]{\overrightarrow{\mathcal{D}}}
 \newcommand{\Dc}[0]{\D^c}
+
+\newcommand{\synO}[0]{\ubar{0}}
+\newcommand{\synP}[0]{\ubar{+}}
 
 % Syntactic terms
 \def\Vakar{V\'{a}k\'{a}r}

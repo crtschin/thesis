@@ -105,13 +105,16 @@
   Both sums and integer terms are structure preserving with respect to the forward-mode macro.
   Note that we only take the derivative of values of type \synR, so when integers are encountered, these are largely ignored.
   More specifically, we do not keep track of derivatives at natural number types as the tangent space is $0$-dimensional.
+  For a similar reason, the logical relation at integer types only needs to establish that the denotations of integer terms tracked by the logical relation, which will be of type $\denR \to \denN$, are constant.
+  For sum terms, the functions tracked are either the left or right tag of the sum.
+  This is neatly defined using a logical disjunction.
 
   \begin{figure}
     \centering
     \begin{equation*}
       \begin{split}
-        \D(\synN) &= \synN \\
         \D(\tau \synPlus \sigma) &= \D(\tau) \synPlus \D(\sigma) \\
+        \D(\synN) &= \synN \\ \\
         \D(\inl{t}) &= \inl{\D(t)} \\
         \D(\inr{t}) &= \inr{\D(t)} \\
         \D(\case{e}{t_1}{t_2}) &= \case{\D(e)}{\D(t_1)}{\D(t_2)} \\
@@ -123,10 +126,6 @@
     \caption{Macro on the sum and integer terms}
     \label{eqn:macro_sums_prim}
   \end{figure}
-
-  For a similar reason, the logical relation at integer types only needs to establish that the denotations of integer terms tracked by the logical relation, which will be of type $\denR \to \denN$, are constant.
-  For sum terms, the functions tracked are either the left or right tag of the sum.
-  This is neatly defined using a logical disjunction.
 
   \begin{equation}
     S_\tau(f, g) =
@@ -145,7 +144,8 @@
   \label{eqn:lr_sums_prim}
   \end{equation}
 
-  The only lemma or theorem that requires extension to deal with these new terms is the substitution lemma, as the validity of every other statement is independent of the additional types added to our language.
-  With terms of integer type, the proof for the substitution lemma is trivial using the definition of our denotation functions.
-  The \<nrec> case for primitive recursion is only slightly more difficult as case-analysis on the denotation of the iteration term is required, where the $0$ and $n+1$ case are proven using the induction hypotheses derived from respectively the initial and function terms.
-  As expected with the \<case> term for sums, the denotation of the term under scrutiny needs to be destructed to properly apply the two disjunct induction hypotheses to their respective cases.
+  The only lemma or theorem that requires extension to deal with these new terms is the fundamental lemma, as the validity of every other statement is independent of the types or terms added to our language.
+  With terms of integer type, the proof for the fundamental lemma is trivial using the definition of our denotation functions.
+  The \<nrec> case for primitive recursion is only slightly more difficult as  we have to do case-analysis on the denotation of the iteration term.
+  The $0$ and $n+1$ case are proven using the induction hypotheses derived from, respectively, the initial and function terms.
+  As expected with the \<case> term for sums, the denotation of the term under scrutiny needs to be destructed to properly apply the two disjunct induction hypotheses to their corresponding cases.

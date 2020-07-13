@@ -135,7 +135,7 @@ We reuse the denotational semantics from Section~\ref{sec:forward} we used to pr
   The rewrite rule where we incorporated the evaluation relation is proven by Lemma~\ref{lem:natural_soundness}.
   The rewrite rules associated with algebraic identities are proven by exactly those identities after simplifying using the denotational semantics.
 
-  For the loop fusion rule, we first do induction on the index, $i$.
+  For the loop fusion rule, we first do induction on $i$, the index being accessed.
   For $i = 0$, we use case-analysis on $n$ along with simple rewriting to prove the goal. The induction step is proven by the induction hypothesis.
   Similarly for the loop fission rule, we have to do induction on the denotation of the term used to encode the number of iterations.
   The base case is trivial and the induction step is proven by the induction hypothesis.

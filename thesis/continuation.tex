@@ -1,29 +1,30 @@
 \subsection{Formalizing Continuation-Based AD}\label{sec:continuation_based}
-  The guiding principle in this algorithm is to build up the reverse pass as a continuation using a macro on the program.
+  The guiding principle in this algorithm is to build up the reverse pass as a continuation using a structure preserving macro on the program syntax.
   Like the forward-mode macro $\D$, the continuation-based macro $\Dc$ is structure preserving and works with tuples at ground type $\synR$.
-  But unlike the forward-mode macro, which uses these tuples to represent dual-numbers, the continuation-based macro pairs the primal values with a continuation calculating all of the perturbation values.
-  Notably, because the macro calculates the perturbation values with respect to each of the input variables, the macro is also indexed by the number of input variables.
+  But unlike the forward-mode macro, which uses these tuples to represent dual-numbers, the continuation-based macro pairs the primal values with a continuation calculating an array containing all of the perturbation variables.
+  Notably, because the continuation-based macro, shown in Figure~\ref{fig:continuation_macro}, calculates all of the perturbation values with respect to each of the input variables, it is additionally indexed by the number of input variables.
 
   \begin{figure}[H]
     \centering
-    \begin{equation*}
-      \begin{split}
+    \begin{gather*}
+      \begin{aligned}
         \Dc_n(\synR) &= \synR \synStar (\synR \synFunc \Array{n}{\synR}) \\
         \Dc_n(\tau \synStar \sigma) &= \D(\tau) \synStar \D(\sigma) \\
         \Dc_n(\tau \synPlus \sigma) &= \D(\tau) \synPlus \D(\sigma) \\
         \Dc_n(\tau \synFunc \sigma) &= \D(\tau) \synFunc \D(\sigma) \\
-        \Dc_n(\Array{m}{\tau}) &= \Array{m}{\Dc_n(\tau)}
-      \end{split}
-      \;\;\;\;\;\;
-      \begin{split}
-        \Dc_n(\rval{r}) &= \tuple{(\rval{r})}{(\rval{0})} \\
-        \Dc_n(\add{r_1}{r_2}) &= \tuple{(\add{r_1}{r_2})}{(\add{r_1'}{r_2'})} \\
-        \Dc_n(\mul{r_1}{r_2}) &= \tuple{(\mul{r_1}{r_2})} \\
-          &{(\add{(\mul{r_1'}{r_2})}{(\mul{r_2'}{r_1})})})
-      \end{split}
-    \end{equation*}
+        \Dc_n(\Array{m}{\tau}) &= \Array{m}{\Dc_n(\tau)} \\
+      \\
+        \Dc_n(\rval{r}&) = \tuple{(\rval{r})} \\
+          &{(\build{(\synConst{(\rval{0})})})} \\
+        \Dc_n(\add{r_1}{r_2}&) = \tuple{(\add{r_1}{r_2})}{(\abs{(\vecadd{ \\
+        &(\app{r_1'}{(\var{\Top})})}{(\app{r_2'}{(\var{\Top})})})})} \\
+        \Dc_n(\mul{r_1}{r_2}&) = \tuple{(\mul{r_1}{r_2})}{(\abs{(\vecadd{ \\
+        &(\app{r_1'}{(\mul{r_2}{(\var{\Top})})})}{ \\
+        &(\app{r_2'}{(\mul{r_1}{(\var{\Top})})})})})} \\
+      \end{aligned}
+    \end{gather*}
     \caption{Continuation-based macro on the simply-typed lambda calculus extended with array types}
-    \label{eqn:macro_base}
+    \label{fig:continuation_macro}
   \end{figure}
 
   As we will phrase correctness in terms of the forward-mode macro, the forward-mode macro used in Section~\ref{sec:formal_stlc} has to be slightly altered to calculate the partial derivatives with respect to all of the input variables.
@@ -31,7 +32,7 @@
   The operations of reals are then swapped out for their vector element-wise counterparts.
   The modified forward-mode macro is shown in Figure~\ref{fig:forward_mode_cont}.
 
-  \begin{figure}[H]
+  \begin{figure}
     \centering
     \begin{subfigure}{1\textwidth}
       \begin{gather*}
@@ -53,23 +54,121 @@
     \end{subfigure}
     \begin{subfigure}{1\textwidth}
       \begin{minted}{coq}
-        Definition vector_map ~$\Gamma$~ ~$\tau$~ ~$\sigma$~ n ( a : tm ~$\Gamma$~ (Array n ~$\tau$~) )
-          ( f : tm ~$\Gamma$~ ~$\tau$~ ~$\rightarrow$~ tm ~$\Gamma$~ ~$\sigma$~ ) : tm ~$\Gamma$~ (Array n ~$\sigma$~) :=
-          build n (fun i => f (get i a)).
+        Definition vector_map ~$\Gamma$~ ~$\tau$~ ~$\sigma$~ n ( f : tm ~$\Gamma$~ (~$\tau \synFunc \sigma$~) )
+        ( a : tm ~$\Gamma$~ (Array n ~$\tau$~) ) : tm ~$\Gamma$~ (Array n ~$\sigma$~) :=
+          build n (fun i => app f (get i a)).
         Definition vector_map2 ~$\Gamma$~ ~$\tau$~ ~$\sigma$~ ~$\rho$~ n
           ( a1 : tm ~$\Gamma$~ (Array n ~$\tau$~) ) ( a2 : tm ~$\Gamma$~ (Array n ~$\sigma$~) )
-          ( f : tm ~$\Gamma$~ ~$\tau$~ ~$\rightarrow$~ tm ~$\Gamma$~ ~$\sigma$~ ~$\rightarrow$~ tm ~$\Gamma$~ ~$\rho$~ ) : tm ~$\Gamma$~ (Array n ~$\rho$~) :=
-          build n (fun i => f (get i a1) (get i a2)).
+          ( f : tm ~$\Gamma$~ (~$\tau \synFunc \sigma \synFunc \rho$~) ) : tm ~$\Gamma$~ (Array n ~$\rho$~) :=
+          build n (fun i => app (app f (get i a1)) (get i a2)).
         Definition vector_add ~$\Gamma$~ n
-          ( a1 a2 : tm ~$\Gamma$~ (Array n ~$\synR$~) ) : tm ~$\Gamma$~ (Array n ~$\synR$~) := vector_map2 a1 a2 add.
+          ( a1 a2 : tm ~$\Gamma$~ (Array n ~$\synR$~) ) : tm ~$\Gamma$~ (Array n ~$\synR$~) :=
+          vector_map2 a1 a2 (abs (abs (add (var Top) (var (Pop Top))))).
         Definition vector_scale ~$\Gamma$~ n ( s : tm ~$\Gamma$~ ~$\synR$~ )
-          ( a : tm ~$\Gamma$~ (Array n ~$\synR$~) ) : tm ~$\Gamma$~ (Array n ~$\synR$~) := vector_map a (mul s).
+          ( a : tm ~$\Gamma$~ (Array n ~$\synR$~) ) : tm ~$\Gamma$~ (Array n ~$\synR$~) :=
+          vector_map (abs (mul s (var Top))) a.
       \end{minted}
       \caption{Helper functions on array types}
       \end{subfigure}
-    \caption{Continuation-based macro on the simply-typed lambda calculus extended with array types}
+    \caption{Consolidated forward-mode macro on the simply-typed lambda calculus extended with array types}
     \label{fig:forward_mode_cont}
   \end{figure}
 
   As we work with the same denotational semantics as in our proof in Section~\ref{sec:formal_stlc}, the usage of an argument supplying function $f : \denR \denFunc \denR^n$ makes a reappearance.
   Unlike last time, however, the arguments have to be massaged to fit both the forward and the reverse-mode macro.
+  Note that for the forward-mode macro, input arguments we take the partial derivative of are supplied in a dual number format where the tangent value is equal to $1$.
+  Likewise, the tangent value of any other input argument should be set to $0$.
+  So each of the input arguments for the forward-mode macro are essentially coupled with a one-hot encoded vector.
+  \begin{equation*}
+    \D_n\left(
+    \begin{bmatrix}
+      x_1 & x_2 & x_3 \\
+    \end{bmatrix}\right)
+    \to
+    \begin{bmatrix}
+      (x_1,
+        \begin{bmatrix}
+          1 & 0 & 0 \\
+        \end{bmatrix}) \\
+      (x_2,
+        \begin{bmatrix}
+          0 & 1 & 0 \\
+        \end{bmatrix}) \\
+      (x_3,
+        \begin{bmatrix}
+          0 & 0 & 1 \\
+        \end{bmatrix}) \\
+    \end{bmatrix}^T
+  \end{equation*}
+  Each of the one-hot encoded vectors function as indicating which partial derivative to calculate.
+  The continuation-based macro requires a similar format, but instead of a one-hot encoded vector containing the value $1$, the identity function is used.
+  \begin{equation*}
+    \Dc_n\left(
+    \begin{bmatrix}
+      x_1 & x_2 & x_3 \\
+    \end{bmatrix}\right)
+    \to
+    \begin{bmatrix}
+      (x_1,
+        \lambda x.
+        \begin{bmatrix}
+          x & 0 & 0 \\
+        \end{bmatrix}) \\
+      (x_2,
+        \lambda x.
+        \begin{bmatrix}
+          0 & x & 0 \\
+        \end{bmatrix}) \\
+      (x_3,
+        \lambda x.
+        \begin{bmatrix}
+          0 & 0 & x \\
+        \end{bmatrix}) \\
+    \end{bmatrix}^T
+  \end{equation*}
+
+  Using these two input massaging functions, we can state correctness of our continuation-based macro with respect to our forward-mode macro.
+
+  \begin{proposition}[Correctness of continuation-based AD]
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synRepeat{\synR}{n} \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
+  \end{proposition}
+
+  This statement cannot be proven directly, however, we need a more general correctness statement.
+  To be be specific, we need to establish equivalence between the macros regardless of the number we apply to the continuation-based macro, which corresponds to the coefficient of the forward-mode macro.
+  This equivalence needs to be baked into the logical relation in our proof.
+  The logical relation we will use in this proof for the most part stays the same as the one we used in the proof in Section~\ref{sec:forward}.
+  The only case to differ significantly is the one for our ground type, the type of real numbers, $\synR$.
+  Also note that, like the macro functions, the logical relation is also indexed by the number of input variables.
+
+  \begin{equation}
+    S_{n, \tau}(f, g) =
+      \left\{
+        \begin{array}{ll}
+          fst \circ f = fst \circ g \wedge
+            & : \tau = \synR \\
+          \forall x. \lambda r. x * snd(f(r)) = \lambda r. (snd(g(r)))(x)
+        \end{array}
+      \right.
+  \label{eqn:lr_continuous}
+  \end{equation}
+
+  As a recurring theme, many of the definitions and lemmas we used in the proof in Section~\ref{sec:forward} reappear in this proof, differing only superficially in that they are additionally indexed by the number of partial derivatives.
+  So we still make use of an instantiation relation like the one given in Definition~\ref{eqn:inst_base} to establish that arbitrary typing context instantiations preserve the logical relation.
+
+  The proof of the fundamental lemma proceeds in much the same manner as the one given for Lemma~\ref{thm:fundamental_lemma}.
+  As expected, the cases for the \synR-typed are exceptional.
+  Each of these cases require a generalized version of the case to be proven.
+  The problem here is that the number of partial derivatives is tightly coupled to the number of terms the operation is over.
+  So induction on the number of terms involved in the operation necessary leads to issues with our relations, as these are indexed by the number of partial derivatives.
+
+  Proving this along with the corresponding fundamental property of the logical relation results in the following theorem.
+  \begin{theorem}[Perturbation correctness]
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, function arguments $x : \llbracket \synRepeat{\synR}{n} \rrbracket$, and real number $r$, we have $r * snd(\D_n(t)(\D_n(x))) = snd(\Dc_n(t)(\Dc_n(x)))(r)$
+  \end{theorem}
+  \begin{proof}
+    This follows from the fundamental property of the logical relation~\ref{eqn:lr_continuous}.
+  \end{proof}
+  This is easily specialized to the original correctness statement we set out to prove.
+  \begin{corollary}[Correctness of continuation-based AD]
+    For any well-typed term $x_1 : \synR, \dots, \linebreak x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synRepeat{\synR}{n} \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
+  \end{corollary}

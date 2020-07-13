@@ -240,7 +240,7 @@
         \item \label{eqn:subst_ih_tuple2}$S_\sigma(\llbracket t_2 \rrbracket \circ s, \llbracket \D(t_2) \rrbracket \circ s_D)$
       \end{enumerate}
 
-      A recurring pattern will become apparent in later sections when continuing to prove the substitution lemma \ref{thm:substitution_lemma} for types consisting of other types.
+      A recurring pattern will become apparent in later sections when continuing to prove the fundamental lemma \ref{thm:fundamental_lemma} for types consisting of other types.
       In this case, due to the carefull attention spent on the logical relation, only the witnesses of the subterms of the tuple need to be supplied to finish the proof.
 
       Note that the witnesses of $S_\tau$ and $S_\sigma$ that need to be given here are supplied by the induction hypotheses.
@@ -346,18 +346,18 @@
     \end{enumerate}
   \end{proof}
 
-  The proof of the fundamental property of the logical relation now follows from the substitution lemma.
+  The proof of the fundamental property of the logical relation now follows from the fundamental lemma.
 
   \begin{lemma}[Fundamental property]\label{thm:fundamental_property}
     For any well-typed term $x_1 : R, \dots, x_n : R \vdash t : \tau$, and argument function $f : R \rightarrow \llbracket R^n \rrbracket$, such that each argument is continuously derivable, then $S_\tau(\llbracket t\rrbracket \circ f, \llbracket \D(t)\rrbracket \circ \D_n \circ f)$.
   \end{lemma}
 
   \begin{proof}
-    This is proven by instantiating the substitution lemma \ref{thm:substitution_lemma} with the proper variables and proving the resulting judgement of $inst_{R^n}$ by induction on $n$.
+    This is proven by instantiating the fundamental lemma \ref{thm:fundamental_lemma} with the proper variables and proving the resulting judgement of $inst_{R^n}$ by induction on $n$.
 
     \begin{align*}
       S&_{\tau}(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f) \\
-      & \Vdash \text{(Apply substitution lemma with $s := f$, $s_D := \D_n \circ f$ and $\Gamma := R^n$)} \\
+      & \Vdash \text{(Apply fundamental lemma with $s := f$, $s_D := \D_n \circ f$ and $\Gamma := R^n$)} \\
       & inst_{R^n}(f, \D_n \circ f) \\
     \end{align*}
 

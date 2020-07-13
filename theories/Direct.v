@@ -130,7 +130,7 @@ Proof. intros; rewrites. Qed.
 
 (*
   This is the generalization of the fundamental property of the
-  logical relation given also referred to as the substitution lemma.
+  logical relation given also referred to as the fundamental lemma.
 
   Considering we are working in the denotational domain and omit
   syntactic constructions as much as possible, we formulate

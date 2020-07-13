@@ -1,9 +1,8 @@
 \subsection{Related work}
 While there are proofs of forward-mode AD algorithms\cite{huot2020correctness}\cite{barthe2020versatility} and many more implementations\cite{Shaikha2019}\cite{Margossian2019ARO}, there have been relative few attempts at formalized proofs in proof assistant.
 In 2002, M. Mayero did a formalized proof of an AD framework in \<Fortran> in \<Coq>\cite{Mayero:CorrectnessProofAD}.
-Their minimal language example included assignments and sequences, and excluded all forms of non-sequential control flow.
-
-% Move this line to related work
+Their minimal language example included assignments and sequences as language constructs, and excluded all forms of non-sequential control flow.
+They also restricted the terms in their language to first order types.
 
 % Advancements in the understanding of both forward-mode AD algorithms and meta-theoretical proof techniques have supplied enough resources to be able to do a formal proof.
 

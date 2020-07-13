@@ -148,8 +148,8 @@
 
   \begin{figure}
     \centering
-    \begin{equation*}
-      \begin{split}
+    \begin{gather*}
+      \begin{aligned}
         \llbracket \synR \rrbracket &= \denR \\
         \llbracket \tau \synStar \sigma \rrbracket &=
           \llbracket \tau \rrbracket \denStar \llbracket \sigma \rrbracket \\
@@ -157,9 +157,9 @@
         \\
         \llbracket \<Top> \rrbracket &= \<hd> \\
         \llbracket \<Pop>\ v \rrbracket &= \llbracket v \rrbracket \circ \<tl> \\
-      \end{split}
+      \end{aligned}
       \;\;\;\;\;\;
-      \begin{split}
+      \begin{aligned}
         \llbracket \var{v} \rrbracket &=
           \lambda x. lookup\ \llbracket v \rrbracket\ x \\
         \llbracket \app{t_1}{t_2} \rrbracket &=
@@ -173,11 +173,17 @@
         \llbracket \tuple{t_1}{t_2} \rrbracket &=
           \lambda x. (\llbracket t_1 \rrbracket(x), \llbracket t_2 \rrbracket(x)) \\
         \llbracket \first{t} \rrbracket &=
-          \lambda x. let\ (x, y) = \llbracket t \rrbracket(x)\ in\ x \\
+          \lambda x. fst(\llbracket t \rrbracket(x)) \\
         \llbracket \second{t} \rrbracket &=
-          \lambda x. let\ (x, y) = \llbracket t \rrbracket(x)\ in\ y \\
-      \end{split}
-    \end{equation*}
+          \lambda x. snd(\llbracket t \rrbracket(x)) \\
+      \end{aligned} \\ \\
+      \begin{aligned}
+        fst &=
+          \lambda x. let\ (x, y) \coloneqq \llbracket t \rrbracket(x)\ in\ x \\
+        snd &=
+          \lambda x. let\ (x, y) \coloneqq \llbracket t \rrbracket(x)\ in\ y \\
+      \end{aligned}
+    \end{gather*}
     \caption{Denotations of the base simply-typed lambda calculus}
     \label{eqn:denotation_base}
   \end{figure}
@@ -331,7 +337,7 @@
 
   Using this notion of instantiations we can now formulate our fundamental lemma. Informally, this states that given correct instantiation functions any well-typed term is semantically correct with respect to the logical relation.
 
-  \begin{lemma}[Substitution]\label{thm:substitution_lemma}
+  \begin{lemma}[Fundamental]\label{thm:fundamental_lemma}
     For any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s_D)$, we have that $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
   \end{lemma}
 
@@ -343,22 +349,22 @@
     Proving the cases used to encode the operators on reals such as \<add> and \<mul> involve proving both smoothness and giving the witness of the derivative.
   \end{proof}
 
-  We can derive the fundamental property of the base logical relation directly from the substitution lemma.
+  We can derive the fundamental property of the base logical relation directly from the fundamental lemma.
   This involves proving the prerequisite $inst$ we used previously.
   Note that the correctness of both the macro and the fundamental property is dependent on the requirement that the denotations supplied by the argument function are smooth.
 
-  \begin{corrollary}[Fundamental property]\label{thm:fundamental_property}
+  \begin{corollary}[Fundamental property]\label{thm:fundamental_property}
     For any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : \denR \to \denR^n$, we have that $S_\tau(\llbracket t\rrbracket \circ f, \llbracket \D(t)\rrbracket \circ \D_n \circ f)$.
-  \end{corrollary}
+  \end{corollary}
 
   \begin{proof}
-    This follows from the substitution lemma. We lastly need to prove $\inst{(\synRepeat{\synR}{n})}$.
+    This follows from the fundamental lemma. We lastly need to prove $\inst{(\synRepeat{\synR}{n})}$.
     This is proven by induction on $n$.
     If $n = 0$, the goal is trivial due to the argument function $f$ being extensionally equal to $\synConst{[]}$, which directly corresponds to $\inst{[]}$.
     The induction step is proven by both the induction hypothesis and the assumption that the denotations of the arguments supplied are smooth.
   \end{proof}
 
-  \begin{theorem}[Macro correctness]
+  \begin{theorem}[Macro correctness]\label{thm:macro_correctness}
     For any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : \denR \rightarrow \denR^n$, we have that $\llbracket \D(t) \rrbracket \circ \D_n \circ f = \lambda x. (\llbracket t \rrbracket \circ f, \sfrac{\partial{(\llbracket t \rrbracket \circ f)}}{\partial{x}})$.
   \end{theorem}
 
