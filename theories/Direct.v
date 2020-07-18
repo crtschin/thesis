@@ -42,6 +42,12 @@ S Nat f g :=
       any related functions will also be constant.
   *)
   f = g /\ (exists n, f = fun _ => n);
+S Bool f g :=
+  (* When (τ := ℕ), we do not need to keep track of the derivative,
+      as the tangent space at each related point is 0-dimensional and
+      any related functions will also be constant.
+  *)
+  f = g /\ (exists b, f = fun _ => b);
 
 (* For composed constructs, the relation needs to be preserved by the
     underlying subcomponents.
@@ -198,6 +204,44 @@ Proof with quick.
   2,3: extensionality x.
   2,3: simp Dtm denote_tm; reflexivity.
     eapply IHt. constructor... }
+  { (* True *)
+    intros. simp S. split...
+    { exists true... } }
+  { (* False *)
+    intros. simp S. split...
+    { exists false... } }
+  { (* Ifthenelse *)
+    intros. simp S.
+    pose proof (IHt1 sb Dsb H) as IHt1.
+    pose proof (IHt2 sb Dsb H) as IHt2.
+    pose proof (IHt3 sb Dsb H) as IHt3.
+    { simp S in *.
+      destruct IHt1 as [eq1 [b eq2]].
+      destruct b.
+      { erewrite S_eq.
+        { apply IHt2... }
+        { extensionality x. simp denote_tm.
+          apply equal_f with x in eq2. rewrite eq2... }
+        { extensionality x. simp Dtm denote_tm.
+          rewrite <- (equal_f eq1).
+          rewrite (equal_f eq2)... } }
+      { erewrite S_eq.
+        { apply IHt3... }
+        { extensionality x. simp denote_tm.
+          apply equal_f with x in eq2. rewrite eq2... }
+        { extensionality x. simp Dtm denote_tm.
+          rewrite <- (equal_f eq1).
+          rewrite (equal_f eq2)... } } } }
+  { (* Rlt *)
+    intros.
+    pose proof (IHt1 sb Dsb H) as [ex1 div1]; clear IHt1;
+      pose proof (IHt2 sb Dsb H) as [ex2 div2]; clear IHt2.
+    simp S in *.
+    split.
+    { extensionality x. simp Dtm denote_tm.
+      rewrite (equal_f div1);
+        rewrite (equal_f div2)... }
+    { admit. } }
   { (* Build *)
     intros. simp S...
     induction n.
@@ -429,7 +473,7 @@ Proof with quick.
     intros. simp S. right...
     exists (⟦ t ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm t ⟧ₜₘ ∘ Dsb)... }
-Qed.
+Admitted.
 
 (* Very simple lemma which states that terms of type ℝ whose denotation are in
     the relation is both derivable and applying the macro to the term results

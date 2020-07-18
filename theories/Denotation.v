@@ -38,6 +38,7 @@ Fixpoint denote_t τ : Set :=
   match τ with
   | Real => R
   | Nat => nat
+  | Bool => bool
   | Array n τ => vector ⟦ τ ⟧ₜ n
   | τ1 × τ2 => ⟦τ1⟧ₜ * ⟦τ2⟧ₜ
   | τ1 → τ2 => ⟦τ1⟧ₜ -> ⟦τ2⟧ₜ
@@ -99,6 +100,12 @@ Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ := {
 denote_tm (Γ:=Γ) (τ:=τ) (var Γ τ v) ctx := denote_v v ctx;
 denote_tm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) ctx := (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx);
 denote_tm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x ::: ctx);
+denote_tm (Γ:=Γ) (τ:=τ) (tru Γ) ctx => true;
+denote_tm (Γ:=Γ) (τ:=τ) (fls Γ) ctx => false;
+denote_tm (Γ:=Γ) (τ:=τ) (ifelse Γ τ b t f) ctx =>
+  if ⟦ b ⟧ₜₘ ctx then ⟦ t ⟧ₜₘ ctx else ⟦ f ⟧ₜₘ ctx;
+denote_tm (Γ:=Γ) (τ:=τ) (rlt Γ t1 t2) ctx =>
+  if Rlt_dec (⟦ t1 ⟧ₜₘ ctx) (⟦ t2 ⟧ₜₘ ctx) then true else false;
 (* Arrays *)
 denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n f) ctx :=
   denote_array n (denote_tm ∘ f) ctx;

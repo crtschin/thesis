@@ -28,6 +28,7 @@ Fixpoint Dt τ : ty :=
   match τ with
   | Real => Real × Real
   | Nat => Nat
+  | Bool => Bool
   | Array n t => Array n (Dt t)
   | t1 × t2 => Dt t1 × Dt t2
   | t1 → t2 => Dt t1 → Dt t2
@@ -47,8 +48,12 @@ Equations Dtm {Γ τ} : tm Γ τ -> tm (map Dt Γ) (Dt τ) :=
   | var Γ τ v := var _ _ (Dv v);
   | app Γ τ σ t1 t2 := app _ _ _ (Dtm t1) (Dtm t2);
   | abs Γ τ σ f := abs _ _ _ (Dtm f);
+(* Bool *)
+  | tru _ => tru _;
+  | fls _ => fls _;
+  | ifelse _ _ b t f => ifelse _ _ (Dtm b) (Dtm t) (Dtm f);
+  | rlt _ t1 t2 => rlt _ (first _ (Dtm t1)) (first _ (Dtm t2));
 (* Arrays *)
-(* Dtm (Γ:=Γ) (τ:=τ) (build_nil Γ τ) => build_nil _ _; *)
   | build Γ τ n ta => build _ _ _ (Dtm ∘ ta);
   | get Γ ti ta => get _ ti (Dtm ta);
 (* Nat *)

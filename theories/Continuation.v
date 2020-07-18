@@ -31,6 +31,7 @@ Fixpoint Dt_c (n : nat) (σ : ty) : ty :=
   match σ with
   | Real => Real × (Real → Array n Real)
   | Nat => Nat
+  | Bool => Bool
   | Array m τ => Array m (Dt_c n τ)
   | τ1 × τ2 => (Dt_c n τ1 × Dt_c n τ2)
   | τ1 → τ2 => (Dt_c n τ1 → Dt_c n τ2)
@@ -52,6 +53,11 @@ Dtm_c n (Γ:=Γ) (τ:=τ) t with t := {
   | (var Γ τ v) := var _ _ (Dv_c n v);
   | (app Γ τ σ t1 t2) := app _ _ _ (Dtm_c n t1) (Dtm_c n t2);
   | (abs Γ τ σ f) := abs _ _ _ (Dtm_c n f);
+(* Bool *)
+  | tru _ => tru _;
+  | fls _ => fls _;
+  | ifelse _ _ b t f => ifelse _ _ (Dtm_c n b) (Dtm_c n t) (Dtm_c n f);
+  | rlt _ t1 t2 => rlt _ (first _ (Dtm_c n t1)) (first _ (Dtm_c n t2));
 (* Arrays *)
   | (build Γ τ m ta) =>
   build _ _ _ (Dtm_c n ∘ ta);
@@ -104,6 +110,7 @@ Fixpoint Dt n τ : ty :=
   match τ with
   | Real => Real × Array n Real
   | Nat => Nat
+  | Bool => Bool
   | Array m t => Array m (Dt n t)
   | t1 × t2 => Dt n t1 × Dt n t2
   | t1 → t2 => Dt n t1 → Dt n t2
@@ -124,6 +131,11 @@ Dtm n (Γ:=Γ) (τ:=τ) v with v := {
   | (var Γ τ v) := var _ _ (Dv v);
   | (app Γ τ σ t1 t2) := app _ _ _ (Dtm n t1) (Dtm n t2);
   | (abs Γ τ σ f) := abs _ _ _ (Dtm n f);
+(* Bool *)
+  | tru _ => tru _;
+  | fls _ => fls _;
+  | ifelse _ _ b t f => ifelse _ _ (Dtm n b) (Dtm n t) (Dtm n f);
+  | rlt _ t1 t2 => rlt _ (first _ (Dtm n t1)) (first _ (Dtm n t2));
 (* Arrays *)
   | (build Γ τ m ta) =>
   build _ _ _ (Dtm n ∘ ta);
@@ -355,6 +367,7 @@ S n ℝ f g := ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
     (fun r => Vmap (Rmult x) (snd (f r)))
       = fun r => (snd (g r)) x;
 S n ℕ f g := f = g /\ exists n, f = fun _ => n;
+S n 𝔹 f g := f = g /\ exists b, f = fun _ => b;
 S n (Array m τ) f g := forall i,
   exists f1 g1,
     S n τ f1 g1 /\
@@ -536,6 +549,40 @@ Proof with quick.
     specialize IHt with
       (fun r => (g1 r ::: sb r)) (fun r => (g2 r ::: sb_c r))...
     eapply IHt. constructor; assumption. }
+  { simp S. split...
+    exists true... }
+  { simp S. split...
+    exists false... }
+    { (* Ifthenelse *)
+    intros. simp S.
+    pose proof (IHt1 sb sb_c H) as IHt1.
+    pose proof (IHt2 sb sb_c H) as IHt2.
+    pose proof (IHt3 sb sb_c H) as IHt3.
+    { simp S in *.
+      destruct IHt1 as [eq1 [b eq2]].
+      destruct b.
+      { erewrite S_eq.
+        { apply IHt2... }
+        { extensionality x. simp Dtm denote_tm in *.
+          apply equal_f with x in eq2. rewrite eq2... }
+        { extensionality x. simp Dtm Dtm_c denote_tm in *.
+          rewrite <- (equal_f eq1).
+          rewrite (equal_f eq2)... } }
+      { erewrite S_eq.
+        { apply IHt3... }
+        { extensionality x. simp Dtm denote_tm in *.
+          apply equal_f with x in eq2. rewrite eq2... }
+        { extensionality x. simp Dtm Dtm_c denote_tm in *.
+          rewrite <- (equal_f eq1).
+          rewrite (equal_f eq2)... } } } }
+  { pose proof (IHt1 sb sb_c H) as [eq1 _]; clear IHt1.
+    pose proof (IHt2 sb sb_c H) as [eq2 _]; clear IHt2.
+    simp S. split.
+    { extensionality x. simp Dtm in *; simp Dtm_c in *.
+      simp denote_tm.
+      rewrite (equal_f eq1);
+        rewrite (equal_f eq2)... }
+    { admit. } }
   { (* Build *)
     intros. simp S...
     induction n0.
@@ -750,8 +797,8 @@ Proof with quick.
     exists (⟦ Dtm n t ⟧ₜₘ ∘ sb );
       exists (⟦ Dtm_c n t ⟧ₜₘ ∘ sb_c)... }
   Grab Existential Variables.
-  all: apply r.
-Qed.
+  all: try apply r.
+Admitted.
 
 (* Prove that the massaged variants of arguments are valid w.r.t.
     the instantiation relation.

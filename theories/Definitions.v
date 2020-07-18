@@ -12,6 +12,7 @@ Local Open Scope program_scope.
 
 Inductive ty : Type :=
   | Real : ty
+  | Bool : ty
   | Nat : ty
   | Array : nat -> ty -> ty
   | Arrow : ty -> ty -> ty
@@ -21,6 +22,7 @@ Inductive ty : Type :=
 
 Notation "'ℝ'" := (Real).
 Notation "'ℕ'" := (Nat).
+Notation "'𝔹'" := (Bool).
 Notation "A × B" := (Prod A B) (left associativity, at level 89).
 Notation "A <+> B" := (Sum A B) (left associativity, at level 89).
 Notation "A → B" := (Arrow A B) (right associativity, at level 90).
@@ -53,6 +55,14 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
     tm Γ τ
   | abs : forall τ σ,
     tm (σ::Γ) τ -> tm Γ (σ → τ)
+
+  (* Bool *)
+  | tru : tm Γ 𝔹
+  | fls : tm Γ 𝔹
+  | ifelse : forall τ,
+    tm Γ 𝔹 -> tm Γ τ -> tm Γ τ -> tm Γ τ
+  | rlt :
+    tm Γ ℝ -> tm Γ ℝ -> tm Γ 𝔹
 
   (* Arrays *)
   | build : forall τ n,
@@ -93,9 +103,6 @@ Inductive Env : Ctx -> Type :=
   | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
 .
 Derive Signature for Env.
-
-Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
-shave_env (env_cons t G) := G.
 
 Lemma build_eq : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
   ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
@@ -204,6 +211,12 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | app _ _ _ t1 t2 => app _ _ _ (rename r t1) (rename r t2)
   | abs _ _ _ f => abs _ _ _ (rename (rename_lifted r) f)
 
+  (* Bool *)
+  | tru _ => tru _
+  | fls _ => fls _
+  | ifelse _ _ b t f => ifelse _ _ (rename r b) (rename r t) (rename r f)
+  | rlt _ t1 t2 => rlt _ (rename r t1) (rename r t2)
+
   (* Arrays *)
   | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
   | get _ ti ta => get _ ti (rename r ta)
@@ -247,12 +260,15 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | app _ _ _ t1 t2 => app _ _ _ (substitute s t1) (substitute s t2)
   | abs _ _ _ f => abs _ _ _ (substitute (substitute_lifted s) f)
 
+  (* Bool *)
+  | tru _ => tru _
+  | fls _ => fls _
+  | ifelse _ _ b t f => ifelse _ _ (substitute s b) (substitute s t) (substitute s f)
+  | rlt _ t1 t2 => rlt _ (substitute s t1) (substitute s t2)
+
   (* Arrays *)
-  (* | build_nil _ _ => build_nil _ _ *)
   | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)
   | get _ ti ta => get _ ti (substitute s ta)
-  (* | ifold _ _ tf ti ta =>
-    ifold _ _ (substitute s tf) (substitute s ti) (substitute s ta) *)
 
   (* Nat *)
   | nval _ n => nval _ n
