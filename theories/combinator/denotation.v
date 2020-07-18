@@ -138,22 +138,16 @@ Fixpoint vector_nth {s : Set} {n}
   end.
 
 Reserved Notation "⟦ τ ⟧ₛₜ".
-Fixpoint denote_st (τ : s_ty) : Type :=
-  match τ with
-  | sℝ => R
-  | sℝ^n => vector R n
-  | s_Unit => unit
-  | τ1 s× τ2 => ⟦τ1⟧ₛₜ * ⟦τ2⟧ₛₜ
-  | τ1 s→ τ2 => ⟦τ1⟧ₛₜ -> ⟦τ2⟧ₛₜ
-  | σ <x> ρ => Mset.type (⟦σ⟧ₛₜ * ⟦ρ⟧ₛₜ)
-  end
+Equations denote_st (τ : s_ty) : Type :=
+denote_st τ with τ := {
+  | sℝ => R;
+  | sℝ^n => vector R n;
+  | s_Unit => unit;
+  | τ1 s× τ2 => ⟦τ1⟧ₛₜ * ⟦τ2⟧ₛₜ;
+  | τ1 s→ τ2 => ⟦τ1⟧ₛₜ -> ⟦τ2⟧ₛₜ;
+  | σ <x> ρ => mset (⟦σ⟧ₛₜ * ⟦ρ⟧ₛₜ)
+}
 where "⟦ τ ⟧ₛₜ" := (denote_st τ).
-
-Definition from_option {A} (o : option A) (default : A) : A :=
-  match o with
-  | None => default
-  | Some o' => o'
-  end.
 
 Fixpoint denote_O τ : ⟦τ⟧ₛₜ :=
   match τ with

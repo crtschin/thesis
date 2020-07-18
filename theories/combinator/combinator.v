@@ -56,7 +56,7 @@ Fixpoint Dt (τ : ty) : s_ty * s_ty :=
       ((fst (Dt σ)) s× (fst (Dt ρ)), (snd (Dt σ)) s× (snd (Dt ρ)))
   | σ → ρ =>
       (fst (Dt σ) s→ (fst (Dt ρ) s× (snd (Dt ρ) s→ snd (Dt σ)))
-        , fst (Dt σ) <x> snd (Dt ρ))
+        , fst (Dt σ) s× snd (Dt ρ))
   end.
 
 (* Warning: the following takes a long time to typecheck/prove automatically

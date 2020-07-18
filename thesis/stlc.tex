@@ -229,7 +229,7 @@
   % Explain expressiveness of base language
   % Work out examples
 
-  % As mentioned by by Barthe, et. al.\cite{barthe2020versatility}, this small calculus, $\lambdaBase$, accompanied with the arguably simple set-theoretic denotational semantics is expressive enough to encode the higher-order polynomials containing the addition and multiplication operators.
+  % As mentioned by by Barthe, et al.\cite{barthe2020versatility}, this small calculus, $\lambdaBase$, accompanied with the arguably simple set-theoretic denotational semantics is expressive enough to encode the higher-order polynomials containing the addition and multiplication operators.
 
   \begin{example}[Square]
     $abs\ (mul\ (var\ Top)\ (var\ Top))$ denotates to the square function $\lambda x. x * x$.
@@ -252,7 +252,7 @@
   Using the denotation rules in Figure~\ref{eqn:denotation_base}, syntactically well-typed terms in our language of the form $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ can be interpreted as their corresponding smooth functions $f : \denR^n \to \denR$.
   Intuitively, the free variables in the syntactic term $t$ correspond to the parameters of the denotation function $f$.
 
-  Although Barthe, et. al.\cite{barthe2020versatility} gave a syntactic proof of correctness of the macro, our formal proof follows the more denotational style of proof given by Huot, Staton and \Vakar{}\cite{huot2020correctness}.
+  Although Barthe, et al.\cite{barthe2020versatility} gave a syntactic proof of correctness of the macro, our formal proof follows the more denotational style of proof given by Huot, Staton and \Vakar{}\cite{huot2020correctness}.
   Likewise, our proof of correctness will follow a similar logical relations argument.
   While both approaches have their merits, the proof using the denotational semantics requires less technical bookkeeping of open and closed terms.
 

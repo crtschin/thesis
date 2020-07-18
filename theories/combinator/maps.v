@@ -1,14 +1,32 @@
 Require Import Setoid.
 Require Import Relations.
+Require Import Coq.Logic.JMeq.
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Basics.
-Require Import Coq.Sets.Multiset.
-Require Import Setoid.
+Require Import Coq.Sorting.Permutation.
 
 Local Open Scope program_scope.
 Local Open Scope type_scope.
 
-Module Mset.
+Inductive mset : forall T, Type :=
+  | mset_empty : forall {T}, mset T
+  | mset_singleton : forall {T} (t : T), mset T
+  | mset_union : forall {T}, mset T -> mset T -> mset T
+.
+
+Fixpoint mset_list {T} (m : mset T) : list T :=
+  match m with
+  | mset_empty => nil
+  | mset_singleton t => t::nil
+  | mset_union m1 m2 => mset_list m1 ++ mset_list m2
+  end.
+
+Definition mset_eq {T} (m1 m2 : mset T) : Prop :=
+  Permutation (mset_list m1) (mset_list m2).
+
+Axiom mset_eq_eq : forall T m1 m2, @mset_eq T m1 m2 -> m1 = m2.
+
+(* Module Mset.
   Definition type (t : Type) := (multiset t * list t).
   Definition mset_eq
     : forall A,
@@ -68,4 +86,4 @@ Add Parametric Relation (A : Type)
 
 Record mset_eq_dec A :=
   mk_eq_dec
-  {eqdec :> forall (x y:mset A), {mset_eq _ x y}+{~mset_eq _ x y}}.
+  {eqdec :> forall (x y:mset A), {mset_eq _ x y}+{~mset_eq _ x y}}. *)

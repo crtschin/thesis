@@ -1,11 +1,11 @@
 \subsection{Arrays}\label{sec:arrays}
-  % TODO: Mention something about Shaikhha, et. al.'s system of optimizations and how this is able to let the performance of forward-mode AD approach reverse-mode levels.
+  % TODO: Mention something about Shaikhha, et al.'s system of optimizations and how this is able to let the performance of forward-mode AD approach reverse-mode levels.
   % TODO: Mention that we implemented what are known as pull arrays
   Automatic differentiation is rarely done on mono-valued real numbers, due to the massive computational power available on GPUs in the form of array operations.
   So the next extension worth considering in our language are the array types.
-  To be more specific, we will be considering the array types and terms presented by Shaikhha, et. al.\cite{Shaikha2019}.
+  To be more specific, we will be considering the pull-array formulation presented by Shaikhha, et al.\cite{Shaikha2019}.
 
-  This final iteration of our simply-typed lambda calculus differs from the \Fsmooth{} language given by Shaikha, et. al. only superficially.
+  This final iteration of our simply-typed lambda calculus differs from the \Fsmooth{} language given by Shaikha, et al. only superficially.
   We can define both their \<ifold> and \<let> constructs as syntactic sugar:
   \begin{gather*}
     \letin{e}{t} \equiv \app{(\abs{t})}{e} \\
