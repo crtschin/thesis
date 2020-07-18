@@ -62,7 +62,7 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | ifelse : forall τ,
     tm Γ 𝔹 -> tm Γ τ -> tm Γ τ -> tm Γ τ
   | rlt :
-    tm Γ ℝ -> tm Γ ℝ -> tm Γ 𝔹
+    tm Γ ℝ -> tm Γ 𝔹
 
   (* Arrays *)
   | build : forall τ n,
@@ -215,7 +215,7 @@ Fixpoint rename {Γ Γ' τ} (r : ren Γ Γ') (t : tm Γ τ) : (tm Γ' τ) :=
   | tru _ => tru _
   | fls _ => fls _
   | ifelse _ _ b t f => ifelse _ _ (rename r b) (rename r t) (rename r f)
-  | rlt _ t1 t2 => rlt _ (rename r t1) (rename r t2)
+  | rlt _ t1 => rlt _ (rename r t1)
 
   (* Arrays *)
   | build _ _ _ ta => build _ _ _ (rename r ∘ ta)
@@ -264,7 +264,7 @@ Fixpoint substitute {Γ Γ' τ} (s : sub Γ Γ') (t : tm Γ τ) : tm Γ' τ :=
   | tru _ => tru _
   | fls _ => fls _
   | ifelse _ _ b t f => ifelse _ _ (substitute s b) (substitute s t) (substitute s f)
-  | rlt _ t1 t2 => rlt _ (substitute s t1) (substitute s t2)
+  | rlt _ t1 => rlt _ (substitute s t1)
 
   (* Arrays *)
   | build _ _ _ ta => build _ _ _ (substitute s ∘ ta)

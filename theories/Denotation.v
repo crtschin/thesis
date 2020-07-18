@@ -104,8 +104,8 @@ denote_tm (Γ:=Γ) (τ:=τ) (tru Γ) ctx => true;
 denote_tm (Γ:=Γ) (τ:=τ) (fls Γ) ctx => false;
 denote_tm (Γ:=Γ) (τ:=τ) (ifelse Γ τ b t f) ctx =>
   if ⟦ b ⟧ₜₘ ctx then ⟦ t ⟧ₜₘ ctx else ⟦ f ⟧ₜₘ ctx;
-denote_tm (Γ:=Γ) (τ:=τ) (rlt Γ t1 t2) ctx =>
-  if Rlt_dec (⟦ t1 ⟧ₜₘ ctx) (⟦ t2 ⟧ₜₘ ctx) then true else false;
+denote_tm (Γ:=Γ) (τ:=τ) (rlt Γ t1) ctx =>
+  if Rlt_dec (⟦ t1 ⟧ₜₘ ctx) 0 then true else false;
 (* Arrays *)
 denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n f) ctx :=
   denote_array n (denote_tm ∘ f) ctx;

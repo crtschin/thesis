@@ -52,7 +52,7 @@ Equations Dtm {Γ τ} : tm Γ τ -> tm (map Dt Γ) (Dt τ) :=
   | tru _ => tru _;
   | fls _ => fls _;
   | ifelse _ _ b t f => ifelse _ _ (Dtm b) (Dtm t) (Dtm f);
-  | rlt _ t1 t2 => rlt _ (first _ (Dtm t1)) (first _ (Dtm t2));
+  | rlt _ t1 => rlt _ (first _ (Dtm t1));
 (* Arrays *)
   | build Γ τ n ta => build _ _ _ (Dtm ∘ ta);
   | get Γ ti ta => get _ ti (Dtm ta);

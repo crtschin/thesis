@@ -57,7 +57,7 @@ Dtm_c n (Γ:=Γ) (τ:=τ) t with t := {
   | tru _ => tru _;
   | fls _ => fls _;
   | ifelse _ _ b t f => ifelse _ _ (Dtm_c n b) (Dtm_c n t) (Dtm_c n f);
-  | rlt _ t1 t2 => rlt _ (first _ (Dtm_c n t1)) (first _ (Dtm_c n t2));
+  | rlt _ t1 => rlt _ (first _ (Dtm_c n t1));
 (* Arrays *)
   | (build Γ τ m ta) =>
   build _ _ _ (Dtm_c n ∘ ta);
@@ -135,7 +135,7 @@ Dtm n (Γ:=Γ) (τ:=τ) v with v := {
   | tru _ => tru _;
   | fls _ => fls _;
   | ifelse _ _ b t f => ifelse _ _ (Dtm n b) (Dtm n t) (Dtm n f);
-  | rlt _ t1 t2 => rlt _ (first _ (Dtm n t1)) (first _ (Dtm n t2));
+  | rlt _ t1 => rlt _ (first _ (Dtm n t1));
 (* Arrays *)
   | (build Γ τ m ta) =>
   build _ _ _ (Dtm n ∘ ta);
@@ -575,13 +575,11 @@ Proof with quick.
         { extensionality x. simp Dtm Dtm_c denote_tm in *.
           rewrite <- (equal_f eq1).
           rewrite (equal_f eq2)... } } } }
-  { pose proof (IHt1 sb sb_c H) as [eq1 _]; clear IHt1.
-    pose proof (IHt2 sb sb_c H) as [eq2 _]; clear IHt2.
+  { pose proof (IHt sb sb_c H) as [eq1 _]; clear IHt.
     simp S. split.
     { extensionality x. simp Dtm in *; simp Dtm_c in *.
       simp denote_tm.
-      rewrite (equal_f eq1);
-        rewrite (equal_f eq2)... }
+      rewrite (equal_f eq1)... }
     { admit. } }
   { (* Build *)
     intros. simp S...

@@ -221,7 +221,7 @@ Proof with quick.
       { erewrite S_eq.
         { apply IHt2... }
         { extensionality x. simp denote_tm.
-          apply equal_f with x in eq2. rewrite eq2... }
+          apply equal_f with x in eq2... rewrite eq2... }
         { extensionality x. simp Dtm denote_tm.
           rewrite <- (equal_f eq1).
           rewrite (equal_f eq2)... } }
@@ -232,15 +232,13 @@ Proof with quick.
         { extensionality x. simp Dtm denote_tm.
           rewrite <- (equal_f eq1).
           rewrite (equal_f eq2)... } } } }
-  { (* Rlt *)
+  { (* Rlt0 *)
     intros.
-    pose proof (IHt1 sb Dsb H) as [ex1 div1]; clear IHt1;
-      pose proof (IHt2 sb Dsb H) as [ex2 div2]; clear IHt2.
+    pose proof (IHt sb Dsb H) as [ex div]; clear IHt.
     simp S in *.
     split.
     { extensionality x. simp Dtm denote_tm.
-      rewrite (equal_f div1);
-        rewrite (equal_f div2)... }
+      rewrite (equal_f div)... }
     { admit. } }
   { (* Build *)
     intros. simp S...
