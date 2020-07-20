@@ -10,6 +10,7 @@ Require Vectors.Fin.
 
 Require Import AD.types.
 Require Import AD.maps.
+Require Import AD.linear.
 Require Import AD.stlc.
 Require Import AD.combinator.
 Require Import AD.target.
@@ -145,7 +146,8 @@ denote_st τ with τ := {
   | s_Unit => unit;
   | τ1 s× τ2 => ⟦τ1⟧ₛₜ * ⟦τ2⟧ₛₜ;
   | τ1 s→ τ2 => ⟦τ1⟧ₛₜ -> ⟦τ2⟧ₛₜ;
-  | σ <x> ρ => mset (⟦σ⟧ₛₜ * ⟦ρ⟧ₛₜ)
+  | τ1 s⊸ τ2 => ⟦τ1⟧ₛₜ ⊸ ⟦τ2⟧ₛₜ;
+  | σ s⊗ ρ => mset (⟦σ⟧ₛₜ * ⟦ρ⟧ₛₜ)
 }
 where "⟦ τ ⟧ₛₜ" := (denote_st τ).
 
@@ -156,7 +158,7 @@ Fixpoint denote_O τ : ⟦τ⟧ₛₜ :=
   | s_Unit => tt
   | τ1 s× τ2 => (denote_O τ1, denote_O τ2)
   | τ1 s→ τ2 => fun _ => denote_O τ2
-  | σ <x> ρ => (EmptyBag _, [])
+  | σ ⊗ ρ => (EmptyBag _, [])
   end.
 
 Fixpoint denote_plus τ : ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ :=
@@ -167,7 +169,7 @@ Fixpoint denote_plus τ : ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ :=
   | τ1 s× τ2 => fun t1 t2 => (denote_plus _ (fst t1) (fst t2)
                   , denote_plus _ (snd t1) (snd t2))
   | τ1 s→ τ2 => fun t1 t2 => fun x => denote_plus _ (t1 x) (t2 x)
-  | σ <x> ρ => fun t1 t2 =>
+  | σ ⊗ ρ => fun t1 t2 =>
     (munion (fst t1) (fst t2), snd t1 ++ snd t2)
     (* combine s_ty denote_st eq_denote_t
       (fun τ x => denote_plus τ (fst x) (snd x))

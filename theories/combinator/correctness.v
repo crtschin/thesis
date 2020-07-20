@@ -150,7 +150,7 @@ Proof with (simpl in *; eauto).
 Qed.
 
 (* TODO: Need to work out both the correct definitions of
-    linearity and denotation of <x> before proceeding.
+    linearity and denotation of ⊗ before proceeding.
 
   Note: Might be slightly more appropriate to call it heterogeneous linearity,
     as it requires linearity with respect to ⟦O⟧ and ⟦plus⟧ which are both

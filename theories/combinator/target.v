@@ -44,30 +44,39 @@ Inductive target : s_ty -> s_ty -> Type :=
   | t_cmplus : forall {n}, target (s_Reals n s× s_Reals n) (s_Reals n)
   | t_cmrval : forall {n} (a : vector R n), target s_Unit (s_Reals n)
 
+  (* Linear *)
+  | t_ev_l : forall {A B}, target ((A s⊸ B) s× A) B
+  | t_curry_l : forall {A B C},
+    target (A s× B) C -> target A (B s⊸ C)
+  | t_exl_l : forall {A B},
+    target (A s⊗ B) A
+  | t_exr_l : forall {A B},
+    target (A s⊗ B) B
+
   (* Maps *)
   | t_mempty : forall {τ σ},
-    target s_Unit (τ <x> σ)
+    target s_Unit (τ s⊗ σ)
   | t_msingleton : forall {τ σ},
-    target (τ s× σ) (τ <x> σ)
+    target (τ s× σ) (τ s⊗ σ)
   | t_mplus : forall {τ σ},
-    target ((τ <x> σ) s× (τ <x> σ)) (τ <x> σ)
+    target ((τ s⊗ σ) s× (τ s⊗ σ)) (τ s⊗ σ)
   | t_mfold : forall {τ σ ρ},
-    target (τ <x> σ s× (τ s× σ s→ ρ)) ρ
+    target (τ s⊗ σ s× (τ s× σ s→ ρ)) ρ
 .
 Derive Signature for target.
 
 Notation "A ;; B" := (t_seq A B) (at level 40, left associativity).
-Notation "<| A , B |>" := (t_dupl ;; t_cross A B) (at level 30).
+Notation "⟨ A , B ⟩" := (t_dupl ;; t_cross A B) (at level 30).
 
 (* Helpfull extras *)
 Definition uncurry {A B C} : target A (B s→ C) -> target (A s× B) C :=
   fun c => t_cross c t_id ;; t_ev.
 Definition assoc1 {A B C} : target ((A s× B) s× C) (A s× (B s× C)) :=
-  <|t_exl;;t_exl, <|t_exl;;t_exr, t_exr|>|>.
+  ⟨t_exl;;t_exl, ⟨t_exl;;t_exr, t_exr⟩⟩.
 Definition assoc2 {A B C} : target (A s× (B s× C)) ((A s× B) s× C) :=
-  <|<|t_exl, t_exr;;t_exl|>, t_exr;;t_exr|>.
+  ⟨⟨t_exl, t_exr;;t_exl⟩, t_exr;;t_exr⟩.
 Definition sym {A B} : target (A s× B) (B s× A) :=
-  <|t_exr, t_exl|>.
+  ⟨t_exr, t_exl⟩.
 
 (* Monoidal/Derivative operation *)
 Fixpoint t_O (τ : s_ty): target s_Unit τ :=
@@ -75,9 +84,10 @@ Fixpoint t_O (τ : s_ty): target s_Unit τ :=
   | sℝ => t_crval 0%R
   | sℝ^n => t_cmrval (@Vbuild _ n (fun _ _ => 0%R))
   | s_Unit => t_neg
-  | σ s× ρ => <| (t_O σ), (t_O ρ) |>
-  | σ s→ ρ => t_curry (t_exl ;; (t_O ρ))
-  | σ <x> ρ => t_mempty
+  | σ s× ρ => ⟨ (t_O σ), (t_O ρ) ⟩
+  | σ s→ ρ => t_curry (t_exl ;; t_O ρ)
+  | σ s⊸ ρ => t_curry_l (t_exl ;; t_O ρ)
+  | σ s⊗ ρ => t_mempty
   end.
 
 Fixpoint t_plus (τ : s_ty): target (τ s× τ) τ :=
@@ -86,15 +96,21 @@ Fixpoint t_plus (τ : s_ty): target (τ s× τ) τ :=
   | sℝ^n => t_cmplus
   | s_Unit => t_neg
   | σ s× ρ =>
-    <|
-      <|t_exl;;t_exl, t_exr;;t_exl|>;; t_plus σ,
-      <|t_exl;;t_exr, t_exr;;t_exr|>;; t_plus ρ
-    |>
+    ⟨
+      ⟨t_exl;;t_exl, t_exr;;t_exl⟩;; t_plus σ,
+      ⟨t_exl;;t_exr, t_exr;;t_exr⟩;; t_plus ρ
+    ⟩
   | σ s→ ρ =>
     t_curry (
-      <|
-        <|t_exl ;; t_exl, t_exr|> ;; t_ev,
-        <|t_exl ;; t_exr, t_exr|> ;; t_ev
-      |> ;; t_plus ρ)
-  | σ <x> ρ => t_mplus
+      ⟨
+        ⟨t_exl ;; t_exl, t_exr⟩ ;; t_ev,
+        ⟨t_exl ;; t_exr, t_exr⟩ ;; t_ev
+      ⟩ ;; t_plus ρ)
+  | σ s⊸ ρ =>
+    t_curry_l (
+      ⟨
+        ⟨t_exl ;; t_exl, t_exr⟩ ;; t_ev_l,
+        ⟨t_exl ;; t_exr, t_exr⟩ ;; t_ev_l
+      ⟩ ;; t_plus ρ)
+  | σ s⊗ ρ => t_mplus
   end.

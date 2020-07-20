@@ -52,7 +52,7 @@ Inductive ccl {Γ : Ctx} : ty -> Type :=
 .
 
 Local Notation "A ;;; B" := (ccl_seq A B) (at level 40, left associativity).
-Local Notation "<| A ,, B |>" := (ccl_cross A B) (at level 30).
+Local Notation "⟨ A ,, B ⟩" := (ccl_cross A B) (at level 30).
 
 Fixpoint translate_context (Γ : Ctx) : ty :=
   match Γ with
@@ -84,18 +84,18 @@ Fixpoint stlc_ccl {Γ τ} (t : tm Γ τ) : @ccl Γ (Unit → τ) :=
   match t with
   (* Base *)
   | @var _ τ v => ccl_const (ccl_var v)
-  | @app _ τ σ t1 t2 => <| stlc_ccl t1 ,, stlc_ccl t2 |> ;;; ccl_ev
+  | @app _ τ σ t1 t2 => ⟨ stlc_ccl t1 ,, stlc_ccl t2 ⟩ ;;; ccl_ev
   | @abs _ τ σ t' => ccl_env (stlc_ccl t')
 
   (* Products *)
-  | tuple _ t1 t2 => <| stlc_ccl t1,, stlc_ccl t2 |>
+  | tuple _ t1 t2 => ⟨ stlc_ccl t1,, stlc_ccl t2 ⟩
   | @first _ τ σ t' => stlc_ccl t' ;;; ccl_exl
   | second _ t => stlc_ccl t ;;; ccl_exr
 
   (* Reals *)
-  | plus _ t1 t2 => <| stlc_ccl t1,, stlc_ccl t2 |> ;;; ccl_plus
+  | plus _ t1 t2 => ⟨ stlc_ccl t1,, stlc_ccl t2 ⟩ ;;; ccl_plus
   | rval _ r => ccl_const (ccl_rval r)
-  | mplus _ t1 t2 => <| stlc_ccl t1,, stlc_ccl t2 |> ;;; ccl_mplus
+  | mplus _ t1 t2 => ⟨ stlc_ccl t1,, stlc_ccl t2 ⟩ ;;; ccl_mplus
   | mrval _ r => ccl_const (ccl_mrval r)
 
   (* Unit *)
@@ -161,7 +161,7 @@ Fixpoint ccc_ccl {Γ τ σ} (c : comb σ τ) : @ccl Γ (σ → τ) :=
 
   (* Monoidal *)
   | @cross τ σ ρ φ t1 t2 =>
-    <| ccl_exl ;;; ccc_ccl t1 ,, ccl_exr ;;; ccc_ccl t2 |>
+    ⟨ ccl_exl ;;; ccc_ccl t1 ,, ccl_exr ;;; ccc_ccl t2 ⟩
 
   (* Terminal *)
   | @neg τ => ccl_const (ccl_it)
@@ -169,7 +169,7 @@ Fixpoint ccc_ccl {Γ τ σ} (c : comb σ τ) : @ccl Γ (σ → τ) :=
   (* Cartesian *)
   | @exl τ σ => ccl_exl
   | @exr τ σ => ccl_exr
-  | @dupl τ => <|ccl_id,, ccl_id|>
+  | @dupl τ => ⟨ccl_id,, ccl_id⟩
 
   (* Closed *)
   | @ev τ σ => ccl_ev
@@ -198,7 +198,7 @@ Fixpoint ccl_ccc {Γ τ} (c : @ccl Γ τ) : comb (translate_context Γ) τ :=
   (* Category laws *)
   | @ccl_id _ τ => curry exr
   | @ccl_seq _ τ σ ρ t1 t2 =>
-    <|ccl_ccc t2, ccl_ccc t1|> ;; curry (assoc1 ;; cross id ev ;; ev)
+    ⟨ccl_ccc t2, ccl_ccc t1⟩ ;; curry (assoc1 ;; cross id ev ;; ev)
 
   (* Cartesian *)
   | @ccl_exl _ τ σ => curry (exr ;; exl)
@@ -206,8 +206,8 @@ Fixpoint ccl_ccc {Γ τ} (c : @ccl Γ τ) : comb (translate_context Γ) τ :=
 
   (* Monoidal *)
   | @ccl_cross _ τ σ ρ t1 t2 =>
-    <| ccl_ccc t1, ccl_ccc t2 |> ;;
-      curry (<|<|exl;;exl, exr|>, <|exl;;exr, exr|>|>;; cross ev ev)
+    ⟨ ccl_ccc t1, ccl_ccc t2 ⟩ ;;
+      curry (⟨⟨exl;;exl, exr⟩, ⟨exl;;exr, exr⟩⟩;; cross ev ev)
 
   (* Closed *)
   | @ccl_ev _ σ => curry (exr ;; ev)
@@ -223,4 +223,4 @@ Fixpoint ccl_ccc {Γ τ} (c : @ccl Γ τ) : comb (translate_context Γ) τ :=
 
 Definition stlc_ccc {Γ τ}
   : tm Γ τ -> comb (translate_context Γ) τ :=
-  fun t => <| ccl_ccc (stlc_ccl t), neg |> ;; ev.
+  fun t => ⟨ ccl_ccc (stlc_ccl t), neg ⟩ ;; ev.

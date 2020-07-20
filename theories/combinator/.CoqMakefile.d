@@ -4,9 +4,12 @@ combinator.vos combinator.vok combinator.required_vos: combinator.v types.vos ta
 correctness.vo correctness.glob correctness.v.beautified correctness.required_vo: correctness.v tactics.vo types.vo stlc.vo combinator.vo denotation.vo translation.vo linearity.vo
 correctness.vio: correctness.v tactics.vio types.vio stlc.vio combinator.vio denotation.vio translation.vio linearity.vio
 correctness.vos correctness.vok correctness.required_vos: correctness.v tactics.vos types.vos stlc.vos combinator.vos denotation.vos translation.vos linearity.vos
-denotation.vo denotation.glob denotation.v.beautified denotation.required_vo: denotation.v types.vo maps.vo stlc.vo combinator.vo target.vo
-denotation.vio: denotation.v types.vio maps.vio stlc.vio combinator.vio target.vio
-denotation.vos denotation.vok denotation.required_vos: denotation.v types.vos maps.vos stlc.vos combinator.vos target.vos
+denotation.vo denotation.glob denotation.v.beautified denotation.required_vo: denotation.v types.vo maps.vo linear.vo stlc.vo combinator.vo target.vo
+denotation.vio: denotation.v types.vio maps.vio linear.vio stlc.vio combinator.vio target.vio
+denotation.vos denotation.vok denotation.required_vos: denotation.v types.vos maps.vos linear.vos stlc.vos combinator.vos target.vos
+linear.vo linear.glob linear.v.beautified linear.required_vo: linear.v types.vo
+linear.vio: linear.v types.vio
+linear.vos linear.vok linear.required_vos: linear.v types.vos
 linearity.vo linearity.glob linearity.v.beautified linearity.required_vo: linearity.v tactics.vo types.vo maps.vo stlc.vo combinator.vo denotation.vo translation.vo
 linearity.vio: linearity.v tactics.vio types.vio maps.vio stlc.vio combinator.vio denotation.vio translation.vio
 linearity.vos linearity.vok linearity.required_vos: linearity.v tactics.vos types.vos maps.vos stlc.vos combinator.vos denotation.vos translation.vos

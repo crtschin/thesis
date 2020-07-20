@@ -55,8 +55,8 @@ Fixpoint Dt (τ : ty) : s_ty * s_ty :=
   | σ × ρ =>
       ((fst (Dt σ)) s× (fst (Dt ρ)), (snd (Dt σ)) s× (snd (Dt ρ)))
   | σ → ρ =>
-      (fst (Dt σ) s→ (fst (Dt ρ) s× (snd (Dt ρ) s→ snd (Dt σ)))
-        , fst (Dt σ) s× snd (Dt ρ))
+      (fst (Dt σ) s→ (fst (Dt ρ) s× (snd (Dt ρ) s⊸ snd (Dt σ)))
+        , fst (Dt σ) s⊗ snd (Dt ρ))
   end.
 
 (* Warning: the following takes a long time to typecheck/prove automatically
@@ -90,14 +90,22 @@ Fixpoint Dcomb {τ σ} (t : comb τ σ)
   (* Closed *)
   | @ev τ σ =>
     (t_ev ;; t_exl
-      , <|
-          <|t_exl ;; t_exr, t_exr|> ;; t_msingleton,
+      , ⟨
+          ⟨t_exl ;; t_exr, t_exr⟩ ;; t_msingleton ,
+          t_cross (t_ev ;; t_exr ;; t_curry t_ev_l) t_id ;; t_ev
+        ⟩)
+    (* (t_ev ;; t_exl
+      , ⟨
+          ⟨t_exl ;; t_exr, t_exr⟩ ;; t_msingleton,
           t_cross (t_ev ;; t_exr) t_id ;; t_ev
-        |>)
+        ⟩); *)
   | @curry τ σ ρ t' =>
-    (t_curry (<| fst (Dcomb t'), t_curry (snd (Dcomb t') ;; t_exr) |>)
-      , t_cross t_id (<|t_id, t_neg ;; t_curry t_exr|> ;; t_mfold) ;;
+    (t_curry (⟨ fst (Dcomb t'), t_curry_l (snd (Dcomb t') ;; t_exr) ⟩)
+      , t_cross t_id (⟨t_id, t_neg ;; t_curry t_exr⟩ ;; t_mfold) ;;
         assoc2 ;; snd (Dcomb t') ;; t_exl)
+    (* (t_curry (⟨ fst (Dcomb t'), t_curry (snd (Dcomb t') ;; t_exr) ⟩)
+      , t_cross t_id (⟨t_id, t_neg ;; t_curry t_exr⟩ ;; t_mfold) ;;
+        assoc2 ;; snd (Dcomb t') ;; t_exl); *)
 
   (* Numeric *)
   | cplus => (t_cplus, t_exr ;; t_dupl)
@@ -108,14 +116,14 @@ Fixpoint Dcomb {τ σ} (t : comb τ σ)
   end.
 
 Notation "A ;; B" := (seq A B) (at level 40, left associativity).
-Notation "<| A , B |>" := (dupl ;; cross A B) (at level 30).
+Notation "⟨ A , B ⟩" := (dupl ;; cross A B) (at level 30).
 
 (* Helpfull extras *)
 Definition uncurry {A B C} : comb A (B → C) -> comb (A × B) C :=
   fun c => cross c id ;; ev.
 Definition assoc1 {A B C} : comb ((A × B) × C) (A × (B × C)) :=
-  <|exl;;exl, <|exl;;exr, exr|>|>.
+  ⟨exl;;exl, ⟨exl;;exr, exr⟩⟩.
 Definition assoc2 {A B C} : comb (A × (B × C)) ((A × B) × C) :=
-  <|<|exl, exr;;exl|>, exr;;exr|>.
+  ⟨⟨exl, exr;;exl⟩, exr;;exr⟩.
 Definition sym {A B} : comb (A × B) (B × A) :=
-  <|exr, exl|>.
+  ⟨exr, exl⟩.

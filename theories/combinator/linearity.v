@@ -165,7 +165,7 @@ Proof with (simpl in *; eauto).
             (but not true for lists)
             TODO:
               possible solution: use multisets
-                instead of lists as denotations of <x> *)
+                instead of lists as denotations of ⊗ *)
       all: admit. } } }
   { split; simpl; fold Dt.
     { split... intros.
@@ -177,14 +177,14 @@ Proof with (simpl in *; eauto).
       admit. }
     { split...
       { apply injective_projections...
-      (* This one is slightly weird in that the denotation of <x>
+      (* This one is slightly weird in that the denotation of ⊗
           cannot contain values of ⟦O⟧.
           As will be apparent in the next section, the denotation
-          chosen for <x> should be principled with respect to both
+          chosen for ⊗ should be principled with respect to both
           O and plus.
           TODO:
             possible solution: Exclude O when defining equality on
-              the denotations of <x> *)
+              the denotations of ⊗ *)
         admit. }
       { intros.  apply injective_projections...
       (* Two weird goals:
@@ -194,7 +194,7 @@ Proof with (simpl in *; eauto).
             = [(snd (fst a), snd a) ; (snd (fst b), snd b)]
 
         Using shorter variables, the behaviour expected of the denotations
-          of <x> requires equality between:
+          of ⊗ requires equality between:
         (plus a b, plus a' b') = (a, a') `union` (b, b')
           TODO: who knows, it seems like the `union` operation should
             itself be built such that this is true.
