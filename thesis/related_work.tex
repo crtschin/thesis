@@ -1,25 +1,41 @@
-\subsection{Related work}
+\subsection{Related work}\label{sec:related-work}
 \textbf{AD Formalizations.} While there are proofs of forward-mode AD algorithms\cite{huot2020correctness}\cite{barthe2020versatility} and many more implementations\cite{Shaikha2019}\cite{Margossian2019ARO}, there have been relative few attempts at formalized proofs in proof assistant.
 In 2002, M. Mayero did a formalized proof of an AD framework in \<Fortran> in \<Coq>\cite{Mayero:CorrectnessProofAD}.
 Their minimal language example included assignments and sequences as language constructs, and excluded all forms of non-sequential control flow.
-They also restricted the terms in their language to first order types.
+They also restricted the terms in their language to first-order types.
 
 \textbf{Programming Language Metatheory.} Much meta-theoretical research has been done on encoding programming languages in proof assistants\cite{Aydemir2005}.
 Examples include the weak higher-order abstract syntax approach worked out in Coq by Despeyroux, et al.\cite{10.1007/BFb0014049}, which shallowly embeds abstractions as functions $abs : (var \to tm) \to tm$.
 The parametric HOAS variant by Chlipala\cite{10.1145/1411204.1411226}, is an interesting polymorphic generalization of this technique as it, like the strongly-typed terms representation used in this thesis, avoids the problems of alpha-conversion and capture avoidance while still being somewhat user-friendly.
 The locally nameless approach introduced by many various authors\cite{McKinna_Pollack_1997}\cite{10.1007/3-540-57826-9_152}\cite{10.1145/1017472.1017477} takes a hybrid approach and preserves names for free variables while using the De-Bruijn representation for bound variables.
 
-\textbf{Forward-Mode AD.} Forward-mode AD has been described for imperative languages very early on by Wengert\cite{10.1145/355586.364791}, who made use of a source code transformation.
-The earliest found description of an approach for forward-mode AD on functional languages on first-order terms is by Karczmarczuk\cite{Karczmarczuk98functionaldifferentiation}.
-Siskind and Pearlmutter presented a "nestable" variant of a forward-mode AD algorithm using the dual numbers representation.
-This same algorithm is used in the library DiffSharp\cite{Baydin2015AutomaticDI}.
-A nearly identical variation, implemented in Haskell, is given by Elliott\cite{Elliott2009-beautiful-differentiation}.
+With regards to denotational semantics, both Benton, et al.\cite{Benton2009} and Dockins\cite{Dockins2014} present domain-theoretical libraries in \<Coq>.
 
-\textbf{Reverse-Mode AD.} There are many interpretations of reverse mode AD on functional languages.
-The most well-known of which is the one by Pearlmutter and Siskind\cite{PearlmutterSiskind2008}, which makes use of non-local program transformations as a primitive derivative calculating operation.
-This is also implemented in DiffSharp and the optimizing compiler Stalingrad\fancyfootnote{https://github.com/Functional-AutoDiff/STALINGRAD}.
-An alternative is the approach by Wang et al. using delimited continuations\cite{ShiftReset:Backprop}, implemented in Lantern\fancyfootnote{https://github.com/feiwang3311/Lantern}.
-Elliott gave a principled approach to reverse-mode AD from the perspective of category theory\cite{Elliott-2018-ad-icfp}.
+\textbf{Forward-Mode AD.}
+The earliest found description of an approach for forward-mode AD on functional languages is by Karczmarczuk\cite{Karczmarczuk98functionaldifferentiation}, on first-order terms.
+Siskind and Pearlmutter presented a "nestable" variant of a forward-mode AD algorithm using the dual numbers representation.
+This same algorithm is used in the \FS{} library, DiffSharp\cite{Baydin2015AutomaticDI}.
+A nearly identical variation, implemented in \<Haskell>, is given by Elliott\cite{Elliott2009-beautiful-differentiation}.
+This uncontroversial implementation of forward-mode AD is also discussed in the survey by Baydin et al.\cite{Baydin2015AutomaticDI}.
+
+\textbf{Reverse-Mode AD.} There are many interpretations of reverse-mode AD on functional languages.
+Most well-known is the one by Pearlmutter and Siskind\cite{PearlmutterSiskind2008}, which is one of the first attempts at reverse-mode AD in a functional context and introduces the practice of using various first-class operations to calculate derivatives.
+These operations very often involve maintaining some notion of state to keep track of adjoints.
+The specific approach by Pearlmutter and Siskind uses non-local program transformations as their primitive construct of choice.
+In the trend of define-by-run algorithms, whose main strategy involves building up the reverse pass of the algorithm during run-time, their primitive $\Jrev$ uses reflection to perform reverse-mode AD at run-time.
+
+Abadi and Plotkin\cite{10.1145/3371106}, and Wang, et al.\cite{ShiftReset:Backprop} also make use of reverse-mode AD primitives.
+Abadi and Plotkin do so in the context of a define-by-run trace-based algorithm.
+% TODO: Explain \cite{10.1145/3371106} better
+The approach by Wang et al. using delimited continuations, tries to remedy this using multi-stage programming to reclaim some efficiencies.
+% TODO: Explain \cite{10.1145/3371106} better
+% TODO: Technique using linear negation is an extension of \cite{10.1145/3371106}, so discuss that next
+
+Define-by-run algorithms, however, lose much of the optimization opportunities provided by the explicit compilation process involved with programming languages.
+One significant issue with defining define-then-run reverse-mode algorithms is how to treat many of the various control-flow constructs such as conditionals, loops or higher-order types.
+Elliott\cite{Elliott-2018-ad-icfp} gave an interesting principled approach to reverse-mode AD from the perspective of category theory by formulating the algorithm as a functor.
+Their method, though, is still limited to first-order programs.
+An extension to higher-order types by \Vakar{}\cite{vkr2020reverse} is discussed in \cref{sec:combinator-base}.
 
 % \cite{ShiftReset:Backprop}\cite{Brunel2020BackpropagationIT}\cite{PearlmutterSiskind2008}
 % Advancements in the understanding of both forward-mode AD algorithms and meta-theoretical proof techniques have supplied enough resources to be able to do a formal proof.

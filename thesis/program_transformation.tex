@@ -1,7 +1,7 @@
 \subsection{Program Transformations}
 The transformation rules consist of several algebraic identities, along with compile time optimization techniques such as partial evaluation and deforestation or loop fusion.
-We reuse the denotational semantics from Section~\ref{sec:forward} we used to prove the forward-mode algorithm correct.
-As a small deviation from the rules given by Shaikhha, et al.\cite{Shaikha2019}, we explicitly included some simplification rules in the style of a natural semantics. Figures \ref{fig:rewrite_rules} and \ref{fig:natural_infer} show, respectively, the rewrite rules we included in our language and the inference rules we used for our simplification rules.
+We reuse the denotational semantics from \cref{sec:forward} we used to prove the forward-mode algorithm correct.
+As a small deviation from the rules given by Shaikhha, et al.\cite{Shaikha2019}, we explicitly include a set of simplification rules in the style of a natural semantics. \cref{fig:rewrite_rules,fig:natural_infer} show, respectively, the rewrite rules we included in our language and the inference rules we used for our simplification rules.
 
 \begin{figure}[]
   \centering
@@ -131,7 +131,7 @@ Before we can prove soundness of our rewrite rules, we have to prove soundness o
 \begin{proof}
   This is proven by induction on the rewriting relation $\Downarrow$.
   Most of the cases follow from the induction hypothesis.
-  The rewrite rule where we incorporated the evaluation relation is proven by Lemma~\ref{lem:natural_soundness}.
+  The rewrite rule where we incorporated the evaluation relation is proven by \cref{lem:natural_soundness}.
   The rewrite rules associated with algebraic identities are proven by exactly those identities after simplifying using the denotational semantics.
 
   For the loop fusion rule, we first do induction on $i$, the index being accessed.

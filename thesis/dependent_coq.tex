@@ -8,7 +8,7 @@ One other possibility would be to write the function as a relation between its i
 This also has its limitations as you then lose computability as \<Coq> treats these definitions opaquely. In this case the standard \<simpl> tactic which invokes \<Coq>'s reduction mechanism is not able to reduce instances of the term.
 This often requires the user to write many more proofs to be able to work with the definitions.
 
-As an example, we will work through defining a length indexed list and a corresponding head function limited to lists of length at least one in Snippet~\ref{lst:dt_ilist}.
+As an example, we will work through defining a length indexed list and a corresponding head function limited to lists of length at least one in \cref{lst:dt_ilist}.
 Using the \<Coq> keyword return, it is possible to let the return type of a match expressions depend on the result of one of the type arguments.
 This makes it possible to define an auxiliary function which, while total on the length of the list, has an incorrect return type. It namely returns the type unit if the input list had the length zero.
 We can then use this auxiliary function in the actual head function by specifying that the list has length at least one.

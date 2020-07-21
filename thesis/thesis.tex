@@ -39,20 +39,20 @@
   We will explain our formalization of the forward-mode automatic differentiation macro in the following sections.
   The formal proof will start from a base simply-typed lambda calculus extended with product types and incrementally add both sum and array types.
   Also included in the final language are natural number types with a primitive recursion principle.
-  Many of the theorems and lemmas introduced in section~\ref{sec:formal_stlc} do not change, as they are independent of the specific types and terms included in the language.
+  Many of the theorems and lemmas introduced in \cref{sec:formal_stlc} do not change, as they are independent of the specific types and terms included in the language.
   \input{stlc.tex}
   \input{sums_prim.tex}
   \input{arrays.tex}
 \section{Optimization}
   Shaikhha, et al. have presented a small system which has proven to be performant\cite{Shaikha2019}.
   They empirically showed that it is possible for forward-mode AD to approach the performance of reverse-mode AD, even if the forward-mode algorithm has to be executed $n$ times to calculate the $n$ partial derivatives of a function.
-  In Section~\ref{sec:arrays} we already formalized one of the critical components of their system, namely their usage of array types.
+  In \cref{sec:arrays} we already formalized one of the critical components of their system, namely their usage of array types.
   Next, we will prove that the various program transformation rules they use to drastically reduce the number of calculations needed, are sound.
   \input{program_transformation.tex}
 \section{Towards Formalizing Reverse-Mode AD}
   % TODO: Find/read more about this
   % Eliott paper
-  As mentioned in \ref{sec:related-work}, there have been many attempts at reverse-mode algorithms that operate on functional languages.
+  As mentioned in \cref{sec:related-work}, there have been many attempts at reverse-mode algorithms that operate on functional languages.
   These algorithms, however, either fall short as they make use of unconventional semantics such as mutable state or delimited continuations, or they do not perform true reverse-mode AD.
   Much of the problem with defining an efficient reverse-mode algorithm on functional languages comes from the difficulty with ensuring that fan-out, the various usages of a variable, in the forward pass, correctly transform to addition in the reverse pass.
 
@@ -60,8 +60,8 @@
   While this algorithm does calculate gradients, it is not a true reverse-mode AD algorithm as the final computation graph differs from what would be expected of reverse-mode AD\cite{PearlmutterSiskind2008}.
   The consequence of which is the excess usage of primitive operations.
   Nonetheless, it is useful to give a formal proof of correctness of this algorithm in terms of what we have already established, to show the versatility of the proof technique used, and by extension, our simple set-theoretic denotational semantics.
-  This is done in Section~\ref{sec:continuation-base}.
-  A reverse-mode algorithm posed by \Vakar{}\cite{} along with an attempt at a formal proof in \<Coq>, is discussed in Section~\ref{sec:combinator-base}.
+  This is done in \cref{sec:continuation-base}.
+  A reverse-mode algorithm posed by \Vakar{}\cite{} along with an attempt at a formal proof in \<Coq>, is discussed in \cref{sec:combinator-base}.
   \input{continuation.tex}
   \input{combinator.tex}
 \section{Discussion}

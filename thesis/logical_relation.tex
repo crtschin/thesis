@@ -11,7 +11,7 @@ The second step is easier to prove as it usually follows from the definition of 
 In most cases this requires that the relation is correct with respect to applying substitutions.
 
 A well-known logical relations proof is the proof of strong normalization of well-typed terms, which states that all terms eventually terminate.
-An example of a logical relation used in such a proof using the intrinsic strongly-typed formulation is given in Snippet~\ref{lst:sn_logical_relation}.
+An example of a logical relation used in such a proof using the intrinsic strongly-typed formulation is given in \cref{lst:sn_logical_relation}.
 Noteworthy is the case for function types, where one needs to prove that applying a function preserves the strong normalization property.
 If one were to attempt the proof of strong normalization without using logical relations, the proof would get stuck in the cases dealing with function types.
 More specifically when applying a function term to an argument term which terminates, the induction hypothesis is not strong enough to prove that substituting the argument into the body of the abstraction results in a terminating term.

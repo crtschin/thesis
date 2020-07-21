@@ -337,7 +337,6 @@ year="2014",
 publisher="Springer International Publishing",
 address="Cham",
 pages="209--225",
-abstract="I present highlights from a formalized development of domain theory in the theorem prover Coq. This is the first development of domain theory that is effective, formalized and that supports all the usual constructions on domains. In particular, I develop constructive models of both the unpointed profinite and the pointed profinite domains. Standard constructions (e.g., products, sums, the function space, and powerdomains) are all developed. In addition, I build the machinery necessary to compute solutions to recursive domain equations.",
 isbn="978-3-319-08970-6"
 }
 @article{Boldo2015CoquelicotAU,
@@ -471,10 +470,21 @@ address="Berlin, Heidelberg",
 pages="157--172",
 isbn="978-3-540-39302-3"
 }
-@draft{Vakar-combinator,
-  author="Matthijs Vákár",
-  title="Reverse AD at Higher Types: Pure, Principled and Denotationally Correct",
-  year="2020",
+@misc{vkr2020reverse,
+  title={Reverse AD at Higher Types: Pure, Principled and Denotationally Correct},
+  author={Matthijs Vákár},
+  year={2020},
+  eprint={2007.05283},
+  archivePrefix={arXiv},
+  primaryClass={cs.PL}
+}
+@misc{vkr2020denotational,
+  title={Denotational Correctness of Foward-Mode Automatic Differentiation for Iteration and Recursion},
+  author={Matthijs Vákár},
+  year={2020},
+  eprint={2007.05282},
+  archivePrefix={arXiv},
+  primaryClass={cs.PL}
 }
 @InProceedings{10.1007/BFb0014049,
 author="Despeyroux, Jo{\"e}lle
@@ -536,7 +546,7 @@ series = {ICFP ’08}
   James and Pollack,
   Robert},
   year={1997},
-  month={Jun.}
+  month={6}
 }
 
 @inproceedings{10.1007/3-540-57826-9_152,
@@ -601,4 +611,21 @@ numpages = {2}
   booktitle = "International Conference on Functional Programming (ICFP)",
   year      = 2009,
   url       = {http://conal.net/papers/beautiful-differentiation},
+}
+@article{10.1145/3371106,
+  author = {Abadi, Mart\'{\i}n and Plotkin, Gordon D.},
+  title = {A Simple Differentiable Programming Language},
+  year = {2019},
+  issue_date = {January 2020},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  volume = {4},
+  number = {POPL},
+  url = {https://doi.org/10.1145/3371106},
+  doi = {10.1145/3371106},
+  journal = {Proc. ACM Program. Lang.},
+  month = dec,
+  articleno = {38},
+  numpages = {28},
+  keywords = {differentiable programming, automatic differentiation}
 }

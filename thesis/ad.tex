@@ -31,23 +31,11 @@ We can also see that it follows the chain rule for function composition.
 Using this, we can essentially calculate the derivative of any derivable function by interpreting any non-dual number $x$ as its dual number counterpart of either $x + 1\epsilon$ or $x + 0\epsilon$. We interpret constant values as $x + 0\epsilon$, while input variables we take the partial derivative of are interpreted as $x + 1\epsilon$.
 
 To give a more elaborate example of how this works in forward-mode AD, take the function $f(x, y) = x^2 + (x - y)$ as an example.
-The dependencies between the terms and operations of the function is visible in the computational graph in Figure~\ref{fig:func_trace}.
-The corresponding traces are filled in Table~\ref{table:func_trace} for the input values $x = 2, y = 1$.
+The dependencies between the terms and operations of the function is visible in the computational graph in \cref{fig:func_trace}.
+The corresponding traces are filled in \cref{table:func_trace} for the input values $x = 2, y = 1$.
 We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$.
-In this paper we will prove the correctness of a simple forward-mode automatic differentiation algorithm with respect to the semantics of a simply-typed lambda calculus.
-
-Reverse-mode automatic differentiation takes a different approach.
-It works backwards from the output by annotating each intermediate variable $v_i$ with an adjoint $v'_i=\frac{\delta y_i}{\delta v_i}$.
-To do this, two passes are necessary.
-Like the forward-mode variant, a primal trace is needed to determine the intermediate variables and their dependencies.
-The second pass calculates the derivatives by working backwards from the output using the adjoints, also called the adjoint trace.
-
-The optimal choice between automatic differentiation variant is heavily dependent on the specific function being differentiated.
-Preference is given for forward-mode AD when the number of output variables exceeds the number of input variables, as it has to be rerun for each partial derivative of the function.
-On the other hand, as reverse-mode AD works backwards, the reverse-pass needs to be redone for each output variable.
-In machine learning research, reverse-mode AD is generally preferred as the objective functions generally contain a small number of output variables.
-
-% TODO: Mention something about Eliott's categorical approach and its possible extension to a macro on combinators.
+Note that the calculation of the traces is structural.
+When calculating the primal value at a specific point, we can calculate the corresponding tangent value at that same point.
 
 \begin{figure}
   \centering
@@ -76,3 +64,21 @@ $f      $&$=$&$v_3$&$=$&$5$           &$f'$&$=$&$v'_3$&$=$&$5$ \\
   \caption{Primal and tangent traces of $f(x, y) = x^2 + (x - y)$}
   \label{table:func_trace}
 \end{table}
+
+Reverse-mode automatic differentiation takes a drastically different approach.
+It starts by annotating one of the possibly many output variables $\frac{\partial{y}}{\partial{y}} = 1$ and working in the reverse direction, annotating each intermediate variable $v_i$ with their adjoint
+$$v'_i=\frac{\delta y_i}{\delta v_i}$$
+To accomplish this, two passes are necessary.
+Like the forward-mode variant, a primal trace is needed.
+This first pass functions to determine the intermediate variables and their respective dependencies.
+The second pass in the algorithm calculates the partial-derivatives by working backwards from the output using the adjoints, also called the adjoint trace.
+When variables are used multiple times, also called fan-out, their adjoints are added in the adjoint trace.
+% TODO: Mention something about define-then-run/define-by-run and how they work with regards to strategy.
+% Tape recording using operator overloading/specialized semantics
+
+The optimal choice between automatic differentiation variant is heavily dependent on the specific function being differentiated.
+Preference is given for forward-mode AD when the number of output variables exceeds the number of input variables, as it has to be rerun for each partial derivative of the function.
+On the other hand, as reverse-mode AD works backwards, the reverse-pass needs to be redone for each output variable.
+In machine learning research, reverse-mode AD is generally preferred as the objective functions generally contain a small number of output variables.
+
+% TODO: Mention something about Eliott's categorical approach and its possible extension to a macro on combinators.

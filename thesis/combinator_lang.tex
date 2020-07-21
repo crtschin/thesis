@@ -4,9 +4,11 @@
   The requirement for a combinator language to be able to do reverse-mode AD comes from the need to make explicit, the contraction and weakening rules usually kept implicit in the typing contexts of typed lambda calculi.
   Translating from a simply-typed lambda calculus necessitates a translation between the implicit manipulation of the typing context to access variables, to one that is explicit in its usage of specific combinators.
 
-  The core combinator language we will be using is shown in Figure~\ref{fig:combinator_core_lang}.
+  The core combinator language we will be using is shown in \cref{fig:combinator_core_lang}.
   Note the combinator language contains no typing context and are defined as terms $c : Hom(\tau, \sigma)$, where $\tau$ and $\sigma$ are, respectively, the input and output types of the combinator $c$.
   As programming in the combinator language can quickly become cumbersome and unreadable, we make repeated usage of some syntactic niceties.
+  We interchangeably use $\synSeq{}{}$ as the infix version of \<seq> and $\langle A, B\rangle$ as a shortcut for $\synSeq{\synDupl}{\synCross{A}{B}}$.
+  We also use some helper functions for moving elements around in products, as shown below.
 
   \begin{figure}[]
     \centering
@@ -54,19 +56,17 @@
   \end{figure}
 
   \begin{minted}{coq}
-    Notation "A ;; B" := (seq A B).
-    Notation "< A , B >" := (dupl ;; cross A B).
     Definition assoc1 {A B C} : comb ((A ~$\synStar$~ B) ~$\synStar$~ C) (A ~$\synStar$~ (B ~$\synStar$~ C)) :=
-      <exl;;exl, <exl;;exr, exr>>.
+      ~$\langle$~ exl;;exl, ~$\langle$~ exl;;exr, exr ~$\rangle$~ ~$\rangle$~.
     Definition assoc2 {A B C} : comb (A ~$\synStar$~ (B ~$\synStar$~ C)) ((A ~$\synStar$~ B) ~$\synStar$~ C) :=
-      <<exl, exr;;exl>, exr;;exr>.
+      ~$\langle$~ ~$\langle$~ exl, exr;;exl ~$\rangle$~, exr;;exr ~$\rangle$~.
     Definition sym {A B} : comb (A ~$\synStar$~ B) (B ~$\synStar$~ A) :=
-      <exr, exl>.
+      ~$\langle$~ exr, exl ~$\rangle$~.
   \end{minted}
 
   We will next describe a translation from a simply-typed lambda calculus to this combinator language.
-  Like the combinator language, the simply-typed lambda calculus will be restricted to function types, product types, and types for real numbers, vectors specialized to real numbers and unit, which is shown in Figure~\ref{fig:stlc_combinator}.
-  Note that we omitted the terms related to typing contexts, function types and product types, as these were identical to the ones used in Section~\ref{sec:forward}.
+  Like the combinator language, the simply-typed lambda calculus will be restricted to function types, product types, and types for real numbers, vectors specialized to real numbers and unit, which is shown in \cref{fig:stlc_combinator}.
+  Note that we omitted the terms related to typing contexts, function types and product types, as these were identical to the ones used in \cref{sec:forward}.
 
   \begin{figure}
     \centering
@@ -141,7 +141,7 @@
   Abstraction, where the argument type is added onto the typing context, is handled by the \cclenv construct.
   In cases where a value is introduced such as \<var>, \<rval> and \<mrval>, we make use of the \cclconst construct to ensure the term fits the type signature.
   Note that an additional domain type of $\synUnit$ is added in the type signature of the translation function to accommodate the combinator-heavy auxiliary language.
-  This translation is shown in Snippet~\ref{lst:combinator_stlc_to_ccl}.
+  This translation is shown in \cref{lst:combinator_stlc_to_ccl}.
 
   \begin{listing}
     \begin{minted}{coq}
@@ -149,16 +149,16 @@
         match t with
         (* Base *)
         | var v => ccl_const (ccl_var v)
-        | app t1 t2 => <stlc_ccl t1, stlc_ccl t2> ;; ccl_ev
+        | app t1 t2 => ~$\langle$~ stlc_ccl t1, stlc_ccl t2 ~$\rangle$~ ;; ccl_ev
         | abs t' => ccl_env (stlc_ccl t')
         (* Products *)
-        | tuple t1 t2 => <stlc_ccl t1, stlc_ccl t2>
+        | tuple t1 t2 => ~$\langle$~ stlc_ccl t1, stlc_ccl t2~$\rangle$~
         | first t' => stlc_ccl t' ;; ccl_exl
         | second t => stlc_ccl t ;; ccl_exr
         (* Reals *)
-        | plus t1 t2 => <stlc_ccl t1, stlc_ccl t2> ;; ccl_plus
+        | plus t1 t2 => ~$\langle$~ stlc_ccl t1, stlc_ccl t2~$\rangle$~ ;; ccl_plus
         | rval r => ccl_const (ccl_rval r)
-        | mplus t1 t2 => <stlc_ccl t1, stlc_ccl t2> ;; ccl_mplus
+        | mplus t1 t2 => ~$\langle$~ stlc_ccl t1, stlc_ccl t2~$\rangle$~ ;; ccl_mplus
         | mrval r => ccl_const (ccl_mrval r)
         (* Unit *)
         | it => ccl_id
@@ -220,7 +220,7 @@
         (* Category laws *)
         | ccl_id => curry exr
         | ccl_seq t1 t2 =>
-          <ccl_ccc t2, ccl_ccc t1> ;; curry (assoc1 ;; cross id ev ;; ev)
+          ~$\langle$~ ccl_ccc t2, ccl_ccc t1~$\rangle$~ ;; curry (assoc1 ;; cross id ev ;; ev)
 
         (* Cartesian *)
         | ccl_exl => curry (exr ;; exl)
@@ -228,8 +228,8 @@
 
         (* Monoidal *)
         | ccl_cross t1 t2 =>
-          < ccl_ccc t1, ccl_ccc t2 > ;;
-            curry (<<exl;;exl, exr>, <exl;;exr, exr>>;; cross ev ev)
+          ~$\langle$~ ccl_ccc t1, ccl_ccc t2 ~$\rangle$~ ;;
+            curry (~$\langle$~ ~$\langle$~ exl;;exl, exr~$\rangle$~, ~$\langle$~ exl;;exr, exr ~$\rangle$~ ~$\rangle$~;; cross ev ev)
 
         (* Closed *)
         | ccl_ev => curry (exr ;; ev)
@@ -244,10 +244,10 @@
     \label{lst:combinator_ccl_to_ccc}
   \end{listing}
 
-  The final translation function is the composition of both the translation functions in Snippet~\ref{lst:combinator_stlc_to_ccl} and \ref{lst:combinator_ccl_to_ccc}.
-  Note that we have to remove the extra $\synUnit$ type we added in the simply-typed lambda calculus to CCL translation shown Snippet~\ref{lst:combinator_stlc_to_ccl}.
+  The final translation function is the composition of both the translation functions in \cref{lst:combinator_stlc_to_ccl,lst:combinator_ccl_to_ccc}.
+  Note that we have to remove the extra $\synUnit$ type we added in the simply-typed lambda calculus to CCL translation shown \cref{lst:combinator_stlc_to_ccl}.
 
   \begin{minted}{coq}
     Definition stlc_ccc ~$\Gamma$~ ~$\tau$~ : tm ~$\Gamma$~ ~$\tau$~ ~$\rightarrow$~ comb (translate_context ~$\Gamma$~) ~$\tau$~ :=
-      fun t => <ccl_ccc (stlc_ccl t), neg> ;; ev.
+      fun t => ~$\langle$~ ccl_ccc (stlc_ccl t), neg ~$\rangle$~ ;; ev.
   \end{minted}

@@ -1,6 +1,74 @@
 \subsubsection{Defining the Macro and Target Language}\label{sec:combinator-macro}
-  % TODO: work this in:
-  % They make the observation that defining a reverse-mode algorithm requires the dual structures to the contraction and weakening rules usually implicitly present in structural languages.
+  The reverse-mode macro we will discuss in this chapter, like the forward-mode macro splits any type $\tau$ into tuples $(\tau_1, \tau_2)$, where $\tau_1$ and $\tau_2$ represent, respectively, primal and tangent values.
+  As expected, for $\tau_1$ the macro essentially preserves the behavior expected of any of the combinators.
+  The intuition what happens with reverse-mode AD gives a hint to what $\tau_2$.
+  Essentially, starting from an input vector and the derivative of the output variable, reverse-mode AD calculates the derivatives of each of the input variables.
+  On the type level, this can be formulated as transforming combinators $\comb{\tau}{\sigma}$ into a tuple of combinators $(\comb{(fst(\Drev(\tau)))}{(fst(\Drev(\sigma)))}, \comb{(fst(\Drev(\tau)) \synStar snd(\Drev(\sigma)))}{(snd(\Drev(\tau)))})$.
+
+  Defining this transformation poses an issue however, as we will illustrate with an example.
+  Consider the combinators \<exl>, \<exr> and \<dupl> from \cref{sec:combinator-core}.
+  \begin{align*}
+    \Drev(\synExl) &= (\synExl, \synSeq{\synDupl}{\synCross{\synExr}{(\synSeq{\synNeg}{\synO})}}) \\
+    \Drev(\synExr) &= (\synExr, \synSeq{\synDupl}{\synCross{(\synSeq{\synNeg}{\synO})}{\synExr}}) \\
+    \Drev(\synDupl) &= (\synDupl, \synSeq{\synExr}{\synP})
+  \end{align*}
+  Note the usage of the monoidal combinators $(\synO, \synP)$.
+  As mentioned in the previous section, these combinators encode the dual structures to the contraction and weakening rules present in programming language inference rules.
+  This encodes how we will treat the fan-out problem, where $\synP : \comb{\tau \synStar \tau}{\tau}$ combines two terms of type $\tau$ in a generic way.
+  Likewise, $\synO : \comb{\synUnit}{\tau}$ formulates how to zero out variables of arbitrary type $\tau$.
+  We can define these combinators by induction on their types, where $\vec{0}$ is the regular vector consisting of just zeroes.
+  \begin{align*}
+    \synO_\tau =
+      \left\{
+        \begin{array}{ll}
+          \synCrval{0} & : \tau = \synR \\
+          \synCmrval{\vec{0}} & : \tau = \synRn \\
+          \synNeg & : \tau = \synUnit \\
+          \langle \synO_\sigma, \synO_\rho \rangle & : \tau = \sigma \synStar \rho \\
+          \synCurry{(\synSeq{\synExl}{\synO_\rho})} & : \tau = \sigma \synFunc \rho \\
+        \end{array}
+      \right.
+  \end{align*}
+  Defining $\synO_\tau$ is straightforward as we only need to ensure that it preserves the structure of our types
+  For ground types $\synR$ and $\synRn$, we generate their respective interpretations of zero.
+  For function types, we can ignore the input of argument type and recursively call $\synO$ on the result type.
+  \begin{align*}
+    \synP_\tau =
+      \left\{
+        \begin{array}{ll}
+          \synCplus & : \tau = \synR \\
+          \synCmplus & : \tau = \synRn \\
+          \synNeg & : \tau = \synUnit \\
+          \langle
+            \synSeq{\langle \synSeq{\synExl}{\synExl}, \synSeq{\synExr}{\synExl} \rangle}{\synP_\sigma}, & : \tau = \sigma \synStar \rho \\
+            \;\;\;\synSeq{\langle \synSeq{\synExl}{\synExr}, \synSeq{\synExr}{\synExr} \rangle}{\synP_\rho} \rangle \\
+          \synCurry{ \\
+            (\synSeq{\langle
+              \synSeq{\langle \synSeq{\synExl}{\synExl}, \synExr \rangle}{\synEv}, & : \tau = \sigma \synFunc \rho \\
+              \;\;\;\synSeq{\langle \synSeq{\synExl}{\synExr}, \synExr \rangle}{\synEv} \rangle}{\synPlus_\rho})} \\
+        \end{array}
+      \right.
+  \end{align*}
+  With $\synP_\tau$, we can make recursive usage of the operator to combine subterms.
+  For tuples, this involves creating a new tuple where the left and right components consist of, respectively, the combinations of all left and right projections.
+  With function types, both left and right input functions need to be evaluated separately before they can be combined.
+
+  We can reuse the same reasoning we used to derive how the combinators should be transformed for reverse-mode, to define the macro on the function types.
+  This reasoning leads to the incomplete and incorrect definition of
+  \begin{equation}
+    \Drev(\tau \synFunc \sigma) = (fst(\Drev(\tau)) \synFunc (fst(\Drev(\sigma)) \synStar (snd(\Drev(\sigma)) \synFunc snd(\Drev(\tau)))), ?)
+  \end{equation}
+  % TODO: Explain faulty use of products as tangent values.
+  In a sense, the tangent value at function types needs to keep track of the possibly incomplete adjoints currently calculated as these can be combined with other adjoints down the line.
+  Remember that in reverse-mode AD, the problem of fan-out involves combining each usage of a variable in the reverse pass.
+  We solved the issue of combining variable usages using the $\synP$ combinator, but still have to find something to keep track of which terms to combine.
+
+  % TODO: Introduce need for linear types
+  \Vakar{} pose the usage of a limited variant of linear types as the target of the reverse-mode macro\cite{vkr2020reverse}.
+  They include both linear function types, $\multimap$, and tensor products, $! (-) \otimes (-)$.
+
+
+
   % These lead to the monoidal operations $\Gamma \vdash \synO : \tau$ and $\Gamma \vdash t_1 \synP t_2 : \tau$, where $\Gamma \vdash t_1, t_2 : \tau$.
   % Ensuring the higher-order types respect $(\synO, \synP)$ requires the usage of minimal linear types.
   % Notice that these two operations naturally correspond to, respectively, the zeroing and fan-out problems associated with reverse-mode AD.

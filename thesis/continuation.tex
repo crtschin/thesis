@@ -2,7 +2,7 @@
   The guiding principle in this algorithm is to build up the reverse pass as a continuation using a structure preserving macro on the program syntax.
   Like the forward-mode macro $\D$, the continuation-based macro $\Dc$ is structure preserving and works with tuples at ground type $\synR$.
   But unlike the forward-mode macro, which uses these tuples to represent dual-numbers, the continuation-based macro pairs the primal values with a continuation calculating an array containing all of the perturbation variables.
-  Notably, because the continuation-based macro, shown in Figure~\ref{fig:continuation_macro}, calculates all of the perturbation values with respect to each of the input variables, it is additionally indexed by the number of input variables.
+  Notably, because the continuation-based macro, shown in \cref{fig:continuation_macro}, calculates all of the perturbation values with respect to each of the input variables, it is additionally indexed by the number of input variables.
 
   \begin{figure}[H]
     \centering
@@ -27,10 +27,10 @@
     \label{fig:continuation_macro}
   \end{figure}
 
-  As we will phrase correctness in terms of the forward-mode macro, the forward-mode macro used in Section~\ref{sec:formal_stlc} has to be slightly altered to calculate the partial derivatives with respect to all of the input variables.
+  As we will phrase correctness in terms of the forward-mode macro, the forward-mode macro used in \cref{sec:formal_stlc} has to be slightly altered to calculate the partial derivatives with respect to all of the input variables.
   This change is slight, and merely swaps what was previously the tangent value for a vector of the tangent values corresponding to the input variables.
   The operations of reals are then swapped out for their vector element-wise counterparts.
-  The modified forward-mode macro is shown in Figure~\ref{fig:forward_mode_cont}.
+  The modified forward-mode macro is shown in \cref{fig:forward_mode_cont}.
 
   \begin{figure}
     \centering
@@ -74,7 +74,7 @@
     \label{fig:forward_mode_cont}
   \end{figure}
 
-  As we work with the same denotational semantics as in our proof in Section~\ref{sec:formal_stlc}, the usage of an argument supplying function $f : \denR \denFunc \denR^n$ makes a reappearance.
+  As we work with the same denotational semantics as in our proof in \cref{sec:formal_stlc}, the usage of an argument supplying function $f : \denR \denFunc \denR^n$ makes a reappearance.
   Unlike last time, however, the arguments have to be massaged to fit both the forward and the reverse-mode macro.
   Note that for the forward-mode macro, input arguments we take the partial derivative of are supplied in a dual number format where the tangent value is equal to $1$.
   Likewise, the tangent value of any other input argument should be set to $0$.
@@ -136,7 +136,7 @@
   This statement cannot be proven directly, however, we need a more general correctness statement.
   To be be specific, we need to establish equivalence between the macros regardless of the number we apply to the continuation-based macro, which corresponds to the coefficient of the forward-mode macro.
   This equivalence needs to be baked into the logical relation in our proof.
-  The logical relation we will use in this proof for the most part stays the same as the one we used in the proof in Section~\ref{sec:forward}.
+  The logical relation we will use in this proof for the most part stays the same as the one we used in the proof in \cref{sec:forward}.
   The only case to differ significantly is the one for our ground type, the type of real numbers, $\synR$.
   Also note that, like the macro functions, the logical relation is also indexed by the number of input variables.
 
@@ -152,10 +152,10 @@
   \label{eqn:lr_continuous}
   \end{equation}
 
-  As a recurring theme, many of the definitions and lemmas we used in the proof in Section~\ref{sec:forward} reappear in this proof, differing only superficially in that they are additionally indexed by the number of partial derivatives.
-  So we still make use of an instantiation relation like the one given in Definition~\ref{eqn:inst_base} to establish that arbitrary typing context instantiations preserve the logical relation.
+  As a recurring theme, many of the definitions and lemmas we used in the proof in \cref{sec:forward} reappear in this proof, differing only superficially in that they are additionally indexed by the number of partial derivatives.
+  So we still make use of an instantiation relation like the one given in \cref{eqn:inst_base} to establish that arbitrary typing context instantiations preserve the logical relation.
 
-  The proof of the fundamental lemma proceeds in much the same manner as the one given for Lemma~\ref{thm:fundamental_lemma}.
+  The proof of the fundamental lemma proceeds in much the same manner as the one given for \cref{thm:fundamental_lemma}.
   As expected, the cases for the \synR-typed are exceptional.
   Each of these cases require a generalized version of the case to be proven.
   The problem here is that the number of partial derivatives is tightly coupled to the number of terms the operation is over.
@@ -166,7 +166,7 @@
     For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, function arguments $x : \llbracket \synRepeat{\synR}{n} \rrbracket$, and real number $r$, we have $r * snd(\D_n(t)(\D_n(x))) = snd(\Dc_n(t)(\Dc_n(x)))(r)$
   \end{theorem}
   \begin{proof}
-    This follows from the fundamental property of the logical relation~(\ref{eqn:lr_continuous}).
+    This follows from the fundamental property of the logical relation in (\cref{eqn:lr_continuous}).
   \end{proof}
 
   This is easily specialized to the original correctness statement we set out to prove.

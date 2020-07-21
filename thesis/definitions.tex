@@ -45,6 +45,7 @@
 \newcommand{\substitute}[2]{\texttt{substitute}\ #1\ #2}
 
 \newcommand{\tm}[2]{\texttt{tm}\ #1\ #2}
+\newcommand{\comb}[2]{\texttt{comb}\ #1\ #2}
 \newcommand{\Fin}[1]{\texttt{Fin}\ #1}
 \newcommand{\Array}[2]{\texttt{Array}\ #1\ #2}
 
@@ -75,9 +76,26 @@
 
 \newcommand{\D}[0]{\overrightarrow{\mathcal{D}}}
 \newcommand{\Dc}[0]{\D^c}
+\newcommand{\Drev}[0]{\overleftarrow{\mathcal{D}}}
+\newcommand{\Jrev}[0]{\overleftarrow{\mathcal{J}}}
+\newcommand{\Dno}[0]{\mathcal{D}}
 
-\newcommand{\synO}[0]{\ubar{0}}
-\newcommand{\synP}[0]{\ubar{+}}
+\newcommand{\synO}[0]{\bar{0}}
+\newcommand{\synP}[0]{\bar{+}}
+
+\newcommand{\synId}[0]{\texttt{id}}
+\newcommand{\synSeq}[2]{#1 \texttt{;\!;} #2}
+\newcommand{\synCross}[2]{\texttt{cross}\ #1\ #2}
+\newcommand{\synNeg}[0]{\texttt{neg}}
+\newcommand{\synExl}[0]{\texttt{exl}}
+\newcommand{\synExr}[0]{\texttt{exr}}
+\newcommand{\synDupl}[0]{\texttt{dupl}}
+\newcommand{\synEv}[0]{\texttt{ev}}
+\newcommand{\synCurry}[1]{\texttt{curry}\ #1}
+\newcommand{\synCplus}[0]{\texttt{cplus}}
+\newcommand{\synCrval}[1]{\texttt{crval}\ #1}
+\newcommand{\synCmplus}[0]{\texttt{cmplus}}
+\newcommand{\synCmrval}[1]{\texttt{cmrval}\ #1}
 
 \newcommand{\cclvar}[0]{\texttt{ccl\_var}}
 \newcommand{\cclapp}[0]{\texttt{ccl\_app}}
@@ -97,6 +115,8 @@
 \newcommand{\cclconst}[0]{\texttt{ccl\_const}}
 \newcommand{\cclit}[0]{\texttt{ccl\_it}}
 
+\newcommand{\FS}[0]{\textit{F\#}}
+
 % Syntactic terms
 \def\Vakar{V\'{a}k\'{a}r}
 \def\lambdaBase{\Lambda_{\delta}^{\times, \rightarrow, \mathds{R}}}
@@ -108,6 +128,7 @@
 \def\keyword@style#1{\textit{#1}}
 \do{Coq}
 \do{Agda}
+\do{Haskell}
 \do{Fortran}
 \def\keyword@style#1{\texttt{#1}}
 \do{bottom}
@@ -128,10 +149,9 @@
 \do{tuple}
 \do{first}
 \do{second}
-\do{rval}
-\do{mrval}
 \do{add}
 \do{mul}
+\do{rval}
 \do{nval}
 \do{nsucc}
 \do{nrec}
@@ -146,4 +166,18 @@
 \do{tl}
 \do{ifold}
 \do{let}
+
+\do{id}
+\do{seq}
+\do{cross}
+\do{neg}
+\do{exl}
+\do{exr}
+\do{dupl}
+\do{ev}
+\do{curry}
+\do{cplus}
+\do{crval}
+\do{cmplus}
+\do{cmrval}
 \endgroup

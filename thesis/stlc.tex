@@ -4,11 +4,11 @@
   % Something about Λ_δ^{+, *, R}
   % Give examples of functions
   % talk about denotations and
-  As mentioned in the background section~\ref{sec:language_repr}, we will make use of De-Bruijn indices in an intrinsic representation to formulate our language.
+  As mentioned in the background \cref{sec:language_repr}, we will make use of De-Bruijn indices in an intrinsic representation to formulate our language.
   We include both addition and multiplication as example operations on the real numbers, but the proofs are easily extensible to other primitive operations.
   Our base language consists of the classic simply-typed lambda calculus with product types and real numbers.
 
-  Both the language constructs and the typing rules for this language are common for a simply-typed lambda calculus, as shown in figure~\ref{fig:base_infer}.
+  Both the language constructs and the typing rules for this language are common for a simply-typed lambda calculus, as shown in \cref{fig:base_infer}.
   As expected, we include variables, applications, and abstractions in the language using, respectively, the \<var>, \<app>, and \<abs> terms.
   We work with projection products, whose elimination rules are encoded in the  \<first> and \<second> terms. The \<tuple> term is used to represent the introduction rule.
   For real numbers, \<rval> is used to introduce real numbered constants and \<add> and \<mul> will be used to respectively encode addition and multiplication.
@@ -54,7 +54,7 @@
   % How we translated this into the well-typed intrinsic representation
   These can be translated into \<Coq> definitions in a reasonably straightforward manner, with each case keeping track of both how the typing context and types change.
   In the \<var> case, we need some way to determine what type the variable is referencing.
-  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied by a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in code snippet~\ref{lst:strong_stlc}.
+  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied by a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in code \cref{lst:strong_stlc}.
   The cases for \<app> and \<abs> are as expected, where variables in the body of abstractions can reference their respective arguments.
 
   Note that in the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they made use of n-ary products accompanied by pattern matching expressions.
@@ -249,7 +249,7 @@
 
   % TODO: give reasonable examples
 
-  Using the denotation rules in Figure~\ref{eqn:denotation_base}, syntactically well-typed terms in our language of the form $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ can be interpreted as their corresponding smooth functions $f : \denR^n \to \denR$.
+  Using the denotation rules in \cref{eqn:denotation_base}, syntactically well-typed terms in our language of the form $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ can be interpreted as their corresponding smooth functions $f : \denR^n \to \denR$.
   Intuitively, the free variables in the syntactic term $t$ correspond to the parameters of the denotation function $f$.
 
   Although Barthe, et al.\cite{barthe2020versatility} gave a syntactic proof of correctness of the macro, our formal proof follows the more denotational style of proof given by Huot, Staton and \Vakar{}\cite{huot2020correctness}.
@@ -257,7 +257,7 @@
   While both approaches have their merits, the proof using the denotational semantics requires less technical bookkeeping of open and closed terms.
 
   Informally, the correctness statement of the forward-mode macro will consists of the assertion that the denotation of any macro-applied term of type $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ will result in a pair of both the denotation of the original term and the derivative of that denotation.
-  Note that while both the free variables and result type of the term $t$ are restricted to type $\synR$, $t$ itself can contain subterms of higher-order types.
+  Note that while both the free variables and result type of the term $t$ are restricted to type $\synR$, $t$ itself can consist of subterms of higher-order types.
 
   The logical relation will ensure that both the smoothness property and the derivatives are preserved over higher-order types.
   We define the logical relation as a type-indexed relation between denotations of both terms and their macro-applied variants, so for any type $\tau$, $S_\tau$ is the relation between functions $R \rightarrow \llbracket \tau \rrbracket$ and $R \rightarrow \llbracket \D(\tau) \rrbracket$.
@@ -379,6 +379,6 @@
       \llbracket \D(t) &\rrbracket \circ \D_n \circ f = \lambda x. (\llbracket t \rrbracket \circ f, \sfrac{\partial{(\llbracket t \rrbracket \circ f)}}{\partial{x}}) \\
       & \Vdash \text{(By definition of $S_R$ with $f := \llbracket t \rrbracket \circ f$ and $g := \llbracket \D(t) \rrbracket \circ \D_n \circ f$)} \\
       & S_R(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f) \\
-      & \Vdash \text{(Fundamental property (\ref{thm:fundamental_property}))}
+      & \Vdash \text{(Fundamental property (\cref{thm:fundamental_property}))}
     \end{align*}
   \end{proof}
