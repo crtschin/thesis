@@ -17,6 +17,7 @@ Require Import AD.combinator.
 Require Import AD.denotation.
 Require Import AD.translation.
 Require Import AD.linearity.
+Require Import AD.linear.
 Local Open Scope program_scope.
 
 (*
@@ -173,13 +174,14 @@ Rel (σ → ρ) f g h :=
     Rel ρ (fun x => f x (g1 x))
       (fun x => fst (g x (g2 x)))
       (fun x => h (fst x, (g2 (fst x), snd x) :: nil)
-        + g3 (fst x, snd (g (fst x) (g2 (fst x))) (snd x)));
+        + g3 (fst x, func _ _ (snd (g (fst x) (g2 (fst x)))) (snd x)));
 Rel (σ × ρ) f g h :=
   exists f1 f2 f3 g1 g2 g3,
   exists (s1 : Rel σ f1 f2 f3) (s2 : Rel ρ g1 g2 g3),
     (f = fun r => (f1 r, g1 r)) /\
     (g = fun r => (f2 r, g2 r)) /\
-    (h = fun r => (f3 (Rel_prod_fst r)) + (g3 (Rel_prod_snd r))).
+    (h = fun r => (f3 (Rel_prod_fst r)) + (g3 (Rel_prod_snd r)))
+.
 
 Lemma Vbuild_cons : forall A n (f : forall i : nat, (i < S n)%nat -> A),
   Vcons (f 0%nat (Nat.lt_0_succ n))
@@ -352,11 +354,14 @@ Proof with simpl in *; eauto.
   { rewrite denote_O_eq... }
   { simpl... rewrite <- denote_plus_eq.
     rewrite denote_plus_O_r. rewrite denote_O_eq... }
-  { (* TODO:
+  { pose proof (snd_Dcomb_linear _ _ (@ev A B)) as [_ lin2].
+    (* TODO:
       Weird, don't think this is true,
         nor is it very clear what's needed to make
         this true *)
-    simpl. destruct d as [p d]...
+    unfold linear_f in *.
+    destruct lin2 as [eq1 eq2]...
+    destruct d as [p d]...
     remember (p d) as p'.
     clear p Heqp'. destruct p' as [d' f]...
     apply injective_projections...
@@ -364,7 +369,10 @@ Proof with simpl in *; eauto.
   all: admit. }
   { simpl... fold Dt.
     specialize IHc with (d, denote_O (fst (Dt B))).
-    rewrite IHc... }
+    eassert (⟦ target.t_O (snd (Dt A)) ⟧ₜₒ () =
+      fst (⟦ target.t_O (snd (Dt A)) ⟧ₜₒ (),
+        ⟦ target.t_O (snd (Dt B)) ⟧ₜₒ ())) by eauto.
+    use H. apply f_equal... }
 Admitted.
 
 Lemma Rel_substitute :
@@ -433,7 +441,7 @@ Proof with (simpl in *; try eauto).
     extensionality x; destruct x as [r [a1 a2]]...
     unfold Rel_prod_fst, Rel_prod_snd...
     apply Rel_linear in H;
-      destruct H as [eq1 [eq2 eqf]].
+      destruct H as [eq1 eq2].
     rewrite eq2... }
   { simp Rel in H.
     destruct H as [f1 [f2 [f3 [g1 [g2 [g3
@@ -449,16 +457,18 @@ Proof with (simpl in *; try eauto).
       repeat split.
       { intros.
         apply Rel_linear in H.
-        destruct H as [eq1 [eq2 eqf]]; fold denote_st in *.
-        pose proof (eqf r (fun _ => ⟦ snd (Dcomb (curry c)) ⟧ₜₒ (g r, []))).
+        destruct H as [eq1 eq2]; fold denote_st in *.
         specialize eq1 with r.
-        destruct H as [q [w e]].
+        rewrite <- eq1.
         apply f_equal. apply injective_projections...
-        remember (g r). fold Dt in *.
+        fold Dt.
         pose proof huh as H'.
         pose proof (H' (A × B) C c
-          (d, denote_O (fst (Dt B)))) as H'...
-        rewrite H'... }
+          (g r, denote_O (fst (Dt B)))) as H'...
+        eassert (⟦ target.t_O (snd (Dt A)) ⟧ₜₒ () =
+          fst (⟦ target.t_O (snd (Dt A)) ⟧ₜₒ (),
+            ⟦ target.t_O (snd (Dt B)) ⟧ₜₒ ())) by eauto.
+        rewrite H. apply f_equal... }
       { (* TODO:
           Weird, might be true,
             fold_left plus (a ++ b) 0 =
@@ -468,8 +478,12 @@ Proof with (simpl in *; try eauto).
         *)
         fold denote_st;
           simpl fst; simpl (snd (_, _)); intros.
-        simpl...
-        fold Dt.
+        apply Rel_linear in H.
+        destruct H as [eq1 eq2]...
+        fold Dt denote_st in *.
+        rewrite <- eq2...
+        pose proof (huh _ _ (curry c) (g r))...
+        fold Dt in *.
         admit. } }
     { intros...
       erewrite Rel_eq. apply IHc.
@@ -569,55 +583,96 @@ Fixpoint denote_untranslate n
   | S n' => fun v => Vcons (fst v) (denote_untranslate n' (snd v))
   end.
 
+Lemma sum_offset : forall n x y a,
+  x + @Vfold_left R R Rplus n y a = Vfold_left Rplus (x + y) a.
+Proof with simpl in *; eauto.
+  intros.
+  dependent induction n...
+  { dependent destruction a... }
+  { dependent destruction a...
+    rewrite IHn.
+    rewrite Rplus_assoc... }
+Qed.
+
+Inductive differentiable : forall n, (R -> ⟦ translate_context (repeat Real n) ⟧ₜ) -> Prop :=
+  | differentiable_0 : differentiable 0 (fun _ => tt)
+  | differentiable_Sn :
+    forall n f,
+    forall (g : R -> R),
+      differentiable n f ->
+      (forall x, ex_derive g x) ->
+      differentiable (Datatypes.S n) (fun x =>
+        ((g x), (f x))).
+
 Lemma fundamental_property :
-  forall n (c : comb (translate_context (repeat ℝ (S n))) (ℝ))
-    (f : R -> ⟦ translate_context (repeat ℝ (S n)) ⟧ₜ),
-  Rel ℝ (⟦ c ⟧ₒ ∘ f)
-    (fun x => ⟦fst (Dcomb c)⟧ₜₒ (fst (D _ f) x))
+  forall n (t : tm (repeat ℝ n) ℝ)
+    (f : R -> ⟦ translate_context (repeat ℝ n) ⟧ₜ),
+  differentiable n f ->
+  Rel ℝ (⟦ (stlc_ccc t) ⟧ₒ ∘ f)
+    (fun x => ⟦fst (Dcomb (stlc_ccc t))⟧ₜₒ (fst (D _ f) x))
     (fun x => Vfold_left Rplus 0
-      (denote_untranslate _ (⟦snd (Dcomb c)⟧ₜₒ (fst (D _ f) (fst x), 1)))).
+      (denote_untranslate _ (⟦snd (Dcomb (stlc_ccc t))⟧ₜₒ (fst (D _ f) (fst x), 1)))).
 Proof with simpl in *; eauto.
   intros.
   unfold compose.
-  (* apply Rel_substitute. *)
+  pose proof (Rel_substitute _ _ (stlc_ccc t) f (fst (D n f))
+    (fun x => Vfold_left Rplus 0 (denote_untranslate n
+        (⟦ snd (Dcomb (stlc_ccc t)) ⟧ₜₒ (fst (D n f) (fst x), 1))))).
+  use H0.
+  dependent induction n...
+  { simp Rel. split... }
+  { simp Rel.
+    exists (fst ∘ f).
+    exists (fst ∘ f).
+    eexists.
+    exists (snd ∘ f).
+    exists (fst (D n (snd ∘ f))).
+    eexists.
+    eexists; eexists.
+    { dependent destruction H... }
+    { unfold compose. split; reflexivity. }
+    { simpl. unfold compose. fold translate_context. erewrite Rel_eq.
+    2:{ reflexivity. }
+    2:{ reflexivity. }
+    2:{ reflexivity. }
+      admit. }
+    { repeat split.
+      { extensionality x. unfold compose. destruct (f x)... }
+      { extensionality x. unfold Rel_prod_fst, Rel_prod_snd...
+        rewrite Rplus_0_l; rewrite Rplus_0_r.
+        unfold compose...
+        admit. } } }
 Admitted.
 
 Lemma Rel_correctness_R :
-  forall n (c : comb (translate_context (repeat ℝ (S n))) (ℝ))
-    (f : R -> ⟦ translate_context (repeat ℝ (S n)) ⟧ₜ),
-  Rel ℝ (⟦ c ⟧ₒ ∘ f)
-    (fun x => ⟦fst (Dcomb c)⟧ₜₒ (fst (D _ f) x))
+  forall n (t : tm (repeat ℝ n) ℝ)
+    (f : R -> ⟦ translate_context (repeat ℝ n) ⟧ₜ),
+  Rel ℝ (⟦ (stlc_ccc t) ⟧ₒ ∘ f)
+    (fun x => ⟦fst (Dcomb (stlc_ccc t))⟧ₜₒ (fst (D _ f) x))
     (fun x => Vfold_left Rplus 0
-      (denote_untranslate _ (⟦snd (Dcomb c)⟧ₜₒ (fst (D _ f) (fst x), 1)))) ->
+      (denote_untranslate _ (⟦snd (Dcomb (stlc_ccc t))⟧ₜₒ (fst (D _ f) (fst x), 1)))) ->
   (fun x => Vfold_left Rplus 0
-    (denote_untranslate (S n)
-    (⟦ snd (Dcomb c) ⟧ₜₒ (fst (D (S n) f) (fst x), 1)))) =
-  (fun x => Derive (fun x0 : R => ⟦ c ⟧ₒ (f x0)) (fst x) * snd x).
+    (denote_untranslate n
+    (⟦ snd (Dcomb (stlc_ccc t)) ⟧ₜₒ (fst (D n f) (fst x), 1)))) =
+  (fun x => Derive (fun x0 : R => ⟦ (stlc_ccc t) ⟧ₒ (f x0)) (fst x) * snd x).
 Proof with (simpl in *; eauto).
   intros.
   simp Rel in H. unfold compose in *.
   destruct H as [ex [eq1 eq2]].
-  extensionality x...
-  apply equal_f with x in eq2...
-  (* apply equal_f with x in eq1...
-  apply equal_f with (x, 1) in eq2...
-  rewrite Rplus_0_l in eq2. unfold compose in *.
-  rewrite Rmult_1_r in eq2. *)
+  extensionality x.
+  apply (equal_f eq2).
 Qed.
 
 Theorem reverse_correctness:
-  forall n (c : comb (translate_context (repeat ℝ (S n))) (ℝ))
-    (f : R -> ⟦ translate_context (repeat ℝ (S n)) ⟧ₜ),
+  forall n (t : tm (repeat ℝ n) ℝ)
+    (f : R -> ⟦ translate_context (repeat ℝ n) ⟧ₜ),
+  differentiable n f ->
   (fun x => Vfold_left Rplus 0
-    (denote_untranslate (S n)
-    (⟦ snd (Dcomb c) ⟧ₜₒ (fst (D (S n) f) (fst x), 1)))) =
-  (fun x => Derive (fun x0 : R => ⟦ c ⟧ₒ (f x0)) (fst x) * snd x).
-  (* denote_untranslate (S n) ∘
-    (fun x => ⟦ snd (Dcomb c) ⟧ₜₒ (fst (D _ f) x, 1))
-  = fun x => multi_partials
-    (⟦ c ⟧ₒ ∘ context_eq' n) (context_eq n (f x)). *)
-Proof.
+    (denote_untranslate n
+    (⟦ snd (Dcomb (stlc_ccc t)) ⟧ₜₒ (fst (D n f) (fst x), 1)))) =
+  (fun x => Derive (fun x0 : R => ⟦ stlc_ccc t ⟧ₒ (f x0)) (fst x) * snd x).
+Proof with simpl in *; eauto.
   intros.
   apply Rel_correctness_R.
-  apply fundamental_property.
+  apply fundamental_property...
 Qed.

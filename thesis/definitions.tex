@@ -66,13 +66,16 @@
 \newcommand{\synStar}[0]{\times}
 \newcommand{\synPlus}[0]{{<}\!{+}\!{>}}
 \newcommand{\synFunc}[0]{\Rightarrow}
+\newcommand{\synTens}[2]{!#1\otimes#2}
+\newcommand{\synLin}[0]{\multimap}
 
-\newcommand{\inst}[1]{inst_{#1}}
+\newcommand{\inst}[1]{\text{inst}_{#1}}
+\newcommand{\differentiable}[1]{\text{differentiable}_{#1}}
 \newcommand{\synRepeat}[2]{\texttt{repeat}\ #1\ #2}
 \newcommand{\synConst}[1]{\texttt{const}\ #1}
 
 \newcommand{\evals}[0]{\Downarrow}
-\newcommand{\Fsmooth}[0]{\textit{\~{F}}}
+\newcommand{\Fsmooth}[0]{\tilde{F}}
 
 \newcommand{\D}[0]{\overrightarrow{\mathcal{D}}}
 \newcommand{\Dc}[0]{\D^c}
@@ -96,6 +99,12 @@
 \newcommand{\synCrval}[1]{\texttt{crval}\ #1}
 \newcommand{\synCmplus}[0]{\texttt{cmplus}}
 \newcommand{\synCmrval}[1]{\texttt{cmrval}\ #1}
+\newcommand{\synMempty}[0]{\texttt{mempty}}
+\newcommand{\synMsingleton}[0]{\texttt{msingleton}}
+\newcommand{\synMplus}[0]{\texttt{mplus}}
+\newcommand{\synMfold}[0]{\texttt{mfold}}
+\newcommand{\synEvL}[0]{\texttt{ev\_l}}
+\newcommand{\synCurryL}[1]{\texttt{curry\_l}\ #1}
 
 \newcommand{\cclvar}[0]{\texttt{ccl\_var}}
 \newcommand{\cclapp}[0]{\texttt{ccl\_app}}

@@ -65,8 +65,8 @@ Proof with (simpl in *; eauto).
     specialize IHτ2 with (x r)... }
   { rewrite IHτ1. rewrite IHτ2. destruct x... }
   { fold denote_st.
-    destruct x... apply injective_projections...
-    admit. }
+    destruct x...
+    apply f_equal. extensionality x... }
 Qed.
 
 Lemma denote_plus_O_r : forall τ x,
@@ -86,8 +86,10 @@ Proof with (simpl in *; eauto).
     extensionality r.
     specialize IHτ2 with (x r)... }
   { rewrite IHτ1. rewrite IHτ2. destruct x... }
-  { rewrite app_nil_r... fold denote_st.
-    admit. }
+  { fold denote_st.
+    destruct x...
+    apply f_equal. extensionality x... }
+  { rewrite app_nil_r... }
 Qed.
 
 Lemma denote_O_eq : forall A,
@@ -97,6 +99,7 @@ Proof with (simpl in *; eauto).
   induction A...
   { fold denote_st. extensionality x... }
   { rewrites. }
+  { fold denote_st. apply f_equal... extensionality x... }
 Qed.
 
 Lemma denote_plus_eq : forall A a b,
@@ -106,6 +109,7 @@ Proof with (simpl in *; eauto).
   induction A...
   { fold denote_st. extensionality x... }
   { rewrites. }
+  { fold denote_st. apply f_equal... extensionality x... }
 Qed.
 
 Definition linear_f {τ σ} (f : ⟦ τ ⟧ₛₜ -> ⟦ σ ⟧ₛₜ) : Prop
@@ -124,8 +128,9 @@ Proof with (simpl in *; eauto).
     split.
     { split; rewrites. }
     { split...
-      { rewrite eq11. rewrite eq21'.
-        rewrite eq11'... }
+      { rewrite eq11.
+        rewrite <- eq11'.
+        rewrite <- eq21'... }
       { intros.
         rewrite <- eq12'...
         rewrite <- eq22'...
@@ -135,7 +140,7 @@ Proof with (simpl in *; eauto).
     split.
     { split; rewrites. }
     { split...
-      { rewrite eq11'. rewrite eq21'... }
+      { rewrite <- eq21'. rewrite <- eq11'...  }
       { intros.
         rewrite <- eq12'...
         rewrite <- eq22'... } } }
@@ -227,7 +232,8 @@ Proof with (simpl in *; eauto).
             or something akin to that.
             Might be caused by trying to prove the wrong thing. *)
           admit. }
-        { extensionality y.
+        { apply f_equal.
+          extensionality y.
           destruct IHc as [_ [eq21 eq22]]...
         (* Approximately the same issue as above, but now with 2 additional
             variables instead of one.

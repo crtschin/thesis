@@ -48,10 +48,6 @@ Inductive target : s_ty -> s_ty -> Type :=
   | t_ev_l : forall {A B}, target ((A s⊸ B) s× A) B
   | t_curry_l : forall {A B C},
     target (A s× B) C -> target A (B s⊸ C)
-  | t_exl_l : forall {A B},
-    target (A s⊗ B) A
-  | t_exr_l : forall {A B},
-    target (A s⊗ B) B
 
   (* Maps *)
   | t_mempty : forall {τ σ},

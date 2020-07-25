@@ -1,7 +1,6 @@
 \RequirePackage{mathtools}
 \RequirePackage{array,booktabs,ragged2e}
 \RequirePackage[english]{babel}
-\RequirePackage[utf8]{inputenc}
 \RequirePackage{xfrac}
 \RequirePackage{enumitem}
 \RequirePackage{graphicx}
@@ -21,7 +20,8 @@
 \RequirePackage[justification=centering]{caption}
 \RequirePackage{subcaption}
 \RequirePackage{csquotes}
-\RequirePackage[margin=1.5in]{geometry}
+\RequirePackage{lmodern}
+\RequirePackage[a4paper,margin=1in]{geometry}
 \RequirePackage{etoolbox}
 \RequirePackage{showkeys}
 \RequirePackage[
@@ -30,12 +30,12 @@
   citestyle=ieee,
   sorting=ynt,
   hyperref=true,
-  backref=true
+  backref=true,
+  dashed=false
 ]{biblatex}
 % \RequirePackage[hidelinks]{hyperref}
 \RequirePackage[hidelinks]{hyperref}
 \RequirePackage{cleveref}
-\RequirePackage{fontspec}
 \RequirePackage{tcolorbox}
 \setmonofont{Inconsolata}[Scale=MatchLowercase]
 \RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}

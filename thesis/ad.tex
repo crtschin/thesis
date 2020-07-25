@@ -28,7 +28,7 @@ We can also see that it follows the chain rule for function composition.
   f(g(x + x' \epsilon)) &= f(g(x) + g'(x)x'\epsilon)) \\
     &= f(g(x)) + f'(g(x))g'(x)x'\epsilon
 \end{align*}
-Using this, we can essentially calculate the derivative of any derivable function by interpreting any non-dual number $x$ as its dual number counterpart of either $x + 1\epsilon$ or $x + 0\epsilon$. We interpret constant values as $x + 0\epsilon$, while input variables we take the partial derivative of are interpreted as $x + 1\epsilon$.
+Using this, we can essentially calculate the derivative of any differentiable function by interpreting any non-dual number $x$ as its dual number counterpart of either $x + 1\epsilon$ or $x + 0\epsilon$. We interpret constant values as $x + 0\epsilon$, while input variables we take the partial derivative of are interpreted as $x + 1\epsilon$.
 
 To give a more elaborate example of how this works in forward-mode AD, take the function $f(x, y) = x^2 + (x - y)$ as an example.
 The dependencies between the terms and operations of the function is visible in the computational graph in \cref{fig:func_trace}.
@@ -73,12 +73,22 @@ Like the forward-mode variant, a primal trace is needed.
 This first pass functions to determine the intermediate variables and their respective dependencies.
 The second pass in the algorithm calculates the partial-derivatives by working backwards from the output using the adjoints, also called the adjoint trace.
 When variables are used multiple times, also called fan-out, their adjoints are added in the adjoint trace.
-% TODO: Mention something about define-then-run/define-by-run and how they work with regards to strategy.
-% Tape recording using operator overloading/specialized semantics
 
 The optimal choice between automatic differentiation variant is heavily dependent on the specific function being differentiated.
 Preference is given for forward-mode AD when the number of output variables exceeds the number of input variables, as it has to be rerun for each partial derivative of the function.
 On the other hand, as reverse-mode AD works backwards, the reverse-pass needs to be redone for each output variable.
 In machine learning research, reverse-mode AD is generally preferred as the objective functions generally contain a small number of output variables.
 
-% TODO: Mention something about Eliott's categorical approach and its possible extension to a macro on combinators.
+While implementing forward-mode AD algorithms is very straightforward, reverse-mode AD is more problematic.
+Correctly creating the reverse pass such that it handles both fan-out and zeroing in the reverse pass is difficult.
+As such, many frameworks targeting non-theoretical applications such as deep learning focus on imperative languages, which eases the process due to the additional concept of state.
+
+There are two main styles to implementing reverse-mode AD, namely define-then-run and define-by-run.
+Define-then-run attempts to create the static computational graph during the compilation process that transforms the program to one that calculates the derivative of the function the program describes.
+One significant benefit to this approach is added possibility to apply optimization steps in the compilation process.
+This does currently, however, have the restriction that programs defined within these frameworks are limited in flexibility of control flow.
+
+This restriction is lifted in the define-by-run style, which builds the computational graph during runtime.
+As such conditionals and loops can now be used freely in the framework.
+On the other hand, due to the graph being constructed during runtime, define-by-run frameworks can be slower due to the missing opportunity to apply optimizations.
+Frameworks using this style are Chainer\fancyfootnote{https://chainer.org/} and PyTorch\fancyfootnote{https://pytorch.org/}

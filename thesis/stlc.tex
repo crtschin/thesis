@@ -122,7 +122,7 @@
   Due to the intrinsic nature of our language representation, the macro also needs to be applied to both the types and typing context to ensure that the terms remain well-typed.
   In other words, for any well-typed term $\Gamma \vdash t : \tau$, applying the forward-mode macro results in a well-typed term in the macro-expanded context, $\D(\Gamma) \vdash \D(t) : \D(\tau)$.
 
-  \begin{figure}[H]
+  \begin{figure}
     \centering
     \begin{equation*}
       \begin{split}
@@ -269,45 +269,49 @@
 
   \begin{definition}(Logical relation)
     Denotation functions $f$ and their corresponding derivatives $g$ are inductively defined on the structure of our types such that they follow the relation
-    \begin{equation}
+    \begin{equation*}
       S_\tau(f, g) =
         \left\{
           \begin{array}{ll}
             smooth\ f \wedge
               g = \lambda x. (f(x), \frac{\partial f}{\partial x}(x))
-              & : \tau = R \\
+              & : \tau = \synR \\
             \exists f_1, f_2, g_1, g_2,
-              & : \tau = \sigma \times \rho \\
+              & : \tau = \sigma \synStar \rho \\
               \;\;\;\;S_\sigma(f_1, f_2), S_\sigma(g_1, g_2). \\
               \;\;\;\;f = \lambda x. (f_1(x), g_1(x)) \wedge \\
               \;\;\;\;g = \lambda x. (f_2(x), g_2(x)) \\
             \forall f_1, f_2.
-              & : \tau = \sigma \rightarrow \rho \\
+              & : \tau = \sigma \synFunc \rho \\
               \;\;\;\;S_\sigma(f_1, f_2) \Rightarrow \\
               \;\;\;\;S_\rho(\lambda x. f(x)(f_1(x)),\lambda x. f(x)(f_2(x)))
           \end{array}
         \right.
     \label{eqn:lr_base}
-    \end{equation}
+    \end{equation*}
   \end{definition}
 
   The next step involves proving that syntactically well-typed terms are semantically correct.
-  In other words, the relation needs to be proven valid for any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \tau$ and argument function $f : \denR \rightarrow \denR^n$ such that $S_\tau(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f)$.
+  In other words, the relation needs to be proven valid for any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and argument function $f : \denR \rightarrow \denR^n$ such that $S_\tau(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f)$.
+  This is also known as the fundamental property of the logical relation given in \cref{eqn:lr_base}.
   To properly instantiate the arguments to the denotation of the macro-applied term, an auxiliary function is needed that pairs each constant with their derivative $0$. So it transforms the argument function $f : \denR \rightarrow \llbracket \synR^n \rrbracket$ into one that supplies both the original input value and its accompanying derivative.
   The full type signature of this auxiliary function is $\D_n : (\denR \rightarrow \llbracket \synR^n \rrbracket) \rightarrow \denR \rightarrow \llbracket \D(\synR)^n \rrbracket$. Note that $\tau^n$ is used as syntactic sugar for $\synRepeat{\tau}{n}$ and is simply a typing context consisting of the type $\tau$ repeated $n$ times.
 
-  \begin{equation}
-    \D_n(f, x) =
-      \left\{
-        \begin{array}{ll}
-          f(x) & : n = 0 \\
-          ((hd \circ f)(x), \frac{\partial{(hd \circ f)}}{\partial{x}}(x)) :: \D_{n'}(tl \circ f, x) & : n = n' + 1 \\
-        \end{array}
-      \right.
-  \label{eqn:argument_df}
-  \end{equation}
+  \begin{definition}[Initialization of dual number representations]
+    For any $n$-length argument function $f : \denR \rightarrow \llbracket \synR^n \rrbracket$, couple each argument with its corresponding tangent such that the resulting transformed function becomes $\D_n(f, x) : \denR \rightarrow \llbracket \D(\synR)^n \rrbracket$. This can be defined as the following higher-order function:
+    \begin{equation*}
+      \D_n(f, x) =
+        \left\{
+          \begin{array}{ll}
+            f(x) & : n = 0 \\
+            ((hd \circ f)(x), \frac{\partial{(hd \circ f)}}{\partial{x}}(x)) :: \D_{n'}(tl \circ f, x) & : n = n' + 1 \\
+          \end{array}
+        \right.
+    \label{eqn:argument_df}
+    \end{equation*}
+  \end{definition}
 
-  Proving this statement directly by induction on the typing derivation, however, does not work.
+  Proving this fundamental property directly by induction on the typing derivation, however, does not work.
   As expected in a logical relations proof, the indicative issue lies in both the case for applications and abstractions.
   To make this work, the correctness statement needs to be generalized to arbitrary contexts and implicitly, substitutions.
   If this were a syntactic proof, one would need to show that the relation is preserved when applying substitutions consisting of arbitrary terms, possibly containing higher-order constructs.
@@ -323,14 +327,14 @@
   \begin{definition}(Instantiation)
     Instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ are inductively defined such that they follow
     \begin{equation}
-      inst_\Gamma(f, g) =
+      \inst{\Gamma}(f, g) =
         \left\{
           \begin{array}{ll}
             f = (\lambda x. \denNil) \wedge g = (\lambda x. \denNil)
               & : \Gamma = \denNil \\
             \forall f_1, f_2, g_1, g_2.
               & : \Gamma = (\tau :: \Gamma') \\
-              \;\;inst_{\Gamma'}(f_1, g_1) \wedge S_\tau(f_2, g_2) \\
+              \;\;\inst{\Gamma'}(f_1, g_1) \wedge S_\tau(f_2, g_2) \\
               \;\;\;\; \to f = (\lambda x. f_2(x) :: f_1(x)) \wedge \\
               \;\;\;\;\;\; g = (\lambda x. g_2(x) :: g_1(x))
           \end{array}
@@ -341,35 +345,55 @@
 
   Using this notion of instantiations we can now formulate our fundamental lemma. Informally, this states that given correct instantiation functions any well-typed term is semantically correct with respect to the logical relation.
 
-  \begin{lemma}[Fundamental]\label{thm:fundamental_lemma}
-    For any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $inst_\Gamma(s, s_D)$, we have that $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
+  \begin{lemma}[Fundamental lemma]\label{thm:fundamental_lemma}
+    For any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $\inst{\Gamma}(s, s_D)$, we have that $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
   \end{lemma}
 
   % \input{proof_base.tex}
 
   \begin{proof}
     This is proven by induction on the typing derivation of the well-typed term $t$. The majority of cases follow from the induction hypothesis.
-    The case for \<var> follows from $inst$ which ensures that any term referenced is semantically well-typed with respect to the relation.
+    The case for \<var> follows from $\inst{}$ which ensures that any term referenced is semantically well-typed with respect to the relation.
     Proving the cases used to encode the operators on reals such as \<add> and \<mul> involve proving both smoothness and giving the witness of the derivative.
   \end{proof}
 
   We can derive the fundamental property of the base logical relation directly from the fundamental lemma.
-  This involves proving the prerequisite $inst$ we used previously.
-  Note that the correctness of both the macro and the fundamental property is dependent on the requirement that the denotations supplied by the argument function are smooth.
+  This involves proving the prerequisite $\inst{}$ we used previously.
+  Note that the correctness of both the macro and the fundamental property is dependent on the requirement that the denotations supplied by the argument functions are differentiable.
+  We formulate this requirement as \cref{thm:differentiable}.
+
+  \begin{definition}\label{thm:differentiable}
+    Any argument function $f : \denR \rightarrow \llbracket \synR^n \rrbracket$ with arity $n$, is inductively constructed such that it follows the following proposition.
+    \begin{equation}
+      \differentiable{n}(f) =
+        \left\{
+          \begin{array}{ll}
+            \differentiable{0}(\lambda x. [])
+              & : n = 0 \\
+            \forall g, h.
+              \differentiable{n'}(g) \rightarrow
+              & : n = n' + 1 \\
+              \;\;\;\;\;\;smooth\ h \rightarrow \\
+              \;\;\;\;\;\;f = (\lambda x. h(x) :: g(x))
+          \end{array}
+        \right.
+    \label{eqn:differentiable_base}
+    \end{equation}
+  \end{definition}
 
   \begin{corollary}[Fundamental property]\label{thm:fundamental_property}
-    For any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : \denR \to \denR^n$, we have that $S_\tau(\llbracket t\rrbracket \circ f, \llbracket \D(t)\rrbracket \circ \D_n \circ f)$.
+    For any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : \denR \to \denR^n$ that follows $\differentiable{n}(f)$, we have that $S_\tau(\llbracket t\rrbracket \circ f, \llbracket \D(t)\rrbracket \circ \D_n \circ f)$.
   \end{corollary}
 
   \begin{proof}
-    This follows from the fundamental lemma. We lastly need to prove $\inst{(\synRepeat{\synR}{n})}$.
+    This follows from the fundamental lemma. We lastly need to prove $\inst{\synR^n}$.
     This is proven by induction on $n$.
     If $n = 0$, the goal is trivial due to the argument function $f$ being extensionally equal to $\synConst{[]}$, which directly corresponds to $\inst{[]}$.
     The induction step is proven by both the induction hypothesis and the assumption that the denotations of the arguments supplied are smooth.
   \end{proof}
 
   \begin{theorem}[Macro correctness]\label{thm:macro_correctness}
-    For any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : \denR \rightarrow \denR^n$, we have that $\llbracket \D(t) \rrbracket \circ \D_n \circ f = \lambda x. (\llbracket t \rrbracket \circ f, \sfrac{\partial{(\llbracket t \rrbracket \circ f)}}{\partial{x}})$.
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, $\llbracket\D(t)\rrbracket$ gives the dual number representation of $\llbracket t \rrbracket$, such that for any argument function $f : \denR \rightarrow \denR^n$ that follows $\differentiable{n}(f)$, we have that $\llbracket \D(t) \rrbracket \circ \D_n \circ f = \lambda x. (\llbracket t \rrbracket \circ f, \sfrac{\partial{(\llbracket t \rrbracket \circ f)}}{\partial{x}})$.
   \end{theorem}
 
   \begin{proof}

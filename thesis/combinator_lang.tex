@@ -1,4 +1,4 @@
-\subsubsection{Core Combinator Language}\label{sec:combinator-core}
+\subsection{Core Combinator Language}\label{sec:combinator-core}
   A well-known fact is the connection between CCC and simply-typed lambda calculi\cite{10.1007/3-540-15198-2_10}.
   We can define a simple core combinator language inspired by the various categorical laws related to CCC.
   The requirement for a combinator language to be able to do reverse-mode AD comes from the need to make explicit, the contraction and weakening rules usually kept implicit in the typing contexts of typed lambda calculi.
@@ -90,17 +90,18 @@
   \end{figure}
 
   Using the same technique as Curien\cite{10.1007/3-540-15198-2_10}, we make use of an auxiliary language to smoothen the process.
-  This auxiliary language, the typed categorical combinatory logic \textit{(CCL)} will contain terms related to both the combinator language and the simply-typed lambda calculus, such as variable access, function application and function abstraction.
-  While this CCL can be used to facilitate both back and forth translations, we will only describe the translation from the combinator language to the simply-typed lambda calculus.
+  This auxiliary language, the typed categorical combinatory logic \textit{(CCL)}, will contain terms related to both the combinator language and the simply-typed lambda calculus.
+  So it will also include usage of a typing context and related constructs such as variable access and function abstraction.
+  While this CCL can be used to facilitate both back and forth translations, we will restrict our focus to only translating from the combinator language to the simply-typed lambda calculus.
 
-  The \cclenv combinator in CCL is most notable.
+  The \cclenv{} combinator in CCL is most notable.
   In essence we transition each type in the typing context to become an additional argument in the resulting function type.
-  Repeated usage of this specific combinator makes from the previously open term, a closed one.
+  Repeated usage of this specific combinator turns any previously open term into a closed one.
 
   \begin{figure}[]
     \centering
     \begin{minted}{coq}
-      Inductive ccl (~$\Gamma$~ : Ctx) : ty ~$\rightarrow$~ Type :=
+    Inductive ccl (~$\Gamma$~ : Ctx) : ty ~$\rightarrow$~ Type :=
       (* Variables *)
       | ccl_var : forall ~$\tau$~,
         ~$\tau$~ ~$\in$~ ~$\Gamma$~ ~$\rightarrow$~ ccl ~$\tau$~
@@ -136,10 +137,10 @@
     \label{fig:combinator_ccl_lang}
   \end{figure}
 
-  The intrinsic representation we use in our definitions makes defining the exact translations a breeze as it then simply becomes an exercise in type-directed programming.
+  The intrinsic representation we use in our definitions makes defining the exact translations a breeze as it then becomes an exercise in type-directed programming.
   The simply-typed lambda calculus to CCL translation specifically is straightforward, as the CCL language still has access to a typing context.
-  Abstraction, where the argument type is added onto the typing context, is handled by the \cclenv construct.
-  In cases where a value is introduced such as \<var>, \<rval> and \<mrval>, we make use of the \cclconst construct to ensure the term fits the type signature.
+  We translate abstractions, where the argument type is added onto the typing context, using the \cclenv{} construct.
+  In cases where we introduce new values, we make use of the \cclconst{} construct to ensure the terms fit the type signature.
   Note that an additional domain type of $\synUnit$ is added in the type signature of the translation function to accommodate the combinator-heavy auxiliary language.
   This translation is shown in \cref{lst:combinator_stlc_to_ccl}.
 

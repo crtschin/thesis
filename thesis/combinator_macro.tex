@@ -1,4 +1,4 @@
-\subsubsection{Defining the Macro and Target Language}\label{sec:combinator-macro}
+\subsection{Defining the Macro and Target Language}\label{sec:combinator-macro}
   The reverse-mode macro we will discuss in this chapter, like the forward-mode macro splits any type $\tau$ into tuples $(\tau_1, \tau_2)$, where $\tau_1$ and $\tau_2$ represent, respectively, primal and tangent values.
   As expected, for $\tau_1$ the macro essentially preserves the behavior expected of any of the combinators.
   The intuition what happens with reverse-mode AD gives a hint to what $\tau_2$.
@@ -45,7 +45,7 @@
           \synCurry{ \\
             (\synSeq{\langle
               \synSeq{\langle \synSeq{\synExl}{\synExl}, \synExr \rangle}{\synEv}, & : \tau = \sigma \synFunc \rho \\
-              \;\;\;\synSeq{\langle \synSeq{\synExl}{\synExr}, \synExr \rangle}{\synEv} \rangle}{\synPlus_\rho})} \\
+              \;\;\;\synSeq{\langle \synSeq{\synExl}{\synExr}, \synExr \rangle}{\synEv} \rangle}{\synP_\rho})} \\
         \end{array}
       \right.
   \end{align*}
@@ -54,20 +54,126 @@
   With function types, both left and right input functions need to be evaluated separately before they can be combined.
 
   We can reuse the same reasoning we used to derive how the combinators should be transformed for reverse-mode, to define the macro on the function types.
-  This reasoning leads to the incomplete and incorrect definition of
-  \begin{equation}
-    \Drev(\tau \synFunc \sigma) = (fst(\Drev(\tau)) \synFunc (fst(\Drev(\sigma)) \synStar (snd(\Drev(\sigma)) \synFunc snd(\Drev(\tau)))), ?)
-  \end{equation}
+  This reasoning leads to the incomplete definition of
+  \begin{multline}
+    \Drev(\tau \synFunc \sigma) = (fst(\Drev(\tau)) \synFunc (fst(\Drev(\sigma)) \synStar (snd(\Drev(\sigma)) \synFunc snd(\Drev(\tau)))),
+      \\ fst(\Drev(\tau)) \synStar snd (\Drev(\sigma)))
+    \label{eqn:combinator_d_incorrect}
+  \end{multline}
   % TODO: Explain faulty use of products as tangent values.
-  In a sense, the tangent value at function types needs to keep track of the possibly incomplete adjoints currently calculated as these can be combined with other adjoints down the line.
+  In a sense, the tangent value at function types keeps track of the possibly incomplete adjoints currently calculated, as these can be combined with other adjoints down the line.
   Remember that in reverse-mode AD, the problem of fan-out involves combining each usage of a variable in the reverse pass.
   We solved the issue of combining variable usages using the $\synP$ combinator, but still have to find something to keep track of which terms to combine.
 
+  In \cref{eqn:combinator_d_incorrect}, we attempt to keep track of the adjoints using product types, which are easily combined using $\synP$.
+  This, however, does not ensure that the linear properties of both $(\synO, \synP)$ are preserved.
+  Indeed, for any program consisting of combinators such that it has type $(\comb{\tau}{\synR})$, if $\llbracket \synO_\tau \rrbracket$ is given as input in the denotational sense, the resulting program should correspond to $0$.
+  In other words, we need to establish that the denotations of our combinators are linear with respect to both $(\synO, \synP)$.
+
   % TODO: Introduce need for linear types
-  \Vakar{} pose the usage of a limited variant of linear types as the target of the reverse-mode macro\cite{vkr2020reverse}.
-  They include both linear function types, $\multimap$, and tensor products, $! (-) \otimes (-)$.
+  \Vakar{} poses the usage of an auxiliary target language with a limited variant of linear types as the result of evaluating the reverse-mode macro\cite{vkr2020reverse}.
+  The linear types used include both linear function types, $\synLin$, and tensor products, $\synTens{(-)}{(-)}$.
+  This target language would be almost identical to the source combinator language described in \cref{sec:combinator-core}.
+  The added types and terms included are shown in \cref{fig:combinator_linear}.
 
+  % | exl_l : forall A B,
+  %   target (~$\synTens{A}{B}$~) A
+  % | exr_l : forall A B,
+  %   target (~$\synTens{A}{B}$~) B
 
+  \begin{figure}
+    \centering
+    \begin{minted}{coq}
+      Inductive ty : Type :=
+        ...
+        | ~$\synTens{\_}{\_}$~ : ty ~$\rightarrow$~ ty ~$\rightarrow$~ ty
+        | ~$\synLin$~  : ty ~$\rightarrow$~ ty ~$\rightarrow$~ ty
+      .
+      Inductive target : ty ~$\rightarrow$~ ty ~$\rightarrow$~ Type :=
+        ...
+        (* Linear *)
+        | ev_l : forall A B, target ((A ~$\synLin$~ B) ~$\synStar$~ A) B
+        | curry_l : forall A B C,
+          target (A ~$\synStar$~ B) C ~$\rightarrow$~ target A (B ~$\synLin$~ C)
+        (* Tensor *)
+        | mempty : forall ~$A$~ ~$B$~,
+        target ~$\synUnit$~ (~$\synTens{A}{B}$~)
+        | msingleton : forall ~$A$~ ~$B$~,
+          target (~$A$~ ~$\synStar$~ ~$B$~) (~$\synTens{A}{B}$~)
+        | mplus : forall ~$A$~ ~$B$~,
+          target ((~$\synTens{A}{B}$~) ~$\synStar$~ (~$\synTens{A}{B}$~)) (~$\synTens{A}{B}$~)
+        | mfold : forall ~$A$~ ~$B$~ ~$C$~,
+          target (~$\synTens{A}{B}$~ ~$\synStar$~ (~$A$~ ~$\synStar$~ ~$B$~ ~$\synLin$~ ~$C$~)) ~$C$~
+      .
+    \end{minted}
+    \caption{}
+    \label{fig:combinator_linear}
+  \end{figure}
+
+  Because we extended the target language with both linear functions and tensor products, we also have to extend both $(\synO, \synP)$ with these types.
+  \begin{align*}
+    \synO_\tau &=
+      \left\{
+        \begin{array}{ll}
+          \dots \\
+          \synCurryL{(\synSeq{\synExl}{\synO})} & : \tau = \sigma \synFunc \rho \\
+          \synMempty & : \tau = \synTens{\sigma}{\rho} \\
+        \end{array}
+      \right. \\
+    \synP_\tau &=
+      \left\{
+        \begin{array}{ll}
+          \dots \\
+          \synCurryL{ \\
+            (\synSeq{\langle
+              \synSeq{\langle \synSeq{\synExl}{\synExl}, \synExr \rangle}{\synEvL}, & : \tau = \sigma \synFunc \rho \\
+              \;\;\;\synSeq{\langle \synSeq{\synExl}{\synExr}, \synExr \rangle}{\synEvL} \rangle}{\synP_\rho})} \\
+          \synMplus & : \tau = \synTens{\sigma}{\rho} \\
+        \end{array}
+      \right.
+  \end{align*}
+
+  Using these additional constructs, we can finally define the macro as shown in \cref{fig:macro_combinator}.
+  Note the usages of the $(\synO, \synP)$ combinators.
+  While $\synO$ is used to explicitly zero out the unused terms in both \<exl> and \<exr>, $\synP$ is used to recombine terms in \<dupl>.
+
+  \begin{figure}
+    \centering
+    \begin{gather*}
+      \begin{multlined}
+        \Drev(\tau \synFunc \sigma) =
+          (fst(\Drev(\tau)) \synFunc
+            (fst(\Drev(\sigma)) \synStar
+              (snd(\Drev(\sigma)) \synLin snd(\Drev(\tau)))),
+          \\ \synTens{fst(\Drev(\tau))}{snd(\Drev(\sigma))})
+      \end{multlined} \\
+      \begin{aligned}
+        \Drev(\synId) &= (\synId, \synExr) \\
+        \Drev(\synSeq{t_1}{t_2}) &= (\synSeq{d_1}{d_2},
+        (\synSeq{\synSeq{\synSeq{\synCross{\synDupl}{\synId}}{assoc1}}{
+          \\&\;\;\; (\synCross{\synId}{(\synCross{d_1}{\synId})})}}{
+          (\synCross{\synId}{(\synSeq{d_2'}{d_1'})})})) \\
+        \Drev(\synCross{t_1}{t_2}) &= (\synCross{d_1}{d_2},
+          \synSeq{assoc1}{
+            \synSeq{\synCross{\synId}{(
+              \synSeq{assoc2}{
+                \synSeq{\\&\;\;\;(\synCross{sym}{\synId})}{assoc1}})}}{
+                  \synSeq{assoc2}{\synCross{d_1'}{d_2'}}}}) \\
+        \Drev(\synNeg) &= (\synNeg, \synSeq{\synExr}{\synO}) \\
+        \Drev(\synExl) &= (\synExl, \synSeq{\synDupl}{\synCross{\synExr}{(\synNeg ;; \synO)}}) \\
+        \Drev(\synExr) &= (\synExr, \synSeq{\synDupl}{\synCross{(\synNeg ;; \synO)}{\synExr}}) \\
+        \Drev(\synDupl) &= (\synDupl, \synSeq{\synExr}{\synP}) \\
+        \Drev(\synEv) &= (\synSeq{\synEv}{\synExl}, \langle \synSeq{\langle \synSeq{\synExl}{\synExr}, \synExr \rangle}{\synMsingleton},
+          \\&\;\;\; \synSeq{\synCross{(\synSeq{\synEv}{
+            \synSeq{\synExr}{\synCurry{\synEvL}}})}{\synId}}{\synEv} \rangle) \\
+        \Drev(\synCurry{t}) &= (\synCurry (\langle d, \synSeq{\synCurry{d'}}{\synExr} \rangle),
+        \\&\;\;\; \synSeq{\synCross{\synId}{(\synSeq{\langle \synId, \synSeq{\synNeg}{\synCurry{\synExr}}\rangle}{\synMfold})}}
+          {\synSeq{assoc2}{\synSeq{d'}{\synExl}}})
+      \end{aligned}
+    \end{gather*}
+    \caption{Macro on the combinator language}
+    \label{fig:macro_combinator}
+  \end{figure}
 
   % These lead to the monoidal operations $\Gamma \vdash \synO : \tau$ and $\Gamma \vdash t_1 \synP t_2 : \tau$, where $\Gamma \vdash t_1, t_2 : \tau$.
   % Ensuring the higher-order types respect $(\synO, \synP)$ requires the usage of minimal linear types.

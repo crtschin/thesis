@@ -2,21 +2,37 @@
   % TODO: Mention something about Shaikhha, et al.'s system of optimizations and how this is able to let the performance of forward-mode AD approach reverse-mode levels.
   % TODO: Mention that we implemented what are known as pull arrays
   Automatic differentiation is rarely done on mono-valued real numbers, due to the massive computational power available on GPUs in the form of array operations.
-  So the next extension worth considering in our language are the array types.
-  To be more specific, we will be considering the pull-array formulation presented by Shaikhha, et al.\cite{Shaikha2019}.
+  So the next extension worth considering in our language are array types.
+  To be more specific, we will be considering the pull array formulation used by Shaikhha, et al.\cite{Shaikha2019}.
 
-  This final iteration of our simply-typed lambda calculus differs from the \Fsmooth{} language given by Shaikha, et al. only superficially.
-  We can define both their \<ifold> and \<let> constructs as syntactic sugar:
+  Pull-arrays are a well-known formulation which lends itself well to deforestation\cite{10.1145/165180.165214}.
+  The most significant element of this concept is to encode arrays as functions, which in some cases can be composed with other similarly encoded arrays.
+  The two operations we will be focussing on are \<build> and \<get>.
+  Note that $Ix$ represents some arity type which should correspond to the arity of the arrays the operations are used on.
+  \begin{gather*}
+    \begin{aligned}
+      \text{build} &: (Ix \rightarrow A) \rightarrow [A] \\
+      \text{get} &: Ix \rightarrow [A] \rightarrow A
+    \end{aligned} \\
+    \text{get}\ i\ (\text{build}\ f) \equiv f(i)
+  \end{gather*}
+
+  This formulation is straightforward to encode in the intrinsic representation, as shown in \cref{lst:tm_array}.
+  We are able to omit much of their cardinality and indexing type-level considerations due to our shallow embedding of pull-arrays into the existing types in \<Coq>.
+  The well-typed nature of our representation allows us to avoid much of the hairy details associated with bounds checking for both indexing and array creation.
+  To accomplish this, we use the \<Fin> inductive datatype which is indexed by an upper-bound and represents for some $n$, the range $[1..n]$.
+
+  The final iteration of our simply-typed lambda calculus including the array types is an expansion of the $\Fsmooth$ language by Shaikha, et al. as ours also includes sum types.
+  We can define the missing \<ifold> and \<let> constructs as syntactic sugar using the primitive recursion terms we added in \cref{sec:sum_prim}.
+  Note that due to our nameless representation, \<let> terms lose much of their original usefulness in writing programs.
   \begin{gather*}
     \letin{e}{t} \equiv \app{(\abs{t})}{e} \\
     \ifold{f}{n}{d} \equiv
     \nrec{(\app{(\abs{(\app{f}{(\nsucc{(\var{\Top})})})})}{(\nval{0})})}{n}{d}
   \end{gather*}
-  Note that due to our nameless representation, \<let> terms lose much of their original usefulness in writing programs.
-  Nonetheless, we included it to help formulate some of the program optimizations used in the final system.
-  We also omit much of their cardinality and indexing constructions due to our shallow embedding of arrays.
-  The well-typed nature of our representation allows us to avoid much of the hairy details associated with bounds checking both indexing and array creation.
-  To accomplish this, we use the \<Fin> inductive datatype which is indexed by an upper-bound and represents for some $n$, the range $[1..n]$.
+
+  % TODO: decide if the let rules should be included
+  % Nonetheless, we included it to help formulate some of the program optimizations used in the final system.
 
   \begin{figure}
     \begin{mathpar}
@@ -39,6 +55,7 @@
         (* Arrays *)
         | build : ~forall n \tau (f : $\Fin{n}$ $\rightarrow$ $\tm{\Gamma}{\tau}$), tm $\Gamma$ $(\Array{n}{\tau})$~
         | get : ~forall n \tau (i : $\Fin{n}$), tm $\Gamma$ $(\Array{n}{\tau})$ $\to$ tm $\Gamma$ $\tau$~
+      .
     \end{minted}
     \caption{The terms related to array types included in our language}
     \label{lst:tm_array}
@@ -50,46 +67,47 @@
 
   \begin{figure}
     \centering
-    \begin{equation*}
-      \begin{split}
+    \begin{align*}
+        &\cdots \\
         \D(\Array{n}{R}) &= \Array{n}{\D(R)} \\
         \D(\build{n}{f}) &= \build{n}{(\D \circ f)} \\
         \D(\get{i}{t}) &= \get{i}{\D(t)}
-      \end{split}
-    \end{equation*}
+    \end{align*}
     \caption{Macro on array construction and indexing terms}
     \label{eqn:macro_array}
   \end{figure}
 
   Similarly for denotations, the denotation function, instantiated to the correct type, has to be passed along to an auxiliary function that builds up a vector of denotation terms.
   Appropriately, array types will denotate to vectors indexed by length.
+  In \cref{fig:denotation_array} we formulate this as $\text{vector}(n, T)$, where $n$ indicates the length of the vector and $T$ is the contained type.
   There is some additional boilerplate necessary to circumvent the structurally recursive requirement imposed by the \<Coq> type checker.
   Note that in the definition of $vect$, the $Fin$ and $nat$ types are treated interchangeably, where $\Fin{n}$ is treated as the type level integer corresponding to a $n : \denN$.
-  So every $n : \denN$ is transformed to $1$ in the corresponding $\Fin{n}$, and any $i : \Fin{n}$ is transformed to $n$.
+  So every $n : \denN$ is transformed to $1 : \Fin{n}$, and any $i : \Fin{n}$ is transformed to $n : \denN$.
 
   \begin{figure}
     \begin{gather*}
       \begin{aligned}
-      \llbracket \Array{n}{\tau} \rrbracket &=
-        vector(n, \llbracket \tau \rrbracket) \\
-      \llbracket \build{n}{f} \rrbracket &=
-        \lambda x.
-        vect(n, \llbracket \rrbracket \circ f, x) \\
-      \llbracket \get{i}{t} \rrbracket &=
-        \lambda x. \denGet{\llbracket t \rrbracket(x)}{i} \\
-      \end{aligned}\\ \\
+        &\cdots \\
+        \llbracket \Array{n}{\tau} \rrbracket &=
+          \text{vector}(n, \llbracket \tau \rrbracket) \\
+        \llbracket \build{n}{f} \rrbracket &=
+          \lambda x.
+          \text{vect}(n, \llbracket \rrbracket \circ f, x) \\
+        \llbracket \get{i}{t} \rrbracket &=
+          \lambda x. \denGet{\llbracket t \rrbracket(x)}{i} \\
+      \end{aligned} \\
       \begin{aligned}
-      vect(i, f, x) &=
+      \text{vect}(i, f, x) &=
         \begin{cases}
           \denNil
             &: i = 0 \\
-          \denCons{f(i)(x)}{vect(i', \lambda j. f(j + 1), x)}
+          \denCons{f(i)(x)}{\text{vect}(i', \lambda j. f(j + 1), x)}
             &: i = i' + 1
         \end{cases}
       \end{aligned}
     \end{gather*}
     \caption{Denotations of the array construction and indexing terms}
-    \label{eqn:denotation_array}
+    \label{fig:denotation_array}
   \end{figure}
 
   The logical relation for array types needs to exhibit the same behavior with respect to both construction and indexing in how it preserves the relation on subterms.
@@ -100,6 +118,7 @@
     S_\tau(f, g) =
       \left\{
         \begin{array}{ll}
+          \dots \\
           \forall i. \exists f_1, g_1.
             & : \tau = \Array{n}{\sigma} \\
           \;\;S_\sigma(f_1, g_1) \wedge \\

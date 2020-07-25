@@ -1,10 +1,15 @@
-\subsection{Formalizing Continuation-Based AD}\label{sec:continuation-base}
+  Huot, Staton and \Vakar{} showed the versatility of their denotational semantics on a continuation-based AD algorithm, whose origin can be traced back to an description given by Karczmarczuk\cite{KarczmarczukLazyTimeReversal}.
+  While this algorithm does calculate gradients, it is not a true reverse-mode AD algorithm as the final computation graph differs from what would be expected of reverse-mode AD\cite{PearlmutterSiskind2008}.
+  The consequence of which is the excess usage of primitive operations.
+  Nonetheless, it is useful to give a formal proof of correctness of this algorithm in terms of what we have already established, to show the versatility of the proof technique used, and by extension, our simple set-theoretic denotational semantics.
+  This is done in \cref{sec:continuation-base}.
+
   The guiding principle in this algorithm is to build up the reverse pass as a continuation using a structure preserving macro on the program syntax.
   Like the forward-mode macro $\D$, the continuation-based macro $\Dc$ is structure preserving and works with tuples at ground type $\synR$.
   But unlike the forward-mode macro, which uses these tuples to represent dual-numbers, the continuation-based macro pairs the primal values with a continuation calculating an array containing all of the perturbation variables.
   Notably, because the continuation-based macro, shown in \cref{fig:continuation_macro}, calculates all of the perturbation values with respect to each of the input variables, it is additionally indexed by the number of input variables.
 
-  \begin{figure}[H]
+  \begin{figure}
     \centering
     \begin{gather*}
       \begin{aligned}
@@ -13,15 +18,20 @@
         \Dc_n(\tau \synPlus \sigma) &= \D(\tau) \synPlus \D(\sigma) \\
         \Dc_n(\tau \synFunc \sigma) &= \D(\tau) \synFunc \D(\sigma) \\
         \Dc_n(\Array{m}{\tau}) &= \Array{m}{\Dc_n(\tau)} \\
+      \end{aligned}
       \\
+      \begin{gathered}
+        \dots \\
+        \begin{aligned}
         \Dc_n(\rval{r}&) = \tuple{(\rval{r})} \\
           &{(\build{(\synConst{(\rval{0})})})} \\
         \Dc_n(\add{r_1}{r_2}&) = \tuple{(\add{r_1}{r_2})}{(\abs{(\vecadd{ \\
-        &(\app{r_1'}{(\var{\Top})})}{(\app{r_2'}{(\var{\Top})})})})} \\
+          &(\app{r_1'}{(\var{\Top})})}{(\app{r_2'}{(\var{\Top})})})})} \\
         \Dc_n(\mul{r_1}{r_2}&) = \tuple{(\mul{r_1}{r_2})}{(\abs{(\vecadd{ \\
-        &(\app{r_1'}{(\mul{r_2}{(\var{\Top})})})}{ \\
-        &(\app{r_2'}{(\mul{r_1}{(\var{\Top})})})})})} \\
-      \end{aligned}
+          &(\app{r_1'}{(\mul{r_2}{(\var{\Top})})})}{ \\
+          &(\app{r_2'}{(\mul{r_1}{(\var{\Top})})})})})} \\
+        \end{aligned}
+      \end{gathered}
     \end{gather*}
     \caption{Continuation-based macro on the simply-typed lambda calculus extended with array types}
     \label{fig:continuation_macro}
@@ -41,14 +51,17 @@
           \D_n(\tau \synStar \sigma) &= \D(\tau) \synStar \D(\sigma) \\
           \D_n(\tau \synPlus \sigma) &= \D(\tau) \synPlus \D(\sigma) \\
           \D_n(\tau \synFunc \sigma) &= \D(\tau) \synFunc \D(\sigma) \\
-          \D_n(\Array{m}{\tau}) &= \Array{m}{\Dc_n(\tau)}
-        \end{aligned} \\ \\
-        \begin{aligned}
-          \D_n(\rval{r}) &= \tuple{(\rval{r})}{(\build{n}{(\texttt{fun \_ => 0})})} \\
-          \D_n(\add{r_1}{r_2}) &= \tuple{(\add{r_1}{r_2})}{(\vecadd{r_1'}{r_2'})} \\
-          \D_n(\mul{r_1}{r_2}) &= \tuple{(\mul{r_1}{r_2})}
-            {\\&(\vecadd{(\vecscale{r_2}{r_1'})}{(\vecscale{r_1}{r_2'})})}
-        \end{aligned}
+          \D_n(\Array{m}{\tau}) &= \Array{m}{\D_n(\tau)}
+        \end{aligned} \\
+        \begin{gathered}
+          \dots \\
+          \begin{aligned}
+            \D_n(\rval{r}) &= \tuple{(\rval{r})}{(\build{n}{(\texttt{fun \_ => 0})})} \\
+            \D_n(\add{r_1}{r_2}) &= \tuple{(\add{r_1}{r_2})}{(\vecadd{r_1'}{r_2'})} \\
+            \D_n(\mul{r_1}{r_2}) &= \tuple{(\mul{r_1}{r_2})}
+              {\\&(\vecadd{(\vecscale{r_2}{r_1'})}{(\vecscale{r_1}{r_2'})})}
+          \end{aligned}
+        \end{gathered}
       \end{gather*}
       \caption{Forward-mode macro calculating all partial derivatives}
     \end{subfigure}
@@ -130,7 +143,7 @@
   Using these two input massaging functions, we can state correctness of our continuation-based macro with respect to our forward-mode macro.
 
   \begin{proposition}[Correctness of continuation-based AD]
-    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synRepeat{\synR}{n} \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
   \end{proposition}
 
   This statement cannot be proven directly, however, we need a more general correctness statement.
@@ -144,6 +157,7 @@
     S_{n, \tau}(f, g) =
       \left\{
         \begin{array}{ll}
+          \dots \\
           fst \circ f = fst \circ g \wedge
             & : \tau = \synR \\
           \;\;\;\forall x. \lambda r. x * snd(f(r)) = \lambda r. (snd(g(r)))(x)
@@ -157,13 +171,13 @@
 
   The proof of the fundamental lemma proceeds in much the same manner as the one given for \cref{thm:fundamental_lemma}.
   As expected, the cases for the \synR-typed are exceptional.
-  Each of these cases require a generalized version of the case to be proven.
-  The problem here is that the number of partial derivatives is tightly coupled to the number of terms the operation is over.
+  Each of these cases require a generalized variant to be proven.
+  The problem here is that the number of partial derivatives is tightly coupled to the number of terms the operation is done over.
   So induction on the number of terms involved in the operation necessary leads to issues with our relations, as these are indexed by the number of partial derivatives.
+  Proving these cases along with the corresponding fundamental property of the logical relation results in the following theorem.
 
-  Proving this along with the corresponding fundamental property of the logical relation results in the following theorem.
   \begin{theorem}[Perturbation correctness]
-    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, function arguments $x : \llbracket \synRepeat{\synR}{n} \rrbracket$, and real number $r$, we have $r * snd(\D_n(t)(\D_n(x))) = snd(\Dc_n(t)(\Dc_n(x)))(r)$
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, function arguments $x : \llbracket \synR^n \rrbracket$, and real number $r$, we have $r * snd(\D_n(t)(\D_n(x))) = snd(\Dc_n(t)(\Dc_n(x)))(r)$
   \end{theorem}
   \begin{proof}
     This follows from the fundamental property of the logical relation in (\cref{eqn:lr_continuous}).
@@ -172,5 +186,5 @@
   This is easily specialized to the original correctness statement we set out to prove.
 
   \begin{corollary}[Correctness of continuation-based AD]
-    For any well-typed term $x_1 : \synR, \dots, \linebreak x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synRepeat{\synR}{n} \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
   \end{corollary}

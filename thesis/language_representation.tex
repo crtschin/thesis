@@ -63,7 +63,7 @@ Due to using indices from the context as variables, some lifting boilerplate is 
 
 \begin{listing}[h]
   \begin{minted}{coq}
-  Inductive ~\tau \in \Gamma~ : Type :=
+  Inductive ~\in~ : Type :=
     | Top : ~\forall \Gamma \tau, \tau \in (\tau::\Gamma)~
     | Pop : ~\forall \Gamma \tau \sigma, \tau \in \Gamma \rightarrow \tau \in (\sigma::\Gamma)~.
 
@@ -75,5 +75,3 @@ Due to using indices from the context as variables, some lifting boilerplate is 
   \caption{Basis of a simply-typed \lambda-calculus using the strongly typed intrinsic formulation.}
   \label{lst:strong_stlc}
 \end{listing}
-
-% TODO: Work out how substitutions work

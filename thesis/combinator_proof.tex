@@ -1,1 +1,82 @@
-\subsubsection{Attempt at a Formalized Proof}\label{sec:combinator-proof}
+\subsection{Attempt at a Formalized Proof}\label{sec:combinator-proof}
+  Temporarily ignoring the issue of a denotational semantics of our target language, we can formulate the proof as a logical relations argument as we have done in previous proofs.
+  Unlike the previous proofs, however, we are this time working with a combinator language.
+  This has the convenient consequence that we do not have to worry about typing contexts or substitutions in the proof of the fundamental lemma of our logical relation.
+
+  As previously, we can formulate our logical relation as a type indexed relation between the curves related to our macro.
+  \begin{equation*}
+    S_\tau : (\denR \rightarrow \llbracket \tau \rrbracket) \rightarrow
+      (\denR \rightarrow \llbracket fst (\Drev(\tau)) \rrbracket) \rightarrow
+      (\denR \denStar \llbracket snd(\Drev(\tau)) \rrbracket \rightarrow \denR) \rightarrow \text{Prop}
+  \end{equation*}
+  Note that we index the logical relation by the types of our source language.
+  The most exceptional case, which will also give a clue as to where the difficulty with this proof lies, is the case for functions.
+  Namely, we additionally have to establish that the second argument of the third curve of our relation is linear in its behavior with respect to $(\synO, \synP)$.
+  This requirement comes from the idea that the third curve, intuitively, is tracking the transposed derivatives of the respective function.
+  As a consequence, its arguments should also obey the linearity of differentiation.
+
+  \begin{definition}(Logical relation)
+    Denotation functions $f$ and their corresponding primal and tangent variants $g$ and $h$ are inductively defined on the structure of our types such that they follow the relation
+    \begin{equation*}
+      S_\tau(f, g, h) =
+        \left\{
+          \begin{array}{ll}
+            f = g \wedge h = \lambda x. 0 & : \tau = \synUnit \\
+            smooth\ f \wedge f = g \wedge
+              & : \tau = \synR \\
+              \;\;\;\; h = \lambda x.
+                (\frac{\partial f}{\partial x}(fst(x))) * snd(x) \\
+            (\forall i. smooth\ (\lambda x. \denGet{(f(x))}{i}))
+              \wedge f = g \wedge
+              & : \tau = \synRn \\
+              \;\;\;\; h = \lambda x.
+                (\frac{\partial f}{\partial x}(fst(x))) \cdot snd(x) \\
+            \exists f_1, f_2, f_3, g_1, g_2, g_3,
+              & : \tau = \sigma \synStar \rho \\
+              \;\;\;\;S_\sigma(f_1, f_2, f_3), S_\sigma(g_1, g_2, g_3). \\
+              \;\;\;\;f = \lambda x. (f_1(x), g_1(x)) \wedge \\
+              \;\;\;\;g = \lambda x. (f_2(x), g_2(x)) \wedge \\
+              \;\;\;\;h = \lambda x. (f_3(fst(x), fst (snd(x))) + \\
+              \;\;\;\;\;\;\;\;g_3(fst(x), snd (snd(x)))) \\
+            \forall f_1, f_2, f_3.
+              & : \tau = \sigma \synFunc \rho \\
+              \;\;\;\;\text{linear\_second}(h) \\
+              \;\;\;\;S_\sigma(f_1, f_2, f_3) \Rightarrow \\
+              \;\;\;\;S_\rho(\lambda x. f(x)(f_1(x)), \lambda x. fst(g(x)(f_2(x))), \\
+              \;\;\;\;\;\;\;\; \lambda x. h (fst x, f_2 (fst(x), snd(x))) + \\
+              \;\;\;\;\;\;\;\; f_3 (fst(x), snd(g(fst(x))(f_2(fst(x))))(snd(x))))
+          \end{array}
+        \right.
+    \label{eqn:lr_combinator}
+    \end{equation*}
+  \end{definition}
+
+  We can plot down the skeleton of what the proof would likely require.
+  We can state correctness of the reverse-mode algorithm as the following proposition.
+  Note the usage of the $\text{sum}$ function to linearly combine all partial derivatives.
+  We additionally use a macro-specific initialization function $\Drev_n$ for our arguments akin to \cref{eqn:argument_df} used in \cref{sec:forward}.
+  The only change is that we return a tuple where the first element is the the original primal value.
+  The second element is defined the same as in \cref{eqn:argument_df}.
+
+  \begin{equation*}
+    \Drev_n(f) =
+      \left\{
+        \begin{array}{ll}
+          (f, f) & : n = 0 \\
+          (\lambda x. (fst(f(x)), fst(\Drev_{n'}(snd \circ f))(x)), & : n = n' + 1 \\
+          \;\;\;\;\;\; \lambda x. \frac{\partial{(fst \circ f)}}{x}(x), snd(\Drev_{n'}(snd\circ f))(x))
+        \end{array}
+      \right.
+  \label{eqn:argument_df_rev}
+  \end{equation*}
+
+  \begin{proposition}[Correctness of reverse-mode AD]
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and argument function $f :  \denR \rightarrow \llbracket \text{translate\_context}(\synR^n) \rrbracket$ such that it follows $\differentiable{n}(f)$, then $(\lambda x. \text{sum}(\llbracket snd(\Drev(\text{stlc\_ccc(t)}))\rrbracket (fst(\Drev_n(f)) (fst(x)), 1))) = (\lambda x. \sfrac{\partial{(\llbracket\text{stlc\_ccc}(t)\rrbracket \circ f)}}{\partial{x}}(fst(x)) * snd(x))$
+  \end{proposition}
+
+  \begin{proposition}[Fundamental property]
+  \end{proposition}
+  \begin{proposition}[Fundamental lemma]
+  \end{proposition}
+  \begin{definition}[Differentiability of arguments]
+  \end{definition}

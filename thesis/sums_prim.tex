@@ -1,7 +1,7 @@
-\subsection{Adding Sums and Primitive Recursion}
-  Now that correctness has been verified for the base simply-typed lambda calculus, the next goal will be to add in both sum and integer types.
-  In the interest of testing the flexibility of both the representation and the proof technique, natural number types and primitive recursion were also added.
-  The inference rules for the new language constructs added for sum and number types are given in \cref{fig:sum_prim_infer}.
+\subsection{Adding Sums and Primitive Recursion}\label{sec:sum_prim}
+  Now that correctness has been verified for the base simply-typed lambda calculus, the next goal will be to add in sum types.
+  In the interest of testing the flexibility of both the representation and the proof technique, natural number types and primitive recursion are also added.
+  The inference rules for the new language constructs added for sum and number types are given in \cref{fig:sum_prim_infer}, while their intrinsic representations are shown in \cref{lst:stlc_sums}.
 
   \begin{figure}
     \begin{mathpar}
@@ -46,6 +46,11 @@
           tm $\Gamma$ $\tau$ $\to$ tm $\Gamma$ ($\tau$ $\synPlus$ $\sigma$)~
         | inr : ~forall $\tau$ $\sigma$,
           tm $\Gamma$ $\sigma$ $\to$ tm $\Gamma$ ($\tau$ $\synPlus$ $\sigma$)~
+        (* Primitive recursion *)
+        | nval : ~forall n, tm \Gamma \synN~
+        | nsucc : ~tm $\Gamma$ \synN $\to$ tm $\Gamma$ \synN~
+        | nrec : ~forall $\tau$,
+          tm $\Gamma$ ($\tau \synFunc \tau$) $\to$ tm $\Gamma$ \synN $\to$ tm $\Gamma$ $\tau$ $\to$ tm $\Gamma$ $\tau$~
     \end{minted}
     \caption{Terms in our language related to sum types.}
     \label{lst:stlc_sums}
@@ -56,20 +61,6 @@
   Primitive recursion is implemented using simple integers, where a endomorphic function is recursively applied a bounded number of times to a start value.
   For convenience, an additional successor function is added in the form of the \<nsucc> term.
 
-  \begin{listing}
-    \begin{minted}{coq}
-      Inductive tm ~($\Gamma$ : Ctx) : ty $\to$ Type~ :=
-        ...
-        (* Primitive recursion *)
-        | nval : ~forall n, tm \Gamma \synN~
-        | nsucc : ~tm $\Gamma$ \synN $\to$ tm $\Gamma$ \synN~
-        | nrec : ~forall $\tau$,
-          tm $\Gamma$ ($\tau \synFunc \tau$) $\to$ tm $\Gamma$ \synN $\to$ tm $\Gamma$ $\tau$ $\to$ tm $\Gamma$ $\tau$~
-    \end{minted}
-    \caption{Terms in our language related to natural number types.}
-    \label{lst:stlc_num}
-  \end{listing}
-
   In terms of denotations, \<case> expressions will follow the same lines as \<app> as they both involve applying a function to an argument.
   Note that the sum term first needs to be destructed to be able to determine which function branch to apply.
   Both \<inl> and \<inr> will map to their \<Coq> counterparts.
@@ -79,6 +70,7 @@
     \centering
     \begin{equation*}
       \begin{split}
+        \dots \\
         \llbracket \tau \synPlus \sigma \rrbracket &= \llbracket \tau \rrbracket \denPlus \llbracket \sigma \rrbracket \\
         \llbracket \synN \rrbracket &= \denN \\
         \\
@@ -121,6 +113,7 @@
     \centering
     \begin{equation*}
       \begin{split}
+        \dots \\
         \D(\tau \synPlus \sigma) &= \D(\tau) \synPlus \D(\sigma) \\
         \D(\synN) &= \synN \\ \\
         \D(\inl{t}) &= \inl{\D(t)} \\
@@ -139,6 +132,7 @@
     S_\tau(f, g) =
       \left\{
         \begin{array}{ll}
+          \dots \\
           f = g \wedge
             \exists n. f = const(n)
             & : \tau = \synN \\

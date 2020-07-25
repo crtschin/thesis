@@ -139,16 +139,16 @@ Fixpoint vector_nth {s : Set} {n}
   end.
 
 Reserved Notation "⟦ τ ⟧ₛₜ".
-Equations denote_st (τ : s_ty) : Type :=
-denote_st τ with τ := {
-  | sℝ => R;
-  | sℝ^n => vector R n;
-  | s_Unit => unit;
-  | τ1 s× τ2 => ⟦τ1⟧ₛₜ * ⟦τ2⟧ₛₜ;
-  | τ1 s→ τ2 => ⟦τ1⟧ₛₜ -> ⟦τ2⟧ₛₜ;
-  | τ1 s⊸ τ2 => ⟦τ1⟧ₛₜ ⊸ ⟦τ2⟧ₛₜ;
-  | σ s⊗ ρ => mset (⟦σ⟧ₛₜ * ⟦ρ⟧ₛₜ)
-}
+Fixpoint denote_st (τ : s_ty) : Type :=
+  match τ with
+  | sℝ => R
+  | sℝ^n => vector R n
+  | s_Unit => unit
+  | τ1 s× τ2 => ⟦τ1⟧ₛₜ * ⟦τ2⟧ₛₜ
+  | τ1 s→ τ2 => ⟦τ1⟧ₛₜ -> ⟦τ2⟧ₛₜ
+  | τ1 s⊸ τ2 => ⟦τ1⟧ₛₜ ⊸ ⟦τ2⟧ₛₜ
+  | σ s⊗ ρ => list (⟦σ⟧ₛₜ * ⟦ρ⟧ₛₜ)
+  end
 where "⟦ τ ⟧ₛₜ" := (denote_st τ).
 
 Fixpoint denote_O τ : ⟦τ⟧ₛₜ :=
@@ -158,10 +158,11 @@ Fixpoint denote_O τ : ⟦τ⟧ₛₜ :=
   | s_Unit => tt
   | τ1 s× τ2 => (denote_O τ1, denote_O τ2)
   | τ1 s→ τ2 => fun _ => denote_O τ2
-  | σ ⊗ ρ => (EmptyBag _, [])
+  | τ1 s⊸ τ2 => mk_lin _ _ (fun _ => denote_O τ2)
+  | τ1 s⊗ τ2 => nil
   end.
 
-Fixpoint denote_plus τ : ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ :=
+Program Fixpoint denote_plus τ : ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ :=
   match τ with
   | sℝ => fun t1 t2 => Rplus t1 t2
   | sℝ^n => fun t1 t2 => vector_plus t1 t2
@@ -169,8 +170,8 @@ Fixpoint denote_plus τ : ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ -> ⟦τ⟧ₛₜ :=
   | τ1 s× τ2 => fun t1 t2 => (denote_plus _ (fst t1) (fst t2)
                   , denote_plus _ (snd t1) (snd t2))
   | τ1 s→ τ2 => fun t1 t2 => fun x => denote_plus _ (t1 x) (t2 x)
-  | σ ⊗ ρ => fun t1 t2 =>
-    (munion (fst t1) (fst t2), snd t1 ++ snd t2)
+  | τ1 s⊸ τ2 => fun t1 t2 => mk_lin _ _  (fun x => denote_plus _ (func _ _ t1 x) (func _ _ t2 x))
+  | σ s⊗ ρ => fun t1 t2 => t1 ++ t2
     (* combine s_ty denote_st eq_denote_t
       (fun τ x => denote_plus τ (fst x) (snd x))
       (denote_O ρ) t1 t2 *)
@@ -187,8 +188,7 @@ Lemma denote_eqdec : forall τ (x y : ⟦ τ ⟧ₛₜ),
 Proof.
   intros.
   dependent induction τ.
-  { eapply Vector.eq_dec.
-    intros. apply Reqb_eq. }
+  { admit. }
   { apply Reqb_eqdec. }
   { destruct x; destruct y.
     admit. }
@@ -196,7 +196,7 @@ Proof.
 Admitted.
 
 Reserved Notation "⟦ t ⟧ₜₒ".
-Fixpoint denote_target {τ σ} (c : target τ σ): ⟦τ⟧ₛₜ -> ⟦σ⟧ₛₜ :=
+Program Fixpoint denote_target {τ σ} (c : target τ σ): ⟦τ⟧ₛₜ -> ⟦σ⟧ₛₜ :=
   match c with
 (* denote_target c x with c := { *)
   | @t_id τ => fun x => x
@@ -217,6 +217,9 @@ Fixpoint denote_target {τ σ} (c : target τ σ): ⟦τ⟧ₛₜ -> ⟦σ⟧ₛ
   | @t_ev τ σ => fun x => (fst x) (snd x)
   | @t_curry τ σ ρ t' => fun x => fun y => ⟦t'⟧ₜₒ (x, y)
 
+  | @t_ev_l τ σ => mk_lin _ _ (fun x => func _ _ (fst x) (snd x))
+  | @t_curry_l τ σ ρ t' => mk_lin _ _ (fun x => mk_lin _ _ (fun y => ⟦t'⟧ₜₒ (x, y)))
+
   (* Numeric *)
   | t_cplus => fun x => Rplus (fst x) (snd x)
   | t_crval r => fun x => r
@@ -225,15 +228,14 @@ Fixpoint denote_target {τ σ} (c : target τ σ): ⟦τ⟧ₛₜ -> ⟦σ⟧ₛ
   | t_cmrval r => fun x => r
 
   (* Maps *)
-  | @t_mempty τ σ => fun x => (EmptyBag _, [])
+  | @t_mempty τ σ => fun x => []
   | @t_msingleton τ σ => fun x =>
-    (@SingletonBag _ eq (denote_eqdec _) x, x::nil)
-  | @t_mplus τ σ => fun x =>
-    (munion (fst (fst x)) (fst (snd x)), snd (fst x) ++ snd (snd x))
+    (x::nil)
+  | @t_mplus τ σ => fun x => (fst x ++ snd x)
   | @t_mfold τ σ ρ => fun x =>
     fold_left
       (fun (a : ⟦ρ⟧ₛₜ) (b : ⟦τ⟧ₛₜ * ⟦σ⟧ₛₜ) =>
         denote_plus ρ (snd x b) a)
-      (snd (fst x)) (denote_O ρ)
+      (fst x) (denote_O ρ)
   end
 where "⟦ s ⟧ₜₒ" := (denote_target s).

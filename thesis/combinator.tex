@@ -1,11 +1,11 @@
 \subsection{Combinator-Based Source Code Transformation}\label{sec:combinator-base}
-  Eliott posed a novel and principled approach to defining an AD algorithm using \textit{category theory}\cite{Elliott-2018-ad-icfp}.
-  They take the category theoretical hammer to the problem by approaching it as an algorithm on categories, cartesian closed categories \textit{(CCC)} to be exact, which are known to be equivalent to the simply-typed lambda calculi\cite{Elliott-2017-compiling-to-categories}\cite{10.1007/3-540-15198-2_10}.
-  The algorithm is, however, still restricted to first order programs.
+Eliott posed a novel and principled approach to defining an AD algorithm using \textit{category theory}\cite{Elliott-2018-ad-icfp}.
+They take the category theoretical hammer to the problem by approaching it as an algorithm on categories, cartesian closed categories \textit{(CCC)} to be exact, which are known to be equivalent to the simply-typed lambda calculi\cite{Elliott-2017-compiling-to-categories}\cite{10.1007/3-540-15198-2_10}.
+The algorithm is, however, still restricted to first order programs.
 
-  An extension of this technique is given by \Vakar{}\cite{vkr2020reverse}.
-  They go through first defining a small core combinator-based language.
-  They then define a reverse-mode macro along with an additional auxiliary target language enriched with simple linear types.
-  \input{combinator_lang.tex}
-  \input{combinator_macro.tex}
-  \input{combinator_proof.tex}
+An extension of this technique is given by \Vakar{}\cite{vkr2020reverse}.
+They go through first defining a small core combinator-based language.
+They then define a reverse-mode macro along with an additional auxiliary target language enriched with simple linear types.
+\input{combinator_lang.tex}
+\input{combinator_macro.tex}
+\input{combinator_proof.tex}
