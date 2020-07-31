@@ -16,7 +16,7 @@ Require Import AD.stlc.
 Require Import AD.combinator.
 Require Import AD.denotation.
 Require Import AD.translation.
-Require Import AD.linearity.
+(* Require Import AD.linearity. *)
 Require Import AD.linear.
 Local Open Scope program_scope.
 
@@ -150,6 +150,79 @@ Proof with (simpl in *; eauto).
     dependent destruction v... }
 Qed.
 
+Lemma denote_plus_O_l : forall τ x,
+  denote_plus τ (denote_O τ) x = x.
+Proof with (simpl in *; eauto).
+  intros.
+  induction τ...
+  { unfold vector_plus. induction n...
+    { dependent destruction x... }
+    { specialize IHn with (Vtail x).
+      rewrite Vbuild_tail; rewrite Vbuild_head.
+      rewrite Rplus_0_l. rewrite IHn.
+      dependent destruction x... } }
+  { rewrite Rplus_0_l... }
+  { destruct x... }
+  { fold denote_st.
+    extensionality r.
+    specialize IHτ2 with (x r)... }
+  { rewrite IHτ1. rewrite IHτ2. destruct x... }
+  { fold denote_st.
+    destruct x...
+    apply f_equal. extensionality x... }
+Qed.
+
+Lemma denote_plus_O_r : forall τ x,
+  denote_plus τ x (denote_O τ) = x.
+Proof with (simpl in *; eauto).
+  intros.
+  induction τ...
+  { unfold vector_plus. induction n...
+    { dependent destruction x... }
+    { specialize IHn with (Vtail x).
+      rewrite Vbuild_tail; rewrite Vbuild_head.
+      rewrite Rplus_0_r. rewrite IHn.
+      dependent destruction x... } }
+  { rewrite Rplus_0_r... }
+  { destruct x... }
+  { fold denote_st.
+    extensionality r.
+    specialize IHτ2 with (x r)... }
+  { rewrite IHτ1. rewrite IHτ2. destruct x... }
+  { fold denote_st.
+    destruct x...
+    apply f_equal. extensionality x... }
+  { rewrite app_nil_r... }
+Qed.
+
+Lemma denote_O_eq : forall A,
+  denote_O A = ⟦ target.t_O A ⟧ₜₒ ().
+Proof with (simpl in *; eauto).
+  intros.
+  induction A...
+  { fold denote_st. extensionality x... }
+  { rewrites. }
+  { fold denote_st. apply f_equal... extensionality x... }
+Qed.
+
+Lemma denote_plus_eq : forall A a b,
+  denote_plus A a b = ⟦ target.t_plus A ⟧ₜₒ (a, b).
+Proof with (simpl in *; eauto).
+  intros.
+  induction A...
+  { fold denote_st. extensionality x... }
+  { rewrites. }
+  { fold denote_st. apply f_equal... extensionality x... }
+Qed.
+
+Definition second_linear {A}
+  : (R * ⟦ snd (Dt A) ⟧ₛₜ -> R) -> Prop :=
+  fun h =>
+    (forall r, h (r, ⟦target.t_O (snd (Dt A))⟧ₜₒ tt) = 0) /\
+    (forall r a b, h (r, ⟦target.t_plus (snd (Dt A))⟧ₜₒ (a, b))
+      = h (r, a) + h (r, b))
+.
+
 (* TODO: Need to work out both the correct definitions of
     linearity and denotation of ⊗ before proceeding.
 
@@ -260,14 +333,7 @@ Proof with simpl in *; eauto.
         { dependent destruction t... }
         rewrite Rmult_comm; rewrite Rmult_plus_distr_r.
         rewrite Rmult_comm; rewrite (@Rmult_comm (Vhead b)).
-        admit. } }
-    (* { exists (⟦target.t_O (snd (Dt (ℝ^n)))⟧ₜₒ tt);
-        exists (dot_product (multi_Derive_o g r)
-          (Vbuild (fun (i : nat) (_ : (i < n)%nat) => 0))).
-      intros.
-      unfold linear in H0; fold denote_st in *.
-      destruct H0 as [eq1 eq2].
-      rewrite eq1. destruct H as [ex [eq1' eq2']]. subst...  } *)  }
+        admit. } } }
   { splits; intros; fold Dt denote_st in *.
     { destruct H as [eq1 [eq2 eq3]].
       subst... rewrite Rmult_0_r... }
@@ -276,38 +342,19 @@ Proof with simpl in *; eauto.
       rewrite Rmult_comm.
       rewrite Rmult_plus_distr_r.
       rewrite Rmult_comm.
-      rewrite (@Rmult_comm b)... }
-    (* { exists (⟦target.t_O (snd (Dt (ℝ)))⟧ₜₒ tt);
-        exists 0; intros.
-      intros.
-      unfold linear in H0; fold denote_st in *.
-      destruct H0 as [eq1 eq2].
-      rewrite eq1. destruct H as [ex [eq1' eq2']]. subst...
-      rewrite Rmult_0_r... } *) }
+      rewrite (@Rmult_comm b)... } }
   { splits; intros; fold Dt denote_st in *.
     { destruct H as [eq1 eq2].
       subst... }
     { destruct H as [eq1 eq2].
-      subst... rewrite Rplus_0_r... }
-    (* { exists (⟦target.t_O (snd (Dt (Unit)))⟧ₜₒ tt);
-        exists 0; intros.
-      intros.
-      unfold linear in H0; fold denote_st in *.
-      destruct H0 as [eq1 eq2].
-      rewrite eq1. destruct H as [eq1' eq2']. subst... } *) }
+      subst... rewrite Rplus_0_r... } }
   { splits; intros; fold Dt denote_st in *.
     { destruct H; unfold second_linear in H...
       destruct H as [eq1 eq2]... }
     { destruct H; unfold second_linear in H...
       destruct H as [eq1 eq2];
         fold denote_st in *.
-      rewrite eq2... }
-    (* { exists (⟦target.t_O (snd (Dt (τ1 → τ2)))⟧ₜₒ tt);
-        exists 0; intros.
-      unfold linear in H0; fold denote_st in *.
-      destruct H0 as [eq1 eq2]; rewrite eq1.
-      destruct H as [[eq1' [eq2' eqf]] H].
-      subst... } *) }
+      rewrite eq2... } }
   { splits; intros; fold Dt denote_st in *.
     { destruct H as [f1 [f2 [f3 [g1 [g2 [g3
         [R1 [R2 [eq1 [eq2 eq3]]]]]]]]]].
@@ -326,19 +373,7 @@ Proof with simpl in *; eauto.
       rewrite 2 Rplus_assoc.
       rewrite (@Rplus_comm (f3 (r, fst b))).
       rewrite Rplus_assoc.
-      rewrite (@Rplus_comm (g3 (r, snd b)))... }
-    (* { exists (⟦target.t_O (snd (Dt (τ1 × τ2)))⟧ₜₒ tt);
-        exists 0; intros.
-      unfold linear in H0; fold denote_st in *.
-      destruct H0 as [eq1 eq2]; rewrite eq1.
-      destruct H as [f1 [f2 [f3 [g1 [g2 [g3
-        [R1 [R2 [eq1' [eq2' eq3']]]]]]]]]].
-      subst...
-      pose proof (IHτ1 _ _ _ R1) as IHτ1; destruct IHτ1 as [eq11 [eq12 eq1f]].
-      pose proof (IHτ2 _ _ _ R2) as IHτ2; destruct IHτ2 as [eq21 [eq22 eq2f]].
-      fold denote_st in *.
-      unfold Rel_prod_fst, Rel_prod_snd...
-      rewrite eq11; rewrite eq21. rewrite Rplus_0_r... } *) }
+      rewrite (@Rplus_comm (g3 (r, snd b)))... } }
 Admitted.
 
 Lemma huh : forall A B (c : comb A B) (d : ⟦ fst (Dt A) ⟧ₛₜ),
@@ -354,13 +389,10 @@ Proof with simpl in *; eauto.
   { rewrite denote_O_eq... }
   { simpl... rewrite <- denote_plus_eq.
     rewrite denote_plus_O_r. rewrite denote_O_eq... }
-  { pose proof (snd_Dcomb_linear _ _ (@ev A B)) as [_ lin2].
-    (* TODO:
+  { (* TODO:
       Weird, don't think this is true,
         nor is it very clear what's needed to make
         this true *)
-    unfold linear_f in *.
-    destruct lin2 as [eq1 eq2]...
     destruct d as [p d]...
     remember (p d) as p'.
     clear p Heqp'. destruct p' as [d' f]...
@@ -460,15 +492,18 @@ Proof with (simpl in *; try eauto).
         destruct H as [eq1 eq2]; fold denote_st in *.
         specialize eq1 with r.
         rewrite <- eq1.
-        apply f_equal. apply injective_projections...
+        apply f_equal.
+        apply injective_projections; simpl (fst (_, _)); try reflexivity.
+        simpl (snd (r, _)). fold Dt.
         fold Dt.
-        pose proof huh as H'.
+        admit.
+        (* pose proof huh as H'.
         pose proof (H' (A × B) C c
           (g r, denote_O (fst (Dt B)))) as H'...
         eassert (⟦ target.t_O (snd (Dt A)) ⟧ₜₒ () =
           fst (⟦ target.t_O (snd (Dt A)) ⟧ₜₒ (),
             ⟦ target.t_O (snd (Dt B)) ⟧ₜₒ ())) by eauto.
-        rewrite H. apply f_equal... }
+        rewrite H. apply f_equal... *) }
       { (* TODO:
           Weird, might be true,
             fold_left plus (a ++ b) 0 =
@@ -479,7 +514,8 @@ Proof with (simpl in *; try eauto).
         fold denote_st;
           simpl fst; simpl (snd (_, _)); intros.
         apply Rel_linear in H.
-        destruct H as [eq1 eq2]...
+        simpl Dcomb. simpl snd. simpl denote_target.
+        destruct H as [eq1 eq2].
         fold Dt denote_st in *.
         rewrite <- eq2...
         pose proof (huh _ _ (curry c) (g r))...

@@ -15,106 +15,16 @@ Require Import AD.tactics.
 Require Import AD.types.
 Require Import AD.maps.
 Require Import AD.stlc.
+Require Import AD.target.
 Require Import AD.combinator.
 Require Import AD.denotation.
 Require Import AD.translation.
 
 Local Open Scope program_scope.
 
-Definition linear {A}
-  : (⟦ snd (Dt A) ⟧ₛₜ -> ⟦ snd (Dt A) ⟧ₛₜ) -> Prop :=
-  fun f =>
-  (f (⟦target.t_O (snd (Dt A))⟧ₜₒ tt)
-    = ⟦target.t_O (snd (Dt A))⟧ₜₒ tt) /\
-  (forall a b, f (⟦target.t_plus (snd (Dt A))⟧ₜₒ (a, b))
-    = ⟦target.t_plus (snd (Dt A))⟧ₜₒ (f a, f b)).
-
-Definition second_linear {A}
-  : (R * ⟦ snd (Dt A) ⟧ₛₜ -> R) -> Prop :=
-  fun h =>
-    (forall r, h (r, ⟦target.t_O (snd (Dt A))⟧ₜₒ tt) = 0) /\
-    (forall r a b, h (r, ⟦target.t_plus (snd (Dt A))⟧ₜₒ (a, b))
-      = h (r, a) + h (r, b))
-.
-
-Lemma seclin_lin : forall A (h : R * ⟦ snd (Dt A) ⟧ₛₜ -> R),
-  second_linear h ->
-    forall x f r,
-    (exists y, h (x, f r) = y) /\ linear f.
-Proof with (simpl in *; eauto).
-  intros. split.
-  { exists (h (x, f r))... }
-  admit.
-Admitted.
-
-Lemma denote_plus_O_l : forall τ x,
-  denote_plus τ (denote_O τ) x = x.
-Proof with (simpl in *; eauto).
-  intros.
-  induction τ...
-  { unfold vector_plus. induction n...
-    { dependent destruction x... }
-    { specialize IHn with (Vtail x).
-      rewrite Vbuild_tail; rewrite Vbuild_head.
-      rewrite Rplus_0_l. rewrite IHn.
-      dependent destruction x... } }
-  { rewrite Rplus_0_l... }
-  { destruct x... }
-  { fold denote_st.
-    extensionality r.
-    specialize IHτ2 with (x r)... }
-  { rewrite IHτ1. rewrite IHτ2. destruct x... }
-  { fold denote_st.
-    destruct x...
-    apply f_equal. extensionality x... }
-Qed.
-
-Lemma denote_plus_O_r : forall τ x,
-  denote_plus τ x (denote_O τ) = x.
-Proof with (simpl in *; eauto).
-  intros.
-  induction τ...
-  { unfold vector_plus. induction n...
-    { dependent destruction x... }
-    { specialize IHn with (Vtail x).
-      rewrite Vbuild_tail; rewrite Vbuild_head.
-      rewrite Rplus_0_r. rewrite IHn.
-      dependent destruction x... } }
-  { rewrite Rplus_0_r... }
-  { destruct x... }
-  { fold denote_st.
-    extensionality r.
-    specialize IHτ2 with (x r)... }
-  { rewrite IHτ1. rewrite IHτ2. destruct x... }
-  { fold denote_st.
-    destruct x...
-    apply f_equal. extensionality x... }
-  { rewrite app_nil_r... }
-Qed.
-
-Lemma denote_O_eq : forall A,
-  denote_O A = ⟦ target.t_O A ⟧ₜₒ ().
-Proof with (simpl in *; eauto).
-  intros.
-  induction A...
-  { fold denote_st. extensionality x... }
-  { rewrites. }
-  { fold denote_st. apply f_equal... extensionality x... }
-Qed.
-
-Lemma denote_plus_eq : forall A a b,
-  denote_plus A a b = ⟦ target.t_plus A ⟧ₜₒ (a, b).
-Proof with (simpl in *; eauto).
-  intros.
-  induction A...
-  { fold denote_st. extensionality x... }
-  { rewrites. }
-  { fold denote_st. apply f_equal... extensionality x... }
-Qed.
-
 Definition linear_f {τ σ} (f : ⟦ τ ⟧ₛₜ -> ⟦ σ ⟧ₛₜ) : Prop
-  := f (denote_O _) = denote_O _ /\
-    forall a b, f (denote_plus _ a b) = denote_plus _ (f a) (f b).
+  := f (⟦t_O _⟧ₜₒ tt) = ⟦t_O _⟧ₜₒ tt /\
+    forall a b, f (⟦t_plus _⟧ₜₒ (a, b)) = ⟦t_plus _⟧ₜₒ (f a, f b).
 
 Lemma snd_Dcomb_linear :
   forall τ σ (c : comb τ σ),
