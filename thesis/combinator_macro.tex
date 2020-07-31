@@ -61,20 +61,21 @@
     \label{eqn:combinator_d_incorrect}
   \end{multline}
   % TODO: Explain faulty use of products as tangent values.
-  In a sense, the tangent value at function types keeps track of the possibly incomplete adjoints currently calculated, as these can be combined with other adjoints down the line.
+  In a sense, the tangent value at function types keeps track of the adjoints currently calculated so they can be combined with other adjoints down the line.
   Remember that in reverse-mode AD, the problem of fan-out involves combining each usage of a variable in the reverse pass.
   We solved the issue of combining variable usages using the $\synP$ combinator, but still have to find something to keep track of which terms to combine.
 
   In \cref{eqn:combinator_d_incorrect}, we attempt to keep track of the adjoints using product types, which are easily combined using $\synP$.
   This, however, does not ensure that the linear properties of both $(\synO, \synP)$ are preserved.
   Indeed, for any program consisting of combinators such that it has type $(\comb{\tau}{\synR})$, if $\llbracket \synO_\tau \rrbracket$ is given as input in the denotational sense, the resulting program should correspond to $0$.
+  Similarly, $\llbracket \synP_\tau \rrbracket$ on inputs $a$ and $b$ should correspond to some notion of addition between $a$ and $b$.
   In other words, we need to establish that the denotations of our combinators are linear with respect to both $(\synO, \synP)$.
 
   % TODO: Introduce need for linear types
   \Vakar{} poses the usage of an auxiliary target language with a limited variant of linear types as the result of evaluating the reverse-mode macro\cite{vkr2020reverse}.
   The linear types used include both linear function types, $\synLin$, and tensor products, $\synTens{(-)}{(-)}$.
   This target language would be almost identical to the source combinator language described in \cref{sec:combinator-core}.
-  The added types and terms included are shown in \cref{fig:combinator_linear}.
+  The added types and terms are shown in \cref{fig:combinator_linear}.
 
   % | exl_l : forall A B,
   %   target (~$\synTens{A}{B}$~) A
@@ -116,7 +117,7 @@
       \left\{
         \begin{array}{ll}
           \dots \\
-          \synCurryL{(\synSeq{\synExl}{\synO})} & : \tau = \sigma \synFunc \rho \\
+          \synCurryL{(\synSeq{\synExl}{\synO})} & : \tau = \sigma \synLin \rho \\
           \synMempty & : \tau = \synTens{\sigma}{\rho} \\
         \end{array}
       \right. \\
@@ -126,7 +127,7 @@
           \dots \\
           \synCurryL{ \\
             (\synSeq{\langle
-              \synSeq{\langle \synSeq{\synExl}{\synExl}, \synExr \rangle}{\synEvL}, & : \tau = \sigma \synFunc \rho \\
+              \synSeq{\langle \synSeq{\synExl}{\synExl}, \synExr \rangle}{\synEvL}, & : \tau = \sigma \synLin \rho \\
               \;\;\;\synSeq{\langle \synSeq{\synExl}{\synExr}, \synExr \rangle}{\synEvL} \rangle}{\synP_\rho})} \\
           \synMplus & : \tau = \synTens{\sigma}{\rho} \\
         \end{array}

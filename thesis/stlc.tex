@@ -325,7 +325,7 @@
   We phrase this requirement as a definition.
 
   \begin{definition}(Instantiation)
-    Instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ are inductively defined such that they follow
+    Argument functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ are inductively defined such that they follow
     \begin{equation}
       \inst{\Gamma}(f, g) =
         \left\{
@@ -343,10 +343,9 @@
     \end{equation}
   \end{definition}
 
-  Using this notion of instantiations we can now formulate our fundamental lemma. Informally, this states that given correct instantiation functions any well-typed term is semantically correct with respect to the logical relation.
-
+  Using this notion of instantiations, we can now formulate our fundamental lemma. Informally, this states that given correct argument functions, any well-typed term is semantically correct with respect to the logical relation.
   \begin{lemma}[Fundamental lemma]\label{thm:fundamental_lemma}
-    For any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : R \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : R \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $\inst{\Gamma}(s, s_D)$, we have that $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
+    For any well-typed term $\Gamma \vdash t : \tau$, and instantiation functions $s : \denR \rightarrow \llbracket \Gamma \rrbracket$ and $s_D : \denR \rightarrow \llbracket \D(\Gamma) \rrbracket$ such that they follow $\inst{\Gamma}(s, s_D)$, we have that $S_\tau(\llbracket t\rrbracket \circ s, \llbracket \D(t)\rrbracket \circ s_D)$.
   \end{lemma}
 
   % \input{proof_base.tex}
@@ -362,7 +361,7 @@
   Note that the correctness of both the macro and the fundamental property is dependent on the requirement that the denotations supplied by the argument functions are differentiable.
   We formulate this requirement as \cref{thm:differentiable}.
 
-  \begin{definition}\label{thm:differentiable}
+  \begin{definition}[Differentiability of arguments]\label{thm:differentiable}
     Any argument function $f : \denR \rightarrow \llbracket \synR^n \rrbracket$ with arity $n$, is inductively constructed such that it follows the following proposition.
     \begin{equation}
       \differentiable{n}(f) =

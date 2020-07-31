@@ -13,7 +13,14 @@
   The most exceptional case, which will also give a clue as to where the difficulty with this proof lies, is the case for functions.
   Namely, we additionally have to establish that the second argument of the third curve of our relation is linear in its behavior with respect to $(\synO, \synP)$.
   This requirement comes from the idea that the third curve, intuitively, is tracking the transposed derivatives of the respective function.
-  As a consequence, its arguments should also obey the linearity of differentiation.
+  As a consequence, its arguments should also obey the linearity of differentiation. We formulate this requirement as \cref{def:second_linear}.
+
+  \begin{definition}\label{def:second_linear}
+    Any transposed derivative calculating function is linear in its second argument such that it follows:
+    \begin{align*}
+      \text{linear\_second}_\tau(h) =& (\forall r. h(r, \llbracket \synO_\tau \rrbracket tt) = 0) \wedge \\ & (\forall r, a, b. h(r, \llbracket \synP_\tau \rrbracket (a, b) = h (r, a) + h (r, b)).
+    \end{align*}
+  \end{definition}
 
   \begin{definition}(Logical relation)
     Denotation functions $f$ and their corresponding primal and tangent variants $g$ and $h$ are inductively defined on the structure of our types such that they follow the relation
@@ -51,13 +58,20 @@
     \end{equation*}
   \end{definition}
 
+  A useful property is that our notion of linearity in the second argument of the curve tracking the transposed derivatives, $\text{linear\_second}$, follows from our logical relation.
+  \begin{lemma}
+    For any type $\tau$ and argument functions $f : \denR \rightarrow \llbracket \tau \rrbracket$, $g : \denR \rightarrow \llbracket fst(\Drev(\tau))\rrbracket$ and $h : \denR \denStar \llbracket snd(\Drev(\tau)) \rrbracket \rightarrow \denR$ such that they follow $S_\tau(f, g, h)$, then $\text{linear\_second}(h)$.
+  \end{lemma}
+  \begin{proof}
+    This is proven by induction on the type $\tau$.
+    The cases for $\synR$ and $\synRn$ are proven by the distributive law, while the rest follows regularly from the induction hypotheses.
+  \end{proof}
+
   We can plot down the skeleton of what the proof would likely require.
-  We can state correctness of the reverse-mode algorithm as the following proposition.
+  We can state the correctness of the reverse-mode algorithm as the following proposition.
   Note the usage of the $\text{sum}$ function to linearly combine all partial derivatives.
   We additionally use a macro-specific initialization function $\Drev_n$ for our arguments akin to \cref{eqn:argument_df} used in \cref{sec:forward}.
-  The only change is that we return a tuple where the first element is the the original primal value.
-  The second element is defined the same as in \cref{eqn:argument_df}.
-
+  This is only slightly changed to return a tuple of the original primal value and the tangent value defined as in \cref{eqn:argument_df}.
   \begin{equation*}
     \Drev_n(f) =
       \left\{
@@ -70,13 +84,64 @@
   \label{eqn:argument_df_rev}
   \end{equation*}
 
+  We can now state correctness of the combinator-based macro as the assertion that the sum of the derivative values of the macro is equal to the gradient of the original function.
   \begin{proposition}[Correctness of reverse-mode AD]
     For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and argument function $f :  \denR \rightarrow \llbracket \text{translate\_context}(\synR^n) \rrbracket$ such that it follows $\differentiable{n}(f)$, then $(\lambda x. \text{sum}(\llbracket snd(\Drev(\text{stlc\_ccc(t)}))\rrbracket (fst(\Drev_n(f)) (fst(x)), 1))) = (\lambda x. \sfrac{\partial{(\llbracket\text{stlc\_ccc}(t)\rrbracket \circ f)}}{\partial{x}}(fst(x)) * snd(x))$
   \end{proposition}
 
-  \begin{proposition}[Fundamental property]
+  As was the case for the proofs in \cref{sec:forward,sec:continuation-base}, this statement follows from the fundamental lemma of the logical relation.
+  We can state this lemma as:
+  \begin{proposition}[Fundamental lemma]\label{thm:fundamental_lemma_combinator}
+    For any well-typed combinator $c : \comb{\tau}{\sigma}$, and instantiation functions $f : \denR \rightarrow \llbracket \tau \rrbracket$, $g : \denR \rightarrow \llbracket fst(\Drev(\tau))\rrbracket$ and $h : \denR \denStar \llbracket snd(\Drev(\tau)) \rrbracket \rightarrow \denR$ such that they follow $S_{\tau}(f, g, h)$, we have that $S_{\sigma}(\llbracket c\rrbracket \circ f, \llbracket fst(\Drev(c))\rrbracket \circ g, \lambda x. h (fst(x), \linebreak (\llbracket snd(\Drev(c))\rrbracket(g(fst(x), snd(x))))))$.
   \end{proposition}
-  \begin{proposition}[Fundamental lemma]
-  \end{proposition}
-  \begin{definition}[Differentiability of arguments]
-  \end{definition}
+
+  The main issue we encountered was during the proof of \cref{thm:fundamental_lemma_combinator}.
+  As a first attempt, lists of products and regular functions were used as the denotations of, respectively, $\synTens{\_}{\_}$ and $\synLin$.
+  As expected, however, both of these choices were insufficient to complete the proof.
+  To be specific, we encountered issues with the case of \<curry>, mainly in the proof of $\text{linear\_second}$, whose goals are:
+  \begin{gather}
+    \begin{multlined}\label{eqn:goal_1}
+      \forall r. h(r, \llbracket snd(\Drev(\synCurry{c}))\rrbracket (g r, [])) = 0
+    \end{multlined} \\
+    \begin{multlined}\label{eqn:goal_2}
+      \forall r, a, b. h(r, \llbracket snd(\Drev(\synCurry{c})) \rrbracket (g (r), a \doubleplus b)) = \\ h(r, \llbracket snd(\Drev(\synCurry{c})) \rrbracket (g r, a)) + h(r, \llbracket snd(\Drev(\synCurry{c})) \rrbracket (g r, b))
+    \end{multlined}
+  \end{gather}
+  Simplifying these statements we can see that we essentially have to prove that $\llbracket snd(\Drev(c)) \rrbracket$ is linear with respect to the denotations of $(\synO, \synP)$.
+  \begin{equation}\label{eqn:linear_c}
+    \text{linear}(\llbracket fst(\Drev(c))\rrbracket) \wedge
+      \text{linear}(\llbracket snd(\Drev(c))\rrbracket)
+  \end{equation}
+  The $(\text{linear} : (\llbracket \tau \rrbracket \rightarrow \llbracket \sigma \rrbracket) \rightarrow \text{Prop})$ proposition encodes our notion of linearity in the context of the types in our combinator language.
+
+  \begin{minted}{coq}
+    Definition linear ~$\tau$~ ~$\sigma$~ (f : ~$\llbracket \tau \rrbracket$~  ~$\rightarrow$~ ~$\llbracket \sigma \rrbracket$~) : Prop
+      := f (~$\llbracket \synO \rrbracket$~ tt) = ~$\llbracket \synO \rrbracket$~ tt /\
+        forall a b, f (~$\llbracket \synP \rrbracket$~ (a, b)) = ~$\llbracket \synP \rrbracket$~ (f a, f b).
+  \end{minted}
+
+  Attempting to prove \cref{eqn:linear_c} by induction on the combinator $c$ lays bare the issues underlying the denotations we chose.
+  As the denotation of $\synLin$, we picked regular functions.
+  This is much too unrestricted, as it does not ensure the linear behavior of the denotations of our monoidal combinators.
+  The lists we used as the denotation of the tensor types were much more problematic.
+  A better denotation would have been maps with some additional restrictions, which we can state as:
+  \begin{align}
+    \{ x : \llbracket \synO \rrbracket \} &\equiv \emptyset \label{eqn:map_1}\\
+    m_1 \cup \llbracket \synO \rrbracket &\equiv m_1 \label{eqn:map_2}\\
+    m_1 \cup m_2 &\equiv m_2 \cup m_1 \label{eqn:map_3}\\
+    m_1 \cup (m_2 \cup m_3) &\equiv (m_1 \cup m_2) \cup m_3 \label{eqn:map_4}
+  \end{align}
+  Of these, the list type denotations we used in the incomplete proof only satisfies \cref{eqn:map_4}.
+  Transitioning from lists to maps or bags would improve on this by also satisfying \cref{eqn:map_3}.
+  \Cref{eqn:map_1,eqn:map_2}, however, pose special difficulty in \<Coq>.
+  Note that $\llbracket \synO \rrbracket$ is defined on the types of our target language, which includes these same tensor types.
+  So when defining these maps as the denotations of tensor types, we require a notion of equivalence that is itself also dependent on those same denotations.
+  This recursive definitional requirement is problematic in the total language of \<Coq>.
+  Another obstacle is the fact that maps require decidable equality on the types used as keys.
+  This becomes an issue when the map contains either functions or real number types as equality on these types is not generally decidable.
+
+  One presumed solution to the first problem is to define proper domains using canonical structures and setoids as the denotational semantics of our language.
+  One would then be able to attach, at each type, an element corresponding to $\llbracket \synO \rrbracket$.
+  We could then take \cref{eqn:map_1,eqn:map_2} into account in the equivalence relation.
+  This would seemingly solve the first issue.
+  How to concretely solve or avoid the second issue in a proof assistant is still unknown.
