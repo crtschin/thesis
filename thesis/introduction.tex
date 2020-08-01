@@ -11,7 +11,7 @@ Programming language research has a rich history, with many well-known both high
 Exposing these optimization techniques to the world of automatic differentiation can be very fruitful as these calculations are very expensive and often require significant computing power to run.
 Through other concepts such as higher-order functions and type systems, we would also get additional benefits such as code-reusability and correctness.
 
-In this thesis, we will aim to formalize an extensible correctness proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
+In this thesis, we aim to formalize an extensible correctness proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
 Our formalization is based on a recent proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}.
 They proved, using a denotational model of diffeological spaces, that their forward-mode emulating macro is correct when applied to a simply-typed lambda calculus with products, co-products and inductive types.
 
@@ -28,4 +28,6 @@ With this thesis we make the following core contributions:
 Finally, \cref{sec:rev} gives our attempt at a formal proof of the recent combinator-based reverse-mode automatic differentiation algorithm by \Vakar{}\cite{vkr2020reverse}.
 
 % TODO: Add a more elaborate section for notations
-% As a notational convention, we will use specialized notation in the definitions themselves. \<Coq> normally requires that pretty printed notations be defined separately from the definitions they reference. The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.
+% As a notational convention, we will use specialized notation in the definitions themselves.
+% \<Coq> normally requires that pretty printed notations be defined separately from the definitions they reference.
+% The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.

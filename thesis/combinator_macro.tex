@@ -1,20 +1,22 @@
 \subsection{Defining the Macro and Target Language}\label{sec:combinator-macro}
   The reverse-mode macro we will discuss in this chapter, like the forward-mode macro splits any type $\tau$ into tuples $(\tau_1, \tau_2)$, where $\tau_1$ and $\tau_2$ represent, respectively, primal and tangent values.
-  As expected, for $\tau_1$ the macro essentially preserves the behavior expected of any of the combinators.
+  As expected, for $\tau_1$ the macro essentially preserves the behavior expected of any of the combinators in our language.
   The intuition what happens with reverse-mode AD gives a hint to what $\tau_2$.
   Essentially, starting from an input vector and the derivative of the output variable, reverse-mode AD calculates the derivatives of each of the input variables.
   On the type level, this can be formulated as transforming combinators $\comb{\tau}{\sigma}$ into a tuple of combinators $(\comb{(fst(\Drev(\tau)))}{(fst(\Drev(\sigma)))}, \comb{(fst(\Drev(\tau)) \synStar snd(\Drev(\sigma)))}{(snd(\Drev(\tau)))})$.
 
   Defining this transformation poses an issue however, as we will illustrate with an example.
   Consider the combinators \<exl>, \<exr> and \<dupl> from \cref{sec:combinator-core}.
+  Attempting to fill this in using type-directed programming following the type signature we mentioned previously, leads to the following:
   \begin{align*}
     \Drev(\synExl) &= (\synExl, \synSeq{\synDupl}{\synCross{\synExr}{(\synSeq{\synNeg}{\synO})}}) \\
     \Drev(\synExr) &= (\synExr, \synSeq{\synDupl}{\synCross{(\synSeq{\synNeg}{\synO})}{\synExr}}) \\
     \Drev(\synDupl) &= (\synDupl, \synSeq{\synExr}{\synP})
   \end{align*}
-  Note the usage of the monoidal combinators $(\synO, \synP)$.
+  Note the usages of the $(\synO, \synP)$ combinators.
+  While $\synO$ is used to explicitly zero out the unused terms in both \<exl> and \<exr>, $\synP$ is used to recombine terms in \<dupl>.
   As mentioned in the previous section, these combinators encode the dual structures to the contraction and weakening rules present in programming language inference rules.
-  This encodes how we will treat the fan-out problem, where $\synP : \comb{\tau \synStar \tau}{\tau}$ combines two terms of type $\tau$ in a generic way.
+  This also appropriately encodes how we will treat the fan-out problem, where $\synP : \comb{(\tau \synStar \tau)}{\tau}$ combines two terms of type $\tau$ in a generic way.
   Likewise, $\synO : \comb{\synUnit}{\tau}$ formulates how to zero out variables of arbitrary type $\tau$.
   We can define these combinators by induction on their types, where $\vec{0}$ is the regular vector consisting of just zeroes.
   \begin{align*}
@@ -53,7 +55,7 @@
   For tuples, this involves creating a new tuple where the left and right components consist of, respectively, the combinations of all left and right projections.
   With function types, both left and right input functions need to be evaluated separately before they can be combined.
 
-  We can reuse the same reasoning we used to derive how the combinators should be transformed for reverse-mode, to define the macro on the function types.
+  We can reuse the same reasoning we used to derive how the combinators should be transformed for reverse-mode, to define the behavior of our macro on function types.
   This reasoning leads to the incomplete definition of
   \begin{multline}
     \Drev(\tau \synFunc \sigma) = (fst(\Drev(\tau)) \synFunc (fst(\Drev(\sigma)) \synStar (snd(\Drev(\sigma)) \synFunc snd(\Drev(\tau)))),
@@ -63,13 +65,12 @@
   % TODO: Explain faulty use of products as tangent values.
   In a sense, the tangent value at function types keeps track of the adjoints currently calculated so they can be combined with other adjoints down the line.
   Remember that in reverse-mode AD, the problem of fan-out involves combining each usage of a variable in the reverse pass.
-  We solved the issue of combining variable usages using the $\synP$ combinator, but still have to find something to keep track of which terms to combine.
+  While we solved the issue of combining variable usages using the $\synP$ combinator, but still have to find something to keep track of which terms to combine.
 
   In \cref{eqn:combinator_d_incorrect}, we attempt to keep track of the adjoints using product types, which are easily combined using $\synP$.
   This, however, does not ensure that the linear properties of both $(\synO, \synP)$ are preserved.
   Indeed, for any program consisting of combinators such that it has type $(\comb{\tau}{\synR})$, if $\llbracket \synO_\tau \rrbracket$ is given as input in the denotational sense, the resulting program should correspond to $0$.
   Similarly, $\llbracket \synP_\tau \rrbracket$ on inputs $a$ and $b$ should correspond to some notion of addition between $a$ and $b$.
-  In other words, we need to establish that the denotations of our combinators are linear with respect to both $(\synO, \synP)$.
 
   % TODO: Introduce need for linear types
   \Vakar{} poses the usage of an auxiliary target language with a limited variant of linear types as the result of evaluating the reverse-mode macro\cite{vkr2020reverse}.
@@ -133,10 +134,7 @@
         \end{array}
       \right.
   \end{align*}
-
   Using these additional constructs, we can finally define the macro as shown in \cref{fig:macro_combinator}.
-  Note the usages of the $(\synO, \synP)$ combinators.
-  While $\synO$ is used to explicitly zero out the unused terms in both \<exl> and \<exr>, $\synP$ is used to recombine terms in \<dupl>.
 
   \begin{figure}
     \centering

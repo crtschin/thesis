@@ -28,9 +28,9 @@ We can also see that it follows the chain rule for function composition.
   f(g(x + x' \epsilon)) &= f(g(x) + g'(x)x'\epsilon)) \\
     &= f(g(x)) + f'(g(x))g'(x)x'\epsilon
 \end{align*}
-Using this, we can essentially calculate the derivative of any differentiable function by interpreting any non-dual number $x$ as its dual number counterpart of either $x + 1\epsilon$ or $x + 0\epsilon$. We interpret constant values as $x + 0\epsilon$, while input variables we take the partial derivative of are interpreted as $x + 1\epsilon$.
+Using this, we can essentially calculate the derivative of any differentiable function by interpreting any non-dual number $x$ as its dual number counterpart. Respectively, we interpret constant values as $x + 0\epsilon$, while input variables we take the partial derivative of are interpreted as $x + 1\epsilon$.
 
-To give a more elaborate example of how this works in forward-mode AD, take the function $f(x, y) = x^2 + (x - y)$ as an example.
+To give a more elaborate example of how forward-mode AD works graphically, take the function $f(x, y) = x^2 + (x - y)$ as an example.
 The dependencies between the terms and operations of the function is visible in the computational graph in \cref{fig:func_trace}.
 The corresponding traces are filled in \cref{table:func_trace} for the input values $x = 2, y = 1$.
 We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$.
