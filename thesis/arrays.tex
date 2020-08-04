@@ -92,16 +92,16 @@
           \text{vector}(n, \llbracket \tau \rrbracket) \\
         \llbracket \build{n}{f} \rrbracket &=
           \lambda x.
-          \text{vect}(n, \llbracket \rrbracket \circ f, x) \\
+          \vect(n, \llbracket \rrbracket \circ f, x) \\
         \llbracket \get{i}{t} \rrbracket &=
           \lambda x. \denGet{\llbracket t \rrbracket(x)}{i} \\
       \end{aligned} \\
       \begin{aligned}
-      \text{vect}(i, f, x) &=
+      \vect(i, f, x) &=
         \begin{cases}
           \denNil
             &: i = 0 \\
-          \denCons{f(i)(x)}{\text{vect}(i', \lambda j. f(j + 1), x)}
+          \denCons{f(i)(x)}{\vect(i', \lambda j. f(j + 1), x)}
             &: i = i' + 1
         \end{cases}
       \end{aligned}

@@ -6,7 +6,7 @@ In the past 30 years since it has been released, research has contributed to ext
 The core of this type theory is based on constructive logic and so many of the laws known in classical logic are not provable.
 An example includes the law of the excluded middle, $\forall A, A \vee \neg A$.
 In most cases they can, however, be safely added to \<Coq> without making its logic inconsistent. Many of these axioms are readily available in the standard library.
-Due to its usefulness in proving propositions over functions, we will make use of the functional extensionality axiom in \<Coq>, which states that functions are equal if they are extensionally equivalent, $(\forall x, f\ x = g\ x) \to f = g$.
+Due to its usefulness in proving propositions over functions, we will make heavy use of the functional extensionality axiom in \<Coq>, which states that functions are equal if they are extensionally equivalent, $(\forall x, f\ x = g\ x) \to f = g$.
 
 \input{language_representation.tex}
 \input{dependent_coq.tex}

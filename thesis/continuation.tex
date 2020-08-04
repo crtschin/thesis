@@ -141,13 +141,27 @@
   \end{equation*}
 
   Using these two input massaging functions, we can state correctness of our continuation-based macro with respect to our forward-mode macro.
-
-  \begin{proposition}[Correctness of continuation-based AD]
+  \begin{proposition}[Correctness of continuation-based AD]\label{prop:continuation}
     For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
   \end{proposition}
+  Unfortunately, this statement cannot be proven directly.
+  To see why, consider multiplication where we would have to prove
+  \begin{equation*}
+    snd(\llbracket \Dc_n(\mul{t_1}{t_2}) \rrbracket \circ f)= snd(\llbracket \Dc_n(\mul{t_1}{t_2}) \rrbracket \circ g)(1)
+  \end{equation*}
+  This can be rewritten using the definitions of our denotations to
+  \begin{align*}
+    \lambda a. \vect(n, \lambda i, x. &fst(\llbracket \D_n(t_2) \rrbracket(x)) * \denGet{snd(\llbracket \D_n(t_1)\rrbracket(x))}{i} + \\
+      &fst(\llbracket \D_n(t_1) \rrbracket(x)) * \denGet{snd(\llbracket \D_n(t_2)\rrbracket(x))}{i}, a) = \\
+    \lambda a. \vect(n, \lambda i, x. &\denGet{snd(\llbracket \Dc_n(t_1) \rrbracket(tl(x)))(fst(\llbracket \Dc_n(t_2)\rrbracket(x)))}{i} * hd(x) + \\
+    &\denGet{snd(\llbracket \Dc_n(t_2) \rrbracket(tl(x)))(fst(\llbracket \Dc_n(t_1)\rrbracket(x)))}{i} * hd(x), \denCons{1}{a})
+  \end{align*}
+  Note on the right hand side, that the first projection of the macro on terms, which contains the primal values, is passed along the continuation in the second projection.
+  As our current induction hypothesis, if we use \cref{prop:continuation} as the basis of our logical relation, restricts our equivalence between $\Dc$ and $\D$ on terms $t_1$ and $t_2$ to passing along 1 to the continuations, this goal cannot be proven.
+  This implies that we require some generalization in both our proof goal and logical relation.
 
-  This statement cannot be proven directly, however, we need a more general correctness statement.
-  To be be specific, we need to establish equivalence between the macros regardless of the number we apply to the continuation-based macro, which corresponds to the coefficient of the forward-mode macro.
+  To be specific, we need to establish equivalence between the macros regardless of the argument we apply to the continuation-based macro, which also corresponds to the coefficient of our forward-mode macro.
+  This requirement can be interpreted as confirming that the two macros are equivalent independent of the sensitivities of functions or operations.
   This equivalence needs to be baked into the logical relation in our proof.
   The logical relation we will use in this proof for the most part stays the same as the one we used in the proof in \cref{sec:forward}.
   The only case to differ significantly is the one for our ground type, the type of real numbers, $\synR$.
@@ -176,7 +190,7 @@
   So induction on the number of terms involved in the operation necessary leads to issues with our relations, as these are indexed by the number of partial derivatives.
   Proving these cases along with the corresponding fundamental property of the logical relation results in the following theorem.
 
-  \begin{theorem}[Perturbation correctness]
+  \begin{theorem}[Sensitivity correctness]
     For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, function arguments $x : \llbracket \synR^n \rrbracket$, and real number $r$, we have $r * snd(\D_n(t)(\D_n(x))) = snd(\Dc_n(t)(\Dc_n(x)))(r)$
   \end{theorem}
   \begin{proof}
@@ -184,7 +198,6 @@
   \end{proof}
 
   This is easily specialized to the original correctness statement we set out to prove.
-
   \begin{corollary}[Correctness of continuation-based AD]
     For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
   \end{corollary}

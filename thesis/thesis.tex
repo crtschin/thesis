@@ -46,11 +46,6 @@
   \input{sums_prim.tex}
   \input{arrays.tex}
 \section{Optimizing through Program Transformations}\label{sec:opt}
-  Shaikhha, et al. have presented a small system which has proven to be performant\cite{Shaikha2019}.
-  They empirically showed that it is possible for forward-mode AD to approach the performance of reverse-mode AD, even if the forward-mode algorithm has to be executed $n$ times to calculate the $n$ partial derivatives of a function.
-  In \cref{sec:arrays} we already formalized one of the critical components of their system, namely their usage of array types.
-  Next, we will prove that the various program transformation rules they use to drastically reduce the number of calculations needed, are sound.
-
   \input{program_transformation.tex}
 \section{Relating a Continuation-Based Algorithm}\label{sec:continuation-base}
   \input{continuation.tex}
@@ -60,7 +55,7 @@
   Much of the problem with defining an efficient reverse-mode algorithm on functional languages comes from the difficulty with ensuring that fan-out, the various usages of a variable, in the forward pass, correctly transform to addition in the reverse pass.
 
   Eliott posed a novel and principled approach to defining an AD algorithm using \textit{category theory}\cite{Elliott-2018-ad-icfp}.
-  They take the category theoretical hammer to the problem by approaching it as an algorithm on categories, cartesian closed categories \textit{(CCC)} to be exact, which are known to be equivalent to the simply-typed lambda calculi\cite{Elliott-2017-compiling-to-categories}\cite{10.1007/3-540-15198-2_10}.
+  They take the category theoretical hammer to the problem by approaching it as an algorithm on categories, Cartesian closed categories \textit{(CCC)} to be exact, which are known to be equivalent to the simply-typed lambda calculi\cite{Elliott-2017-compiling-to-categories}\cite{10.1007/3-540-15198-2_10}.
   The algorithm is, however, still restricted to first order programs.
 
   An extension of this technique is given by \Vakar{}\cite{vkr2020reverse}.

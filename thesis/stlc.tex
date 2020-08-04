@@ -54,7 +54,7 @@
   % How we translated this into the well-typed intrinsic representation
   These can be translated into \<Coq> definitions in a reasonably straightforward manner, with each case keeping track of both how the typing context and types change.
   In the \<var> case, we need some way to determine what type the variable is referencing.
-  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied by a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in code \cref{lst:strong_stlc}.
+  Like many others previously\cite{Benton2011}\cite{Coquand1994}, instead of using indices into the list accompanied by a proof that the index does not exceed the length of the list, we make use of an inductively defined type evidence to type our variables as shown in \cref{lst:strong_stlc}.
   The cases for \<app> and \<abs> are as expected, where variables in the body of abstractions can reference their respective arguments.
 
   Note that in the original proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}, they made use of n-ary products accompanied by pattern matching expressions.

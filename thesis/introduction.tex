@@ -1,7 +1,10 @@
 \section{Introduction}
 % TODO: Work through MV feedback
-In machine learning and more specifically neural network research, researchers set up functions between input and output data and through an algorithm called back propagation, try to optimize the network such that it learns how to solve the problem implied by the data.
-Back propagation is a specialized version of automatic differentiation, reverse-mode automatic differentiation to be precise, but programming in an environment which allows for automatic differentiation can be limiting.
+In machine learning and neural network research, problems are automatically almost magically solved using just input and output data.
+This happens through an iterative optimization process of carefully designed functions.
+One of the algorithms facilitating this process is called backpropagation.
+Backpropagation directly corresponds to reverse-mode automatic differentiation, which, in most cases, is the most efficient method to compute the derivatives of a function, critical in optimization problems.
+But programming in an environment that allows for automatic differentiation can be limiting.
 
 Frameworks such as Tangent\fancyfootnote{https://github.com/google/tangent} or autograd\fancyfootnote{https://github.com/HIPS/autograd} are define-by-run algorithms, whose main tactic is to build up the derivative calculation dynamically during runtime.
 This process can restrict which high-level optimizations one can apply to generated code.
@@ -25,7 +28,7 @@ With this thesis we make the following core contributions:
 
 % TODO: Add references
 \Cref{sec:bg} includes a background section explaining many of the topics and techniques used in this thesis. The formalization of the ubiquitous forward-mode automatic differentiation is given in \cref{sec:forward}, starting from a base simply-typed lambda calculus extended with product types and incrementally adding new types and language constructs. \Cref{sec:opt,sec:continuation-base} give formalizations of optimization avenues through, respectively, program transformations and a continuation-based automatic differentiation algorithms.
-Finally, \cref{sec:rev} gives our attempt at a formal proof of the recent combinator-based reverse-mode automatic differentiation algorithm by \Vakar{}\cite{vkr2020reverse}.
+Finally, \cref{sec:rev} gives our attempt at a formal proof of the combinator-based reverse-mode automatic differentiation algorithm.
 
 % TODO: Add a more elaborate section for notations
 % As a notational convention, we will use specialized notation in the definitions themselves.

@@ -78,11 +78,6 @@
   This target language would be almost identical to the source combinator language described in \cref{sec:combinator-core}.
   The added types and terms are shown in \cref{fig:combinator_linear}.
 
-  % | exl_l : forall A B,
-  %   target (~$\synTens{A}{B}$~) A
-  % | exr_l : forall A B,
-  %   target (~$\synTens{A}{B}$~) B
-
   \begin{figure}
     \centering
     \begin{minted}{coq}
@@ -173,7 +168,3 @@
     \caption{Macro on the combinator language}
     \label{fig:macro_combinator}
   \end{figure}
-
-  % These lead to the monoidal operations $\Gamma \vdash \synO : \tau$ and $\Gamma \vdash t_1 \synP t_2 : \tau$, where $\Gamma \vdash t_1, t_2 : \tau$.
-  % Ensuring the higher-order types respect $(\synO, \synP)$ requires the usage of minimal linear types.
-  % Notice that these two operations naturally correspond to, respectively, the zeroing and fan-out problems associated with reverse-mode AD.

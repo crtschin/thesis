@@ -1,11 +1,11 @@
 \subsection{Core Combinator Language}\label{sec:combinator-core}
   A well-known fact is the connection between CCC and simply-typed lambda calculi\cite{10.1007/3-540-15198-2_10}.
   We can define a simple core combinator language inspired by the various categorical laws related to CCC.
-  The requirement for a combinator language to be able to do reverse-mode AD comes from the need to make explicit, the contraction and weakening rules usually kept implicit in the typing contexts of typed lambda calculi.
+  The requirement for a combinator language to be able to do reverse-mode AD comes from the need to make the contraction and weakening rules usually kept implicit in the typing contexts of typed lambda calculi, explicit.
   Translating from a simply-typed lambda calculus necessitates a translation between the implicit manipulation of the typing context to access variables, to one that is explicit in its usage of specific combinators.
 
   The core combinator language we will be using is shown in \cref{fig:combinator_core_lang}.
-  Note the combinator language contains no typing context and are defined as terms $c : Hom(\tau, \sigma)$, where $\tau$ and $\sigma$ are, respectively, the input and output types of the combinator $c$.
+  Note the combinator language contains no typing context and are defined as terms $c : \comb{\tau}{\sigma}$, where $\tau$ and $\sigma$ are, respectively, the input and output types of the combinator $c$.
   As programming in the combinator language can quickly become cumbersome and unreadable, we make repeated usage of some syntactic niceties.
   We interchangeably use $\synSeq{}{}$ as the infix version of \<seq> and $\langle A, B\rangle$ as a shortcut for $\synSeq{\synDupl}{\synCross{A}{B}}$.
   We also use some helper functions for moving elements around in products, as shown below.
@@ -202,8 +202,6 @@
       | ~$\tau'$~ :: ~$\Gamma'$~ => weaken ~$\tau'$~ (weaken_ctx ~$\Gamma'$~ c)
       end.
   \end{minted}
-
-  % TODO: explain ccl_ccc
 
   \begin{listing}
     \begin{minted}{coq}

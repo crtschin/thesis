@@ -286,7 +286,7 @@ Proof with quick.
   { rewrite IHn... }
 Qed.
 
-(* States equivalence between forward and continuation format input vectors *)
+(* States equivalence between forward and continuation-format input vectors *)
 Lemma vector_one_hot_same : forall x i n,
   Vmap (Rmult x) (vector_one_hot i n) = vector_one_hot_c i n x.
 Proof with quick.
@@ -328,6 +328,9 @@ Proof with quick.
   simp Dtm_c...
 Qed.
 
+(* Equivalence between forward and continuation-based macro run on the above
+    example
+*)
 Example derivative_example :
   snd (⟦ Dtm 2 square_plus ⟧ₜₘ
     (@Dtm_ctx 2 2
@@ -346,11 +349,12 @@ Qed.
 
 (*
   Logical relations proof between the denotations given by the
-  forward and reverse mode macros
+    forward and reverse mode macros.
 *)
 Equations S n τ :
   (R -> ⟦ Dt n τ ⟧ₜ) -> (R -> ⟦ Dt_c n τ ⟧ₜ) -> Prop :=
 S n ℝ f g := ((fun r => (fst (f r))) = fun r => (fst (g r))) /\
+  (* Generalized equivalence  *)
   forall x,
     (fun r => Vmap (Rmult x) (snd (f r)))
       = fun r => (snd (g r)) x;

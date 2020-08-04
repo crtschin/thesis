@@ -1,15 +1,17 @@
 \subsection{Denotational semantics}
 % A formal semantics of programming language: An introduction
 % TODO: Work through MV feedback
-The notion of denotational semantics tries to find underlying mathematical models able to underpin the concepts known in programming languages. The most well-known example is the solution given by Dana Scott and Christopher Strachey\cite{Scott1977} for lambda calculi, also called domain theory.
+Denotational semantics enables reasoning about programs using formal mathematics.
+It also functions as a hotbed for new and innovative language designs and algorithms.
+The most well-known example is the domain theory model given by Dana Scott and Christopher Strachey\cite{Scott1977} for lambda calculi, also called domain theory.
 To be able to formalize non-termination and partiality, they thought to use concepts such as partial orderings and least fixed points\cite{aaby2020}.
 In this model, programs are regularly interpreted as partial functions, and recursive computations as taking the fixpoint of such functions.
 Non-termination, on the other hand, is formalized as a value $\bot$ that is lower in the ordering relation than any other element.
 
 Automatic differentiation introduces a challenge in constructing a denotational semantics as the notion of differentiability needs to be included.
-If the language under consideration were to be restricted to real-typed terms, cartesian spaces would have been sufficient as any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ could be interpreted as the corresponding smooth function $\llbracket t \rrbracket : \denR^n \to \denR$.
+If the language under consideration were to be restricted to real-typed terms, Cartesian spaces would have been sufficient as any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ could be interpreted as the corresponding smooth function $\llbracket t \rrbracket : \denR^n \to \denR$.
 Note that we use $\synR$ as the syntactic type for real numbers, while $\denR$ is its denotational counterpart.
-This, however, does not work when function types are added as their denotational equivalent, function spaces, are not supported by Cartesian spaces\cite{huot2020correctness}.
+Using Cartesian spaces, however, does not work when function types are added as their denotational equivalent, function spaces, are not supported by Cartesian spaces\cite{huot2020correctness}.
 In the original pen and paper proof of automatic differentiation this thesis is based on by Huot, Staton and \Vakar{}\cite{huot2020correctness}, the mathematical models used were diffeological spaces.
 
 For the purpose of this thesis, however, we were able to avoid using diffeological spaces by directly encoding the property of differentiability in the logical relation itself.
