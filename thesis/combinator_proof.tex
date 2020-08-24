@@ -1,7 +1,7 @@
 \subsection{Attempt at a Formalized Proof}\label{sec:combinator-proof}
-  Temporarily ignoring the issue of a denotational semantics of our target language, we can formulate the proof as a logical relations argument as we have done in previous proofs.
+  Temporarily ignoring the issue of denotational semantics of our target language, we can formulate the proof as a logical relations argument, as we have done in previous proofs.
   Unlike the previous proofs, however, we are this time working with a combinator language.
-  This has the convenient consequence that we do not have to worry about typing contexts or substitutions in the proof of the fundamental lemma of our logical relation.
+  Using a separate combinator language has the convenient consequence that we do not have to worry about typing contexts or substitutions in the proof of the fundamental lemma of our logical relation.
 
   As previously, we can formulate our logical relation as a type indexed relation between the curves related to our macro.
   \begin{equation*}
@@ -63,15 +63,15 @@
     For any type $\tau$ and argument functions $f : \denR \rightarrow \llbracket \tau \rrbracket$, $g : \denR \rightarrow \llbracket fst(\Drev(\tau))\rrbracket$ and $h : \denR \denStar \llbracket snd(\Drev(\tau)) \rrbracket \rightarrow \denR$ such that they follow $S_\tau(f, g, h)$, then $\text{linear\_second}(h)$.
   \end{lemma}
   \begin{proof}
-    This is proven by induction on the type $\tau$.
+    This lemma is proven by induction on the type $\tau$.
     The cases for $\synR$ and $\synRn$ are proven by the distributive law, while the rest follows regularly from the induction hypotheses.
   \end{proof}
 
   We can plot down the skeleton of what the proof would likely require.
   We can state the correctness of the reverse-mode algorithm as the following proposition.
-  Note the usage of the $\text{sum}$ function to linearly combine all partial derivatives.
+  Note the usage of the $\text{sum}$ function to combine all partial derivatives linearly.
   We additionally use a macro-specific initialization function $\Drev_n$ for our arguments akin to \cref{eqn:argument_df} used in \cref{sec:forward}.
-  This is only slightly changed to return a tuple of the original primal value and the tangent value defined as in \cref{eqn:argument_df}.
+  The initialization function is only altered slightly to return a tuple of the original primal value and the tangent value defined as in \cref{eqn:argument_df}.
   \begin{equation*}
     \Drev_n(f) =
       \left\{
@@ -122,26 +122,27 @@
 
   Attempting to prove \cref{eqn:linear_c} by induction on the combinator $c$ lays bare the issues underlying the denotations we chose.
   As the denotation of $\synLin$, we picked regular functions.
-  This is much too unrestricted, as it does not ensure the linear behavior of the denotations of our monoidal combinators.
+  This choice proved much too unrestricted, as it does not ensure the linear behavior of the denotations of our monoidal combinators.
   The lists we used as the denotation of the tensor types were much more problematic.
-  A better denotation would have been maps with some additional restrictions, which we can state as:
+  A better denotation would have been map types with some additional restrictions, which we can be state as:
   \begin{align}
     \{ x : \llbracket \synO \rrbracket \} &\equiv \emptyset \label{eqn:map_1}\\
+    \{ x : a \} \cap \{ x : b \} &\equiv \{ x : a\ \llbracket \synP \rrbracket\ b \} \label{eqn:map_5}\\
     m_1 \cup \llbracket \synO \rrbracket &\equiv m_1 \label{eqn:map_2}\\
     m_1 \cup m_2 &\equiv m_2 \cup m_1 \label{eqn:map_3}\\
     m_1 \cup (m_2 \cup m_3) &\equiv (m_1 \cup m_2) \cup m_3 \label{eqn:map_4}
   \end{align}
   Of these, the list type denotations we used in the incomplete proof only satisfies \cref{eqn:map_4}.
   Transitioning from lists to maps or bags would improve on this by also satisfying \cref{eqn:map_3}.
-  \Cref{eqn:map_1,eqn:map_2}, however, pose special difficulty in \<Coq>.
+  \Cref{eqn:map_1,eqn:map_2}, however, pose a unique difficulty in \<Coq>.
   Note that $\llbracket \synO \rrbracket$ is defined on the types of our target language, which includes these same tensor types.
   So when defining these maps as the denotations of tensor types, we require a notion of equivalence that is itself also dependent on those same denotations.
   This recursive definitional requirement is problematic in the total language of \<Coq>.
   Another obstacle is the fact that maps require decidable equality on the types used as keys.
-  This becomes an issue when the map contains either functions or real number types as equality on these types is not generally decidable.
+  Remember that equality on both function or real number types is not generally decidable, and as such, cannot be used as keys in our maps.
 
   One presumed solution to the first problem is to define proper domains using canonical structures and setoids as the denotational semantics of our language.
   One would then be able to attach, at each type, an element corresponding to $\llbracket \synO \rrbracket$.
   We could then take \cref{eqn:map_1,eqn:map_2} into account in the equivalence relation.
-  This would seemingly solve the first issue.
+  Embedding such a zero-element into the denotations directly, seemingly solve the first issue.
   How to concretely solve or avoid the second issue in a proof assistant is still unknown.

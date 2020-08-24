@@ -102,12 +102,11 @@
     \label{eqn:denotation_sums_prim}
   \end{figure}
 
-  Both sums and integer terms are structure preserving with respect to the forward-mode macro.
+  Both sums and integer terms are structure-preserving with respect to the forward-mode macro.
   Note that we only take the derivative of values of type \synR, so when integers are encountered, these are largely ignored.
   More specifically, we do not keep track of derivatives at natural number types as the tangent space is $0$-dimensional.
   For a similar reason, the logical relation at integer types only needs to establish that the denotations of integer terms tracked by the logical relation, which will be of type $\denR \to \denN$, are constant.
-  For sum terms, the functions tracked are either the left or right tag of the sum.
-  This is neatly defined using a logical disjunction.
+  For sum terms, the functions tracked are either the left or right tag of the sum, which we can neatly define using a logical disjunction.
 
   \begin{figure}
     \centering

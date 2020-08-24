@@ -1,29 +1,30 @@
 \subsection{Automatic differentiation}
-Automatic differentiation (\textit{AD}) has a long and rich history, where its driving motivation is to efficiently calculate the derivatives of functions in a manner that is both correct and fast\cite{Baydin2015AutomaticDI}.
+Automatic differentiation (\textit{AD}) has a long and rich history, where its driving motivation is to efficiently calculate the derivatives of higher-dimensional functions in a manner that is both correct and efficient in terms of space and time\cite{Baydin2015AutomaticDI}.
 There are several different methods of implementing AD algorithms, such as source-code transformations or operator overloading.
 These algorithms usually transform any program which implements some function to one that calculates its derivative.
 
 There are two main variants of AD, namely forward-mode and reverse-mode AD.
 In forward-mode AD, we annotate every term in the function trace with their corresponding derivative.
-These are also known as, respectively, the primal and tangent traces.
+These are also known as, respectively, the \emph{primal} and \emph{tangent} traces.
 So calculating the partial derivatives of sub-terms is structural with respect to normal calculations.
 
-This approach to forward-mode AD can be explained by what is mathematically known as dual numbers, as these are, in essence, what we are calculating\cite{Baydin2015AutomaticDI}. Dual numbers are numbers in the form of
+The core approach to forward-mode AD can be explained by what is mathematically known as dual numbers, as these are, in essence, what we are calculating\cite{Baydin2015AutomaticDI}. Dual numbers are numbers in the form of
 $$
   x + x' \epsilon
 $$
-where $x, x' \in \denR$ and $\epsilon$ is a nilpotent number, such that $\epsilon^2 = 0$ and $\epsilon \neq 0$.
-Notably, both primal and tangent values are tracked in this representation, namely the tangent value is equal to the coefficient of $\epsilon$.
+where $x, x' \in \denR$ and $\epsilon$ is a formal construction, such that $\epsilon^2 = 0$ and $\epsilon \neq 0$.
+Using the standard ring axioms of addition and multiplication, we can uniquely evaluate any polynomial containing $\epsilon$ into the form $x + x'\epsilon$ where neither $x$ nor $x'$ contains $\epsilon$.
+Notably, both the primal and tangent values are tracked in this representation as $x$ and $x'$.
 As an example, we can see that this is true for both addition and multiplication:
 \begin{align*}
   (x + x' \epsilon) + (y + y' \epsilon) &= (x + y) + (x' + y')\epsilon \\
   (x + x' \epsilon)(y + y' \epsilon) &= (xy) + (xy' + yx')\epsilon
 \end{align*}
-Using the following scheme for function application:
+Using the following scheme for function application,
 \begin{align*}
   f(x + x' \epsilon) &= f(x) + f'(x)x'\epsilon
 \end{align*}
-We can also see that it follows the chain rule for function composition.
+we can also see that it follows the chain rule for function composition.
 \begin{align*}
   f(g(x + x' \epsilon)) &= f(g(x) + g'(x)x'\epsilon)) \\
     &= f(g(x)) + f'(g(x))g'(x)x'\epsilon
@@ -34,8 +35,7 @@ To give a more elaborate example of how forward-mode AD works graphically, take 
 The dependencies between the terms and operations of the function is visible in the computational graph in \cref{fig:func_trace}.
 The corresponding traces are filled in \cref{table:func_trace} for the input values $x = 2, y = 1$.
 We can calculate the partial derivative $\frac{\delta f}{\delta x}$ at this point by setting $x' = 1$ and $y' = 0$.
-Note that the calculation of the traces is structural.
-This means that when we calculate the primal value at a specific point, we can calculate the corresponding tangent value at that same point.
+Note that the calculation of the traces is structural, which means that when we calculate the primal value at a specific point, we can calculate the corresponding tangent value at that same point.
 
 \begin{figure}
   \centering
@@ -66,7 +66,7 @@ $f      $&$=$&$v_3$&$=$&$5$           &$f'$&$=$&$v'_3$&$=$&$5$ \\
 \end{table}
 
 Reverse-mode automatic differentiation takes a drastically different approach.
-It starts by annotating one of the possibly many output variables $\frac{\partial{y}}{\partial{y}} = 1$ and working in the reverse direction, annotating each intermediate variable $v_i$ with their adjoint
+It starts by annotating one of the possibly many output variables $\frac{\partial{y}}{\partial{y}} = 1$ and working in the reverse direction, annotating each intermediate variable $v_i$ with their \emph{adjoint}
 $$v'_i=\frac{\delta y_i}{\delta v_i}$$
 To accomplish this, we require two separate passes.
 Like the forward-mode variant, a primal trace is needed.
@@ -77,16 +77,17 @@ The adjoints of multiple usages of the same variables, also called fan-out, are 
 The optimal choice between the automatic differentiation variants is heavily dependent on the function under consideration.
 Preference is given for forward-mode AD when the number of output variables exceeds the number of input variables, as it has to be rerun for each partial derivative of the function.
 On the other hand, reverse-mode AD scales with the number of output variables as it works backwards from each one.
-In machine learning research, preference is given for reverse-mode AD, because the objective functions generally contain a small number of output variables.
+For example, much machine learning research boils down to optimizing an objective function with just a single output variable, but many input variables.
+As such, reverse-mode AD is the optimal choice.
 
-While implementing forward-mode AD algorithms is very straightforward, reverse-mode AD is more problematic.
-Correctly creating the reverse pass such that it handles both fan-out and zeroing in the reverse pass is difficult.
+Implementing reverse-mode AD is more problematic than the straightforward forward-mode AD algorithms.
+Correctly creating the reverse pass such that it handles both fan-out and zeroing in the reverse pass is complicated.
 As such, many frameworks targeting non-theoretical applications such as deep learning focus on imperative languages, which eases the process due to the additional concept of state.
 
 There are two main styles of implementing reverse-mode AD, namely define-then-run and define-by-run.
 Define-then-run attempts to create the static computational graph during the compilation process that transforms the program to one that calculates the derivative of the function the program describes.
 One significant benefit to this approach is the added opportunity to apply optimization steps in the compilation process.
-This does currently, however, have the restriction that programs defined within these frameworks are limited in their usage of intricate control flow.
+Define-then-run frameworks do, however, have the restriction that programs defined within these frameworks are limited in their usage of intricate control flow as is apparent in the expressive power of TensorFlow\fancyfootnote{https://www.tensorflow.org/}.
 
 This restriction is lifted in the define-by-run style, which builds the computation graph during runtime.
 As such, conditionals and loops can now be used freely in the framework.

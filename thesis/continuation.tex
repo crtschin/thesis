@@ -1,11 +1,10 @@
-  Huot, Staton and \Vakar{} showed the versatility of their denotational semantics on a continuation-based AD algorithm, whose origin can be traced back to an description given by Karczmarczuk\cite{KarczmarczukLazyTimeReversal}.
+  Huot, Staton and \Vakar{} showed the versatility of their denotational semantics on a continuation-based AD algorithm whose origin can be traced back to a description given by Karczmarczuk\cite{KarczmarczukLazyTimeReversal}.
   While this algorithm does calculate gradients, it is not a true reverse-mode AD algorithm as the final computation graph differs from what would be expected of reverse-mode AD\cite{PearlmutterSiskind2008}.
-  The consequence of which is the excess usage of primitive operations.
+  A consequence of which is the excess usage of primitive operations.
   Nonetheless, it is useful to give a formal proof of correctness of this algorithm in terms of what we have already established, to show the versatility of the proof technique used, and by extension, our simple set-theoretic denotational semantics.
-  This is done in \cref{sec:continuation-base}.
 
-  The guiding principle in this algorithm is to build up the reverse pass as a continuation using a structure preserving macro on the program syntax.
-  Like the forward-mode macro $\D$, the continuation-based macro $\Dc$ is structure preserving and works with tuples at ground type $\synR$.
+  The guiding principle in this algorithm is to build up the reverse pass as a continuation using a structure-preserving macro on the program syntax.
+  Like the forward-mode macro $\D$, the continuation-based macro $\Dc$ is structure-preserving and works with tuples at ground type $\synR$.
   But unlike the forward-mode macro, which uses these tuples to represent dual-numbers, the continuation-based macro pairs the primal values with a continuation calculating an array containing all of the perturbation variables.
   Notably, because the continuation-based macro, shown in \cref{fig:continuation_macro}, calculates all of the perturbation values with respect to each of the input variables, it is additionally indexed by the number of input variables.
 
@@ -37,8 +36,8 @@
     \label{fig:continuation_macro}
   \end{figure}
 
-  As we will phrase correctness in terms of the forward-mode macro, the forward-mode macro used in \cref{sec:formal_stlc} has to be slightly altered to calculate the partial derivatives with respect to all of the input variables.
-  This change is slight, and merely swaps what was previously the tangent value for a vector of the tangent values corresponding to the input variables.
+  As we will phrase correctness in terms of the forward-mode macro, the forward-mode macro used in \cref{sec:formal_stlc} is slightly altered to calculate the partial derivatives with respect to all of the input variables.
+  This change is slight and merely swaps what was previously the tangent value for a vector of the tangent values corresponding to the input variables.
   The operations of reals are then swapped out for their vector element-wise counterparts.
   The modified forward-mode macro is shown in \cref{fig:forward_mode_cont}.
 
@@ -91,7 +90,7 @@
   Unlike last time, however, the arguments have to be massaged to fit both the forward and the reverse-mode macro.
   Note that for the forward-mode macro, input arguments we take the partial derivative of are supplied in a dual number format where the tangent value is equal to $1$.
   Likewise, the tangent value of any other input argument should be set to $0$.
-  So each of the input arguments for the forward-mode macro are essentially coupled with a one-hot encoded vector.
+  So each of the input arguments for the forward-mode macro is essentially coupled with a one-hot encoded vector.
   \begin{equation*}
     \D_n\left(
     \begin{bmatrix}
@@ -113,7 +112,7 @@
         \end{bmatrix}) \\
     \end{bmatrix}^T
   \end{equation*}
-  Each of the one-hot encoded vectors function as indicating which partial derivative to calculate.
+  Each of the one-hot encoded vectors indicates which partial derivative to calculate.
   The continuation-based macro requires a similar format, but instead of a one-hot encoded vector containing the value $1$, the identity function is used.
   \begin{equation*}
     \Dc_n\left(
@@ -140,7 +139,7 @@
     \end{bmatrix}^T
   \end{equation*}
 
-  Using these two input massaging functions, we can state correctness of our continuation-based macro with respect to our forward-mode macro.
+  Using these two input massaging functions, we can state the correctness of our continuation-based macro relative to our forward-mode macro.
   \begin{proposition}[Correctness of continuation-based AD]\label{prop:continuation}
     For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
   \end{proposition}
@@ -149,22 +148,22 @@
   \begin{equation*}
     snd(\llbracket \Dc_n(\mul{t_1}{t_2}) \rrbracket \circ f)= snd(\llbracket \Dc_n(\mul{t_1}{t_2}) \rrbracket \circ g)(1)
   \end{equation*}
-  This can be rewritten using the definitions of our denotations to
+  This expression can be rewritten using the definitions of our denotations to
   \begin{align*}
     \lambda a. \vect(n, \lambda i, x. &fst(\llbracket \D_n(t_2) \rrbracket(x)) * \denGet{snd(\llbracket \D_n(t_1)\rrbracket(x))}{i} + \\
       &fst(\llbracket \D_n(t_1) \rrbracket(x)) * \denGet{snd(\llbracket \D_n(t_2)\rrbracket(x))}{i}, a) = \\
     \lambda a. \vect(n, \lambda i, x. &\denGet{snd(\llbracket \Dc_n(t_1) \rrbracket(tl(x)))(fst(\llbracket \Dc_n(t_2)\rrbracket(x)))}{i} * hd(x) + \\
     &\denGet{snd(\llbracket \Dc_n(t_2) \rrbracket(tl(x)))(fst(\llbracket \Dc_n(t_1)\rrbracket(x)))}{i} * hd(x), \denCons{1}{a})
   \end{align*}
-  Note on the right hand side, that the first projection of the macro on terms, which contains the primal values, is passed along the continuation in the second projection.
-  As our current induction hypothesis, if we use \cref{prop:continuation} as the basis of our logical relation, restricts our equivalence between $\Dc$ and $\D$ on terms $t_1$ and $t_2$ to passing along 1 to the continuations, this goal cannot be proven.
-  This implies that we require some generalization in both our proof goal and logical relation.
+  Note on the right-hand side, that the first projection of the macro on terms, which contains the primal values, is passed along the continuation in the second projection.
+  If we attempt to base our logical relation on \cref{prop:continuation}, however, the proof will fail.
+  The corresponding induction hypothesis will only account for supplying the value $1$ to our continuations, which is too restricting.
+  This issue implies that we require some generalization in both our proof goal and logical relation.
 
-  To be specific, we need to establish equivalence between the macros regardless of the argument we apply to the continuation-based macro, which also corresponds to the coefficient of our forward-mode macro.
-  This requirement can be interpreted as confirming that the two macros are equivalent independent of the sensitivities of functions or operations.
-  This equivalence needs to be baked into the logical relation in our proof.
-  The logical relation we will use in this proof for the most part stays the same as the one we used in the proof in \cref{sec:forward}.
-  The only case to differ significantly is the one for our ground type, the type of real numbers, $\synR$.
+  To be specific, we need to establish equivalence between the macros regardless of the argument we apply to the continuation-based macro, which corresponds to the coefficient of our forward-mode macro.
+  We bake this equivalence directly into the logical relation in our proof.
+  The logical relation we will use in this proof, for the most part, stays the same as the one we used in the proof in \cref{sec:forward}.
+  The only case to differ significantly is the type of real numbers, $\synR$.
   Also note that, like the macro functions, the logical relation is also indexed by the number of input variables.
 
   \begin{equation}
@@ -180,24 +179,24 @@
   \label{eqn:lr_continuous}
   \end{equation}
 
-  As a recurring theme, many of the definitions and lemmas we used in the proof in \cref{sec:forward} reappear in this proof, differing only superficially in that they are additionally indexed by the number of partial derivatives.
-  So we still make use of an instantiation relation like the one given in \cref{eqn:inst_base} to establish that arbitrary typing context instantiations preserve the logical relation.
+  As a recurring theme, the definitions and lemmas we used in the proof in \cref{sec:forward} reappear in this proof.
+  One of the main differences is that we now have to keep track of the number of partial derivatives.
+  So we still use an instantiation relation like the one given in \cref{eqn:inst_base} to establish that arbitrary typing context instantiations preserve the logical relation.
 
   The proof of the fundamental lemma proceeds in much the same manner as the one given for \cref{thm:fundamental_lemma}.
   As expected, the cases for the \synR-typed are exceptional.
-  Each of these cases require a generalized variant to be proven.
-  The problem here is that the number of partial derivatives is tightly coupled to the number of terms the operation is done over.
-  So induction on the number of terms involved in the operation necessary leads to issues with our relations, as these are indexed by the number of partial derivatives.
-  Proving these cases along with the corresponding fundamental property of the logical relation results in the following theorem.
+  The problem here is that the number of partial derivatives is tightly coupled to the number of terms involved in the operations.
+  This tight coupling can be solved for each of these cases by proving the corresponding generalized variant.
+  Proving these cases, along with the corresponding fundamental property of the logical relation, results in the following theorem.
 
-  \begin{theorem}[Sensitivity correctness]
+  \begin{theorem}[Duality]
     For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, function arguments $x : \llbracket \synR^n \rrbracket$, and real number $r$, we have $r * snd(\D_n(t)(\D_n(x))) = snd(\Dc_n(t)(\Dc_n(x)))(r)$
   \end{theorem}
   \begin{proof}
     This follows from the fundamental property of the logical relation in (\cref{eqn:lr_continuous}).
   \end{proof}
 
-  This is easily specialized to the original correctness statement we set out to prove.
+  This theorem is easily specialized to the original correctness statement we set out to prove.
   \begin{corollary}[Correctness of continuation-based AD]
     For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
   \end{corollary}

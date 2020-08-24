@@ -294,7 +294,8 @@
   The next step involves proving that syntactically well-typed terms are semantically correct.
   In other words, the relation needs to be proven valid for any term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and argument function $f : \denR \rightarrow \denR^n$ such that $S_\tau(\llbracket t \rrbracket \circ f, \llbracket \D(t) \rrbracket \circ \D_n \circ f)$.
   This is also known as the fundamental property of the logical relation given in \cref{eqn:lr_base}.
-  To properly instantiate the arguments to the denotation of the macro-applied term, an auxiliary function is needed that pairs each constant with their derivative $0$. So it transforms the argument function $f : \denR \rightarrow \llbracket \synR^n \rrbracket$ into one that supplies both the original input value and its accompanying derivative.
+  To properly instantiate the arguments to the denotation of the macro-applied term, an auxiliary function is needed that pairs each constant with their derivative $0$.
+  So it transforms the argument function $f : \denR \rightarrow \llbracket \synR^n \rrbracket$ into one that supplies both the original input value and its accompanying derivative.
   The full type signature of this auxiliary function is $\D_n : (\denR \rightarrow \llbracket \synR^n \rrbracket) \rightarrow \denR \rightarrow \llbracket \D(\synR)^n \rrbracket$. Note that $\tau^n$ is used as syntactic sugar for $\synRepeat{\tau}{n}$ and is simply a typing context consisting of the type $\tau$ repeated $n$ times.
 
   \begin{definition}[Initialization of dual number representations]
@@ -357,7 +358,7 @@
   \end{proof}
 
   We can derive the fundamental property of the base logical relation directly from the fundamental lemma.
-  This involves proving the prerequisite $\inst{}$ we used previously.
+  This corollary involves proving the prerequisite $\inst{}$ we used previously.
   Note that the correctness of both the macro and the fundamental property is dependent on the requirement that the denotations supplied by the argument functions are differentiable.
   We formulate this requirement as \cref{thm:differentiable}.
 

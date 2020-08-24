@@ -1,4 +1,23 @@
 {
     "search.useIgnoreFiles": false,
-    "editor.wordWrap": "wordWrapColumn"
+    "editor.wordWrap": "wordWrapColumn",
+    "cSpell.words": [
+        "diffeological",
+        "setoids"
+    ],
+    "grammarly.overrides": [
+        {
+            "files": [
+                "**/thesis/combinator_proof.tex"
+            ],
+            "config": {
+                "audience": "knowledgeable",
+                "dialect": "british",
+                "domain": "academic",
+                "emotions": [],
+                "goals": [],
+                "emotion": "mild"
+            }
+        }
+    ]
 }

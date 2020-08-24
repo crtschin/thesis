@@ -2,15 +2,16 @@
 % TODO: Work through MV feedback
 In \<Coq>, one can normally write function definitions using either case-analysis as is done in other functional languages, or using \<Coq>'s tactics language.
 Using the standard case-analysis functionality can cause the code to be complicated and verbose, even more so when proof terms are present in the function signature.
-This has been caused by the previously poor support in \<Coq> for dependent pattern matching.
-Using the return keyword, one is able to vary the result type of a match expression. But due to requirement \<Coq> used to have that case expressions be syntactically total, this could be very difficult to work with.
+This complexity has historically been caused by the poor support in \<Coq> for dependent pattern matching.
+Using the return keyword, one can vary the result type of a match expression. But due to requirement \<Coq> used to have that case expressions be syntactically total, this could be very difficult to work with.
 One other possibility would be to write the function as a relation between its input and output.
-This also has its limitations as you then lose computability as \<Coq> treats these definitions opaquely. In this case the standard \<simpl> tactic which invokes \<Coq>'s reduction mechanism is not able to reduce instances of the term.
-This often requires the user to write many more proofs to be able to work with the definitions.
+This approach also has its limitations as you then lose computability as \<Coq> treats these definitions opaquely.
+In this case, the standard \<simpl> tactic which invokes the reduction mechanism is not able to reduce instances of the term.
+Instead the user is required to write many more proofs to be able to work with such definitions.
 
 As an example, we will work through defining a length indexed list and a corresponding head function limited to lists of length at least one in \cref{lst:dt_ilist}.
 Using the \<Coq> keyword return, it is possible to let the return type of a match expressions depend on the result of one of the type arguments.
-This makes it possible to define an auxiliary function which, while total on the length of the list, has an incorrect return type. It namely returns the type unit if the input list had the length zero.
+This makes it possible to define an auxiliary function which, while total on the length of the list, has an incorrect return type.
 We can then use this auxiliary function in the actual head function by specifying that the list has length at least one.
 It should be noted that more recent versions of \<Coq> do not require that case expressions be syntactically total, so specifying that the input list has a length of at least zero is enough to eliminate the requirement for the zero-case.
 

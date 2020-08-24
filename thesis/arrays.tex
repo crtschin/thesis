@@ -63,7 +63,7 @@
 
   Both the macro and denotation functions deviate slightly from how the previous terms were defined.
   When looking at the macro, while it previously sufficed to recursively call the macro on subterms, this is not possible as the subterm of interest is now a function.
-  This can be solved by substituting the function by a composition of itself combined with the forward-mode macro, essentially applying the macro to every possible result of the function.
+  Instead, we substitute the function by a composition of itself combined with the forward-mode macro, essentially applying the macro to every possible result of the function.
 
   \begin{figure}
     \centering
@@ -110,10 +110,9 @@
     \label{fig:denotation_array}
   \end{figure}
 
-  The logical relation for array types needs to exhibit the same behavior with respect to both construction and indexing in how it preserves the relation on subterms.
-  This is accomplished by first and foremost, quantifying over the indices possible for the vector denotation.
-  Next, each subdenotation needs to both preserve the relation and be extensionally equal to the appropriate projection of the term.
-
+  The logical relation for array types needs to exhibit the same behavior for both construction and indexing in how it preserves the relation on subterms.
+  This is accomplished by quantifying over the indices of the vector denotation.
+  Next, the denotation of each subterm needs to both preserve the relation and be extensionally equal to the appropriate projection of the term.
   \begin{equation}
     S_\tau(f, g) =
       \left\{

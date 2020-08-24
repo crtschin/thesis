@@ -1,11 +1,6 @@
 \subsection{Defining the Macro and Target Language}\label{sec:combinator-macro}
-  The reverse-mode macro we will discuss in this chapter, like the forward-mode macro splits any type $\tau$ into tuples $(\tau_1, \tau_2)$, where $\tau_1$ and $\tau_2$ represent, respectively, primal and tangent values.
-  As expected, for $\tau_1$ the macro essentially preserves the behavior expected of any of the combinators in our language.
-  The intuition what happens with reverse-mode AD gives a hint to what $\tau_2$.
-  Essentially, starting from an input vector and the derivative of the output variable, reverse-mode AD calculates the derivatives of each of the input variables.
-  On the type level, this can be formulated as transforming combinators $\comb{\tau}{\sigma}$ into a tuple of combinators $(\comb{(fst(\Drev(\tau)))}{(fst(\Drev(\sigma)))}, \comb{(fst(\Drev(\tau)) \synStar snd(\Drev(\sigma)))}{(snd(\Drev(\tau)))})$.
-
-  Defining this transformation poses an issue however, as we will illustrate with an example.
+  The reverse-mode macro we will discuss in this chapter splits any type $\tau$ into pairs $(\tau_1, \tau_2)$, where $\tau_1$ and $\tau_2$ represent primal and tangent values.
+  Defining this transformation poses an issue, however, as we will illustrate with an example.
   Consider the combinators \<exl>, \<exr> and \<dupl> from \cref{sec:combinator-core}.
   Attempting to fill this in using type-directed programming following the type signature we mentioned previously, leads to the following:
   \begin{align*}
@@ -16,7 +11,7 @@
   Note the usages of the $(\synO, \synP)$ combinators.
   While $\synO$ is used to explicitly zero out the unused terms in both \<exl> and \<exr>, $\synP$ is used to recombine terms in \<dupl>.
   As mentioned in the previous section, these combinators encode the dual structures to the contraction and weakening rules present in programming language inference rules.
-  This also appropriately encodes how we will treat the fan-out problem, where $\synP : \comb{(\tau \synStar \tau)}{\tau}$ combines two terms of type $\tau$ in a generic way.
+  This also appropriately encodes how we treat the fan-out problem, where $\synP : \comb{(\tau \synStar \tau)}{\tau}$ combines two terms of type $\tau$ generically.
   Likewise, $\synO : \comb{\synUnit}{\tau}$ formulates how to zero out variables of arbitrary type $\tau$.
   We can define these combinators by induction on their types, where $\vec{0}$ is the regular vector consisting of just zeroes.
   \begin{align*}
@@ -72,7 +67,6 @@
   Indeed, for any program consisting of combinators such that it has type $\comb{\tau}{\synR}$, if $\llbracket \synO_\tau \rrbracket$ is given as input in the denotational sense, the resulting program should correspond to $0$.
   Similarly, $\llbracket \synP_\tau \rrbracket$ on inputs $a$ and $b$ should correspond to some notion of addition between $a$ and $b$.
 
-  % TODO: Introduce need for linear types
   \Vakar{} poses the usage of an auxiliary target language with a limited variant of linear types as the result of evaluating the reverse-mode macro\cite{vkr2020reverse}.
   The linear types used include both linear function types, $\synLin$, and tensor products, $\synTens{(-)}{(-)}$.
   This target language would be almost identical to the source combinator language described in \cref{sec:combinator-core}.
