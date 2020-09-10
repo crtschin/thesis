@@ -7,7 +7,7 @@ As the set-theoretic denotational semantics we used in our proof is only able to
 On the more mathematical side, \Vakar{}\cite{vkr2020denotational} extends the original proof by Huot, Staton, and \Vakar{}\cite{huot2020correctness} with iteration and recursion, which should give an indication to which steps are needed in the corresponding formal proof.
 Also relevant is the proof given by Abadi and Plotkin\cite{10.1145/3371106}, as their language also includes partial constructs.
 
-\textbf{Polymorphism and Impredicativity.} The intrinsic representation we used in this thesis was derived from the presentation by Benton, et al.\cite{Benton2011}.
+\textbf{Polymorphism and Impredicativity.} The intrinsic representation we used in this thesis was derived from the presentation by Benton et al.\cite{Benton2011}.
 One language aspect they also discussed, but we did not use, was polymorphism.
 Extending the proof to include polymorphic types or any other higher-order concepts such as rank-n types would help determine the feasibility of using this representation in eventual extensions to impredicativity.
 Due to the interactions between substitution and renaming, this may prove problematic with the proof load.
@@ -16,4 +16,4 @@ In this case, alternative representations like the one described by Chlipala\cit
 \textbf{Reverse-Mode AD.} Reverse-mode AD was briefly discussed in \cref{sec:rev}, but we were unable to finish the proof.
 A possible research direction would be to give a completed formalized proof of correctness of the algorithm described by \Vakar{}\cite{vkr2020reverse}.
 This algorithm has the added benefit of being a define-then-run algorithm, which further increases the value of such a formal proof.
-Other reverse-mode algorithms, such as the one described by Wang, et al.\cite{ShiftReset:Backprop}, may also be possible valuable proof targets.
+Other reverse-mode algorithms, such as the one described by Wang et al.\cite{ShiftReset:Backprop}, may also be possible valuable proof targets.

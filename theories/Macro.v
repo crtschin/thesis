@@ -84,16 +84,6 @@ Equations Dtm {Γ τ} : tm Γ τ -> tm (map Dt Γ) (Dt τ) :=
   | inl Γ _ _ e := inl _ _ _ (Dtm e);
   | inr Γ _ _ e := inr _ _ _ (Dtm e).
 
-(* Equations Denv {Γ}: forall {τ}, Env τ Γ -> Env (Dt τ) (Dctx Γ) :=
-Denv (τ:=τ) env_nil => env_nil (Dt τ);
-Denv (τ:=τ) (env_cons Γ t G) => env_cons (Dt τ) (Dtm t) (Denv G). *)
-
-Fixpoint Denv {Γ} (G : Env Γ): Env (Dctx Γ) :=
-  match G with
-  | env_nil => env_nil
-  | env_cons _ _ t G => env_cons (Dtm t) (Denv G)
-  end.
-
 Definition Dsub (Γ Γ' : list ty) :=
   forall τ, Var Γ τ -> tm (Dctx Γ') (Dt τ).
 

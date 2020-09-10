@@ -1,14 +1,12 @@
 \subsection{Arrays}\label{sec:arrays}
-  % TODO: Mention something about Shaikhha, et al.'s system of optimizations and how this is able to let the performance of forward-mode AD approach reverse-mode levels.
-  % TODO: Mention that we implemented what are known as pull arrays
   Automatic differentiation is rarely done on mono-valued real numbers, due to the massive computational power available on GPUs in the form of array operations.
   So the next extension worth considering in our language are array types.
-  To be more specific, we will be considering the pull array formulation used by Shaikhha, et al.\cite{Shaikha2019}.
+  To be more specific, we will be considering the pull array formulation used by Shaikhha et al.\cite{Shaikha2019}.
 
   Pull-arrays are a well-known formulation which lends itself well to deforestation\cite{10.1145/165180.165214}.
   The most significant element of this concept is to encode arrays as functions, which in some cases can be composed with other similarly encoded arrays.
   The two operations we will be focussing on are \<build> and \<get>.
-  Note that $Ix$ represents some arity type which should correspond to the arity of the arrays the operations are used on.
+  Note that $Ix$ represents some bounded integer type which should correspond to the arity of the arrays the operations are used on.
   \begin{gather*}
     \begin{aligned}
       \text{build} &: (Ix \rightarrow A) \rightarrow [A] \\
@@ -20,9 +18,9 @@
   This formulation is straightforward to encode in the intrinsic representation, as shown in \cref{lst:tm_array}.
   We are able to omit much of their cardinality and indexing type-level considerations due to our shallow embedding of pull-arrays into the existing types in \<Coq>.
   The well-typed nature of our representation allows us to avoid much of the hairy details associated with bounds checking for both indexing and array creation.
-  To accomplish this, we use the \<Fin> inductive datatype which is indexed by an upper-bound and represents for some $n$, the range $[1..n]$.
+  We accomplish this using the $\Fin{n}$ inductive datatype, which represents the range $[1..n]$.
 
-  The final iteration of our simply-typed lambda calculus including the array types is an expansion of the $\Fsmooth$ language by Shaikha, et al. as ours also includes sum types.
+  The final iteration of our simply-typed lambda calculus including the array types is an expansion of the $\Fsmooth$ language by Shaikha et al. as ours also includes sum types.
   We can define the missing \<ifold> and \<let> constructs as syntactic sugar using the primitive recursion terms we added in \cref{sec:sum_prim}.
   Note that due to our nameless representation, \<let> terms lose much of their original usefulness in writing programs.
   \begin{gather*}
@@ -130,6 +128,7 @@
 
   As was the case for sum types, only the proof of the fundamental lemma needs to be extended.
   The proof for the array terms proceeds as follows.
+  The case for \<get> is straightforward as it simply follows from the induction hypothesis.
   For \<build>, we first do induction on $n$, the length of the array.
   The base case is trivial, as $\Fin{0}$ contains $0$ inhabitants.
   For the induction step, we first do case-analysis on the indices, $i$, where the $(+1)$ case follows from the induction hypothesis.

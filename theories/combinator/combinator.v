@@ -94,18 +94,10 @@ Fixpoint Dcomb {τ σ} (t : comb τ σ)
           ⟨t_exl ;; t_exr, t_exr⟩ ;; t_msingleton ,
           t_cross (t_ev ;; t_exr ;; t_curry t_ev_l) t_id ;; t_ev
         ⟩)
-    (* (t_ev ;; t_exl
-      , ⟨
-          ⟨t_exl ;; t_exr, t_exr⟩ ;; t_msingleton,
-          t_cross (t_ev ;; t_exr) t_id ;; t_ev
-        ⟩); *)
   | @curry τ σ ρ t' =>
     (t_curry (⟨ fst (Dcomb t'), t_curry_l (snd (Dcomb t') ;; t_exr) ⟩)
       , t_cross t_id (⟨t_id, t_neg ;; t_curry t_exr⟩ ;; t_mfold) ;;
         assoc2 ;; snd (Dcomb t') ;; t_exl)
-    (* (t_curry (⟨ fst (Dcomb t'), t_curry (snd (Dcomb t') ;; t_exr) ⟩)
-      , t_cross t_id (⟨t_id, t_neg ;; t_curry t_exr⟩ ;; t_mfold) ;;
-        assoc2 ;; snd (Dcomb t') ;; t_exl); *)
 
   (* Numeric *)
   | cplus => (t_cplus, t_exr ;; t_dupl)

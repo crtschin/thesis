@@ -1,6 +1,6 @@
 \subsection{Adding Sums and Primitive Recursion}\label{sec:sum_prim}
   Now that correctness has been verified for the base simply-typed lambda calculus, the next goal will be to add in sum types.
-  In the interest of testing the flexibility of both the representation and the proof technique, natural number types and primitive recursion are also added.
+  In the interest of testing the flexibility of both the representation and the proof technique, we also add natural number types and primitive recursion.
   The inference rules for the new language constructs added for sum and number types are given in \cref{fig:sum_prim_infer}, while their intrinsic representations are shown in \cref{lst:stlc_sums}.
 
   \begin{figure}
@@ -62,9 +62,10 @@
   For convenience, an additional successor function is added in the form of the \<nsucc> term.
 
   In terms of denotations, \<case> expressions will follow the same lines as \<app> as they both involve applying a function to an argument.
-  Note that the sum term first needs to be destructed to be able to determine which function branch to apply.
+  Note that we first destruct the sum term to be able to determine which function branch to apply.
   Both \<inl> and \<inr> will map to their \<Coq> counterparts.
   For \<nrec>, the number of applications should be dependent on the input integer.
+  The specific denotations chosen is given in \cref{eqn:denotation_sums_prim}.
 
   \begin{figure}
     \centering

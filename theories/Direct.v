@@ -515,10 +515,14 @@ Proof with quick.
       { reflexivity. } } }
 Qed.
 
+(* Final theorem stating correctness which we phrase as that applying the
+    macro to well-typed terms that signify function, so real numbered inputs
+    and outputs, is denotationally equivalent to a tuple containing the original
+    function and its derivative *)
 Theorem semantic_correct_R :
   forall n,
-  forall (f : R -> ⟦ repeat Real n ⟧ₜₓ),
-  forall (t : tm (repeat Real n) Real),
+  forall (f : R -> ⟦ repeat ℝ n ⟧ₜₓ),
+  forall (t : tm (repeat ℝ n) ℝ),
     differentiable n f ->
     (⟦ Dtm t ⟧ₜₘ ∘ D n f) =
       (fun r => (⟦ t ⟧ₜₘ (f r),

@@ -1,20 +1,21 @@
 \section{Introduction}
 % TODO: Work through MV feedback
-In machine learning and neural network research, problems are automatically almost magically solved using just input and output data.
-This happens through an iterative optimization process of carefully designed functions.
-One of the algorithms facilitating this process is called backpropagation.
+Automatic differentiation is a well-known technique within the scientific community with diverse applications such as Bayesian inference and solving systems of non-linear algebraic equations.
+It has received increased interest due to recent developments in machine learning research, where solving optimization problems is the primary goal.
+One of the algorithms involved in this area of research is known as backpropagation.
 Backpropagation directly corresponds to reverse-mode automatic differentiation, which, in most cases, is the most efficient method to compute the derivatives of a function, critical in optimization problems.
-But programming in an environment that allows for automatic differentiation can be limiting.
+However, programming in an environment that allows for automatic differentiation can be limiting.
 
 Frameworks such as Tangent\fancyfootnote{https://github.com/google/tangent} or autograd\fancyfootnote{https://github.com/HIPS/autograd} are define-by-run algorithms, whose main tactic is to build up the derivative calculation dynamically during runtime.
 This process can restrict which high-level optimizations one can apply to generated code.
 Support for higher-order derivatives is also limited.
 
 Programming language research has a rich history, with many well-known both high and low-level optimization techniques such as partial evaluation and deforestation.
-Exposing these optimization techniques to the world of automatic differentiation can be very fruitful as these calculations are very expensive and often require significant computing power to run.
+Exposing these optimization techniques to the world of automatic differentiation can be very fruitful as these calculations are costly and often require significant computing power to run.
 Through other concepts such as higher-order functions and type systems, we would also get additional benefits such as code-reusability and correctness.
 
-In this thesis, we aim to formalize an extensible correctness proof of an implementation of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
+While much research has already been done to integrate programming language theory with automatic differentiation, formalizations of these techniques are absent.
+In this thesis, we aim to formalize an extensible correctness proofs of various implementations of automatic differentiation on a simply-typed lambda calculus in the \<Coq> proof assistant, opening up further possibilities for formally proving the correctness of more complex language features in the future.
 Our formalization is based on a recent proof by Huot, Staton, and \Vakar{} \cite{huot2020correctness}.
 They proved, using a denotational model of diffeological spaces, that their forward-mode emulating macro is correct when applied to a simply-typed lambda calculus with products, co-products and inductive types.
 
@@ -22,15 +23,13 @@ With this thesis we make the following core contributions:
 \begin{itemize}
   \item Formalize the proofs of both the forward-mode and continuation-based automatic differentiation algorithms specified by Huot, Staton, and \Vakar{} \cite{huot2020correctness} in \<Coq>.
   \item Prove the semantic correctness of various useful compile-time optimizations techniques in the context of generating performant code for automatic differentiation.
-  \item Extend the proofs with the array types and compile-time optimization rules by Shaikhha, et al.\cite{Shaikha2019}.
+  \item Extend the proofs with the array types and compile-time optimization rules by Shaikhha et al.\cite{Shaikha2019}.
   \item Analyze both the requirements of and issues involved with giving a formal proof of correctness for the combinator-based reverse-mode automatic differentiation algorithm by \Vakar{}\cite{vkr2020reverse}.
 \end{itemize}
 
-% TODO: Add references
 \Cref{sec:bg} includes a background section explaining many of the topics and techniques used in this thesis. The formalization of the ubiquitous forward-mode automatic differentiation is given in \cref{sec:forward}, starting from a base simply-typed lambda calculus extended with product types and incrementally adding new types and language constructs. \Cref{sec:opt,sec:continuation-base} give formalizations of optimization avenues through, respectively, program transformations and a continuation-based automatic differentiation algorithms.
 Finally, \cref{sec:rev} gives our attempt at a formal proof of the combinator-based reverse-mode automatic differentiation algorithm.
 
-% TODO: Add a more elaborate section for notations
-% As a notational convention, we will use specialized notation in the definitions themselves.
-% \<Coq> normally requires that pretty printed notations be defined separately from the definitions they reference.
-% The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.
+As a notational convention, we will use specialized notation in the definitions themselves.
+\<Coq> normally requires that pretty printed notations be defined separately from the definitions they reference.
+The letter $\Gamma$ is used for typing contexts while lowercase Greek letters are usually used for types.

@@ -1,4 +1,4 @@
-Shaikhha, et al. have presented a small system which has proven to be performant\cite{Shaikha2019}.
+Shaikhha et al. have presented a small system which has proven to be performant\cite{Shaikha2019}.
 They empirically showed that it is possible for forward-mode AD to approach the performance of reverse-mode AD, even if the forward-mode algorithm has to be executed $n$ times to calculate the $n$ partial derivatives of a function.
 One of the key reasons their system is performant is due to the usage of various program optimizations.
 In \cref{sec:arrays} we already formalized one of the components of their system, namely their usage of array types.
@@ -7,10 +7,10 @@ Their seemingly low-level transformations facilitate various algebraic identitie
 The transformation rules consist of several algebraic identities on real numbers, along with compile-time optimization techniques such as partial evaluation and deforestation or loop fusion.
 
 In this proof, we will reuse the denotational semantics from our proof of the forward-mode macro in \cref{sec:forward}.
-As a small deviation from the rules given by Shaikhha, et al.\cite{Shaikha2019}, we explicitly include a set of simplification rules in the style of a big-step operational semantics.
+As a small deviation from the rules given by Shaikhha et al.\cite{Shaikha2019}, we explicitly include a set of simplification rules in the style of a big-step operational semantics.
 We use these simplification rules to facilitate partial evaluation on non-functional terms.
 Note that partial evaluation on function terms is included as a separate transformation rule.
-\cref{fig:rewrite_rules,fig:natural_infer} show, respectively, the rewrite rules we included in our language and the inference rules we used for our simplification rules.
+\cref{fig:rewrite_rules,fig:natural_infer} shows, respectively, the rewrite rules we included in our language and the inference rules we used for our simplification rules.
 
 \begin{figure}[]
   \centering

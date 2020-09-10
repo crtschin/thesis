@@ -53,9 +53,6 @@ Fixpoint denote_comb {τ σ} (c : comb τ σ): ⟦τ⟧ₜ -> ⟦σ⟧ₜ :=
   | @ev τ σ => fun x => (fst x) (snd x)
   | @curry τ σ ρ t' => fun x => fun y => ⟦t'⟧ₒ (x, y)
 
-  (* Const *)
-  (* | cnst t => _ *)
-
   (* Numeric *)
   | cplus => fun x => Rplus (fst x) (snd x)
   | crval r => fun x => r

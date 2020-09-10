@@ -88,15 +88,6 @@ Inductive tm (Γ : Ctx) : ty -> Type :=
   | inr : forall τ σ, tm Γ σ -> tm Γ (τ <+> σ)
 .
 
-Inductive Env : Ctx -> Type :=
-  | env_nil : Env []
-  | env_cons : forall {Γ τ}, tm Γ τ -> Env Γ -> Env (τ::Γ)
-.
-Derive Signature for Env.
-
-Equations shave_env {Γ τ} (G : Env (τ::Γ)) : Env Γ :=
-shave_env (env_cons t G) := G.
-
 Lemma build_eq : forall Γ τ n (ta ta' : Fin.t n -> tm Γ τ),
   ta = ta' -> build Γ τ n ta = build Γ τ n ta'.
 Proof. intros; rewrites. Qed.
@@ -383,8 +374,6 @@ Proof with eauto.
   induction t; Rewrites lift_ren_sub.
   { erewrite build_eq...
     extensionality x... }
-  (* { erewrite ifold_congr...
-    extensionality x... } *)
 Qed.
 
 Lemma lift_sub_sub : forall Γ Γ' Γ'' τ (s : sub Γ' Γ'') (s' : sub Γ Γ'),
@@ -405,8 +394,6 @@ Proof with eauto.
   induction t; Rewrites lift_sub_sub.
   { erewrite build_eq...
     extensionality x... }
-  (* { erewrite ifold_congr...
-    extensionality x... } *)
 Qed.
 
 Lemma rename_abs : forall Γ Γ' τ σ (t : tm (σ::Γ) τ) (r : ren Γ Γ'),

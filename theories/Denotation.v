@@ -78,6 +78,7 @@ Fixpoint vector_nth {s : Set} {n}
   | @FS _ i' => fun ar => vector_nth i' (Vtail ar)
   end.
 
+(* Isomorphism between Fin n and n by treating Fin n as a type level integer *)
 Fixpoint nat_to_fin n : Fin.t (S n) :=
   match n with
   | 0 => F1
@@ -96,33 +97,33 @@ Fixpoint iterate {A} (n : nat) (f : A -> A) (a : A) :=
 Reserved Notation "⟦ t ⟧ₜₘ".
 Equations denote_tm {Γ τ} (t : tm Γ τ) : ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ := {
 (* STLC *)
-denote_tm (Γ:=Γ) (τ:=τ) (var Γ τ v) ctx := denote_v v ctx;
-denote_tm (Γ:=Γ) (τ:=τ) (app Γ τ σ t1 t2) ctx := (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx);
-denote_tm (Γ:=Γ) (τ:=τ) (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x ::: ctx);
+denote_tm (var Γ τ v) ctx := denote_v v ctx;
+denote_tm (app Γ τ σ t1 t2) ctx := (⟦t1⟧ₜₘ ctx) (⟦t2⟧ₜₘ ctx);
+denote_tm (abs Γ τ σ f) ctx := fun x => ⟦ f ⟧ₜₘ (x ::: ctx);
 (* Arrays *)
-denote_tm (Γ:=Γ) (τ:=τ) (build Γ τ n f) ctx :=
+denote_tm (build Γ τ n f) ctx :=
   denote_array n (denote_tm ∘ f) ctx;
-denote_tm (Γ:=Γ) (τ:=τ) (get Γ i ta) ctx := vector_nth i (⟦ ta ⟧ₜₘ ctx);
+denote_tm (get Γ i ta) ctx := vector_nth i (⟦ ta ⟧ₜₘ ctx);
 (* Nat *)
-denote_tm (Γ:=Γ) (τ:=τ) (nval Γ n) ctx := n;
-denote_tm (Γ:=Γ) (τ:=τ) (nsucc Γ t) ctx := Datatypes.S (⟦t⟧ₜₘ ctx);
-denote_tm (Γ:=Γ) (τ:=τ) (nrec Γ τ tf ti ta) ctx :=
+denote_tm (nval Γ n) ctx := n;
+denote_tm (nsucc Γ t) ctx := Datatypes.S (⟦t⟧ₜₘ ctx);
+denote_tm (nrec Γ τ tf ti ta) ctx :=
   iterate (⟦ ti ⟧ₜₘ ctx) (⟦ tf ⟧ₜₘ ctx) (⟦ ta ⟧ₜₘ ctx);
 (* Reals *)
-denote_tm (Γ:=Γ) (τ:=τ) (rval Γ r) ctx := r;
-denote_tm (Γ:=Γ) (τ:=τ) (add Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx;
-denote_tm (Γ:=Γ) (τ:=τ) (mul Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx * ⟦t2⟧ₜₘ ctx;
+denote_tm (rval Γ r) ctx := r;
+denote_tm (add Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx + ⟦t2⟧ₜₘ ctx;
+denote_tm (mul Γ t1 t2) ctx := ⟦t1⟧ₜₘ ctx * ⟦t2⟧ₜₘ ctx;
 (* Products *)
-denote_tm (Γ:=Γ) (τ:=τ) (tuple Γ t1 t2) ctx := (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx);
-denote_tm (Γ:=Γ) (τ:=τ) (first Γ t) ctx := fst (⟦t⟧ₜₘ ctx);
-denote_tm (Γ:=Γ) (τ:=τ) (second Γ t) ctx := snd (⟦t⟧ₜₘ ctx);
+denote_tm (tuple Γ t1 t2) ctx := (⟦t1⟧ₜₘ ctx, ⟦t2⟧ₜₘ ctx);
+denote_tm (first Γ t) ctx := fst (⟦t⟧ₜₘ ctx);
+denote_tm (second Γ t) ctx := snd (⟦t⟧ₜₘ ctx);
 (* Sums *)
-denote_tm (Γ:=Γ) (τ:=τ) (case Γ e c1 c2) ctx with ⟦e⟧ₜₘ ctx := {
+denote_tm (case Γ e c1 c2) ctx with ⟦e⟧ₜₘ ctx := {
   denote_tm (case Γ e c1 c2) ctx (Datatypes.inl x) := (⟦c1⟧ₜₘ ctx) x;
   denote_tm (case Γ e c1 c2) ctx (Datatypes.inr x) := (⟦c2⟧ₜₘ ctx) x
 };
-denote_tm (Γ:=Γ) (τ:=τ) (inl Γ τ σ e) ctx := Datatypes.inl (⟦e⟧ₜₘ ctx);
-denote_tm (Γ:=Γ) (τ:=τ) (inr Γ σ τ e) ctx := Datatypes.inr (⟦e⟧ₜₘ ctx) }
+denote_tm (inl Γ τ σ e) ctx := Datatypes.inl (⟦e⟧ₜₘ ctx);
+denote_tm (inr Γ σ τ e) ctx := Datatypes.inr (⟦e⟧ₜₘ ctx) }
 where "⟦ t ⟧ₜₘ" := (denote_tm t)
 (* Helper for arrays *)
 where denote_array {Γ τ} n (f : Fin.t n -> ⟦Γ⟧ₜₓ -> ⟦τ⟧ₜ)
@@ -158,13 +159,6 @@ Proof with quick.
   { unfold shave_fin.
     eapply IHi. }
 Qed.
-
-Reserved Notation "⟦ s ⟧ₑ".
-Equations denote_env {Γ} (G : Env Γ): ⟦ Γ ⟧ₜₓ :=
-denote_env env_nil => HNil;
-denote_env (env_cons t G') with denote_env G' => {
-  denote_env (env_cons t G') X => ⟦ t ⟧ₜₘ X ::: X }
-where "⟦ s ⟧ₑ" := (denote_env s).
 
 Fixpoint denote_sub {Γ Γ'}: sub Γ Γ' -> ⟦ Γ' ⟧ₜₓ -> ⟦ Γ ⟧ₜₓ :=
   match Γ with

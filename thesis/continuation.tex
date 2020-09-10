@@ -92,7 +92,7 @@
   Likewise, the tangent value of any other input argument should be set to $0$.
   So each of the input arguments for the forward-mode macro is essentially coupled with a one-hot encoded vector.
   \begin{equation*}
-    \D_n\left(
+    \Darg_n\left(
     \begin{bmatrix}
       x_1 & x_2 & x_3 \\
     \end{bmatrix}\right)
@@ -115,7 +115,7 @@
   Each of the one-hot encoded vectors indicates which partial derivative to calculate.
   The continuation-based macro requires a similar format, but instead of a one-hot encoded vector containing the value $1$, the identity function is used.
   \begin{equation*}
-    \Dc_n\left(
+    \Dargc_n\left(
     \begin{bmatrix}
       x_1 & x_2 & x_3 \\
     \end{bmatrix}\right)
@@ -141,7 +141,7 @@
 
   Using these two input massaging functions, we can state the correctness of our continuation-based macro relative to our forward-mode macro.
   \begin{proposition}[Correctness of continuation-based AD]\label{prop:continuation}
-    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $\vec{x} : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\Darg_n(\vec{x}))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dargc_n(\vec{x})))(1)$.
   \end{proposition}
   Unfortunately, this statement cannot be proven directly.
   To see why, consider multiplication where we would have to prove
@@ -150,13 +150,13 @@
   \end{equation*}
   This expression can be rewritten using the definitions of our denotations to
   \begin{align*}
-    \lambda a. \vect(n, \lambda i, x. &fst(\llbracket \D_n(t_2) \rrbracket(x)) * \denGet{snd(\llbracket \D_n(t_1)\rrbracket(x))}{i} + \\
+    \lambda a. \vect(n, \lambda i, x. &fst(\llbracket \D_n(t_2) \rrbracket(x)) * \denGet{snd(\llbracket \D_n(t_1)\rrbracket(x))}{i}\ + \\
       &fst(\llbracket \D_n(t_1) \rrbracket(x)) * \denGet{snd(\llbracket \D_n(t_2)\rrbracket(x))}{i}, a) = \\
-    \lambda a. \vect(n, \lambda i, x. &\denGet{snd(\llbracket \Dc_n(t_1) \rrbracket(tl(x)))(fst(\llbracket \Dc_n(t_2)\rrbracket(x)))}{i} * hd(x) + \\
+    \lambda a. \vect(n, \lambda i, x. &\denGet{snd(\llbracket \Dc_n(t_1) \rrbracket(tl(x)))(fst(\llbracket \Dc_n(t_2)\rrbracket(x)))}{i} * hd(x)\ + \\
     &\denGet{snd(\llbracket \Dc_n(t_2) \rrbracket(tl(x)))(fst(\llbracket \Dc_n(t_1)\rrbracket(x)))}{i} * hd(x), \denCons{1}{a})
   \end{align*}
   Note on the right-hand side, that the first projection of the macro on terms, which contains the primal values, is passed along the continuation in the second projection.
-  If we attempt to base our logical relation on \cref{prop:continuation}, however, the proof will fail.
+  If we attempt to base our logical relation on \cref{prop:continuation}, however, the proof of this case will fail.
   The corresponding induction hypothesis will only account for supplying the value $1$ to our continuations, which is too restricting.
   This issue implies that we require some generalization in both our proof goal and logical relation.
 
@@ -190,7 +190,7 @@
   Proving these cases, along with the corresponding fundamental property of the logical relation, results in the following theorem.
 
   \begin{theorem}[Duality]
-    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, function arguments $x : \llbracket \synR^n \rrbracket$, and real number $r$, we have $r * snd(\D_n(t)(\D_n(x))) = snd(\Dc_n(t)(\Dc_n(x)))(r)$
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$, function arguments $\vec{x} : \llbracket \synR^n \rrbracket$, and real number $r$, we have $r * snd(\D_n(t)(\Darg_n(\vec{x}))) = snd(\Dc_n(t)(\Dargc_n(\vec{x})))(r)$
   \end{theorem}
   \begin{proof}
     This follows from the fundamental property of the logical relation in (\cref{eqn:lr_continuous}).
@@ -198,5 +198,5 @@
 
   This theorem is easily specialized to the original correctness statement we set out to prove.
   \begin{corollary}[Correctness of continuation-based AD]
-    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $x : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\D_n(x))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dc_n(x)))(1)$.
+    For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $\vec{x} : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\Darg_n(\vec{x}))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dargc_n(\vec{x})))(1)$.
   \end{corollary}

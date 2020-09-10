@@ -1,22 +1,22 @@
 \subsection{Related work}\label{sec:related-work}
 \textbf{AD Formalizations.} While there exists proofs of forward-mode AD algorithms\cite{huot2020correctness}\cite{barthe2020versatility}\cite{10.1145/3371106} and many more implementations\cite{Shaikha2019}\cite{Margossian2019ARO} in a functional setting, there have been relative few attempts at formalized proofs in proof assistant.
-In 2002, Mayero did a formalized correctness proof of an AD framework implemented in \<Fortran> in \<Coq>\cite{Mayero:CorrectnessProofAD}.
+In 2002, Mayero gave a formalized correctness proof of an AD framework implemented in \<Fortran> in \<Coq>\cite{Mayero:CorrectnessProofAD}.
 Their minimal core language included assignments and sequences as language constructs, and excluded all forms of non-sequential control flow.
 They also restricted the terms in their language to first-order types.
 
 \textbf{Programming Language Metatheory.} Much meta-theoretical research has been done on encoding programming languages in proof assistants\cite{Aydemir2005}.
-Examples include the weak higher-order abstract syntax approach worked out in Coq by Despeyroux, et al.\cite{10.1007/BFb0014049}, which shallowly embeds abstractions as functions $abs : (var \to tm) \to tm$.
+Examples include the weak higher-order abstract syntax approach worked out in Coq by Despeyroux et al.\cite{10.1007/BFb0014049}, which shallowly embeds abstractions as functions $abs : (var \to tm) \to tm$.
 The parametric HOAS variant by Chlipala\cite{10.1145/1411204.1411226}, is an interesting polymorphic generalization of this technique.
 PHOAS, like the strongly-typed terms representation used in this thesis, avoids the problems of alpha-conversion and capture avoidance while still being somewhat user-friendly.
 The locally nameless approach introduced by many various authors\cite{McKinna_Pollack_1997}\cite{10.1007/3-540-57826-9_152}\cite{10.1145/1017472.1017477} takes a hybrid approach and preserves names for free variables while using the De-Bruijn representation for bound variables.
 
-With regards to denotational semantics, both Benton, et al.\cite{Benton2009} and Dockins\cite{Dockins2014} present domain-theoretical libraries in \<Coq>.
-% Proof-wise, Huot, Staton and \Vakar{} use diffeological spaces in their correctness proof of automatic differentiation on a simply-typed lambda calculus.
-% Contrastingly, Abadi and Plotkin\cite{10.1145/3371106} use the more conventional \omega-cpos to be able to support partiality.
+With regards to denotational semantics, both Benton et al.\cite{Benton2009} and Dockins\cite{Dockins2014} present domain-theoretical libraries in \<Coq>.
+Proof-wise, Huot, Staton and \Vakar{} use diffeological spaces in their pen-and-paper correctness proof of automatic differentiation on a simply-typed lambda calculus.
+Contrastingly, Abadi and Plotkin use the more conventional \omega-cpos to be able to support partiality\cite{10.1145/3371106}.
 
 \textbf{Forward-Mode AD.}
 The earliest found description of an approach for forward-mode AD on functional languages is by Karczmarczuk\cite{Karczmarczuk98functionaldifferentiation}, on first-order terms.
-Siskind and Pearlmutter presented a "nestable" variant of a forward-mode AD algorithm using the dual numbers representation.
+Siskind and Pearlmutter presented a nestable variant of the forward-mode AD algorithm using the dual numbers representation\cite{Mark2008NestingFA}.
 This same algorithm is used in the \FS{} library, DiffSharp\cite{Baydin2015AutomaticDI}.
 A nearly identical variation, implemented in \<Haskell>, is given by Elliott\cite{Elliott2009-beautiful-differentiation}.
 This uncontroversial implementation of forward-mode AD is also discussed in the survey by Baydin et al.\cite{Baydin2015AutomaticDI}.
@@ -28,9 +28,8 @@ The specific approach by Pearlmutter and Siskind uses non-local program transfor
 In the trend of define-by-run algorithms, whose main strategy involves building up the reverse pass of the algorithm during runtime, their primitive $\Jrev$ uses reflection to perform reverse-mode AD at runtime.
 
 Define-by-run algorithms, however, lose much of the optimization opportunities provided by the explicit compilation process involved with programming languages.
-As an improvement on the approach by Pearlmutter and Siskind, Wang, et al.\cite{ShiftReset:Backprop} negate some of the issues associated with define-by-run algorithms by using multi-stage programming to reclaim some optimization opportunities.
+As an improvement on the approach by Pearlmutter and Siskind, Wang et al.\cite{ShiftReset:Backprop} negate some of the issues associated with define-by-run algorithms by using multi-stage programming to reclaim some optimization opportunities.
 Their algorithm makes heavy usage of both delimited continuations as well as state by way of references.
-% TODO: Technique using linear negation is an extension of \cite{10.1145/3371106}, so discuss that next
 
 Abadi and Plotkin\cite{10.1145/3371106} also make use of reverse-mode AD primitives, but do so in the context of a define-by-run trace-based algorithm.
 Their reverse-mode primitive is given special treatment in their operational semantics, essentially symbolically evaluating terms into so-called trace terms, which are devoid of control-flow constructs.
@@ -39,6 +38,3 @@ One significant issue with defining define-then-run reverse-mode algorithms is h
 Elliott\cite{Elliott-2018-ad-icfp} gave an interesting principled approach to reverse-mode AD from the perspective of category theory by formulating the algorithm as a functor.
 Their method, though, is still limited to first-order programs.
 An extension to higher-order types by \Vakar{}\cite{vkr2020reverse} is further discussed in \cref{sec:rev}.
-
-% \cite{ShiftReset:Backprop}\cite{Brunel2020BackpropagationIT}\cite{PearlmutterSiskind2008}
-% Advancements in the understanding of both forward-mode AD algorithms and meta-theoretical proof techniques have supplied enough resources to be able to do a formal proof.

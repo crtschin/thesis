@@ -415,6 +415,8 @@ Proof. intros; rewrites. Qed.
     This is needed as the number of partial derivatives being calculated
     needs to be detached from the number elements being operated on.
 *)
+
+(* Real number constants *)
 Lemma denote_array_eq_const_correct :
   forall Γ m n i (ctx : ⟦ Dctx m Γ ⟧ₜₓ) (ctx_c : ⟦ Dctx_c m Γ ⟧ₜₓ),
   Vmap (Rmult i) (@denote_array (Dctx m Γ) ℝ n (const (const 0)) ctx) =
@@ -427,6 +429,7 @@ Proof with quick.
     rewrite Rmult_0_r...
 Qed.
 
+(* Addition on real numbers *)
 Lemma denote_array_eq_add_correct :
   forall n m i Γ x1 x2 f1 f2
     (d: ⟦ Dctx_c m Γ ⟧ₜₓ) (d0: ⟦ Dctx m Γ ⟧ₜₓ),
@@ -454,6 +457,7 @@ Proof with quick.
         (rewrite <- H || rewrite <- H0)... } }
 Qed.
 
+(* Multiplication on real numbers *)
 Lemma denote_array_eq_mul_correct :
   forall (n m: nat) (Γ: Ctx) (r x : R)
     x1 x2 f1 f2
@@ -510,6 +514,10 @@ Proof with quick.
       remember (x2' (sb y)); dependent destruction t... } }
 Qed.
 
+(* Fundamental lemma of the logical relation.
+    Proof follows the same structure as the one given for forward mode ad,
+    with the exception of the operations on real numbers for which the above
+    generalizations are required. *)
 Lemma S_subst :
   forall Γ τ n,
   forall (t : tm Γ τ),
@@ -552,8 +560,7 @@ Proof with quick.
         ⟦ Dtm n (t (nat_to_fin n0)) ⟧ₜₘ (sb r)).
       exists (fun r =>
         ⟦ Dtm_c n (t (nat_to_fin n0)) ⟧ₜₘ (sb_c r))... } }
-  { (* Get
-        Proven by logical relation where (τ:=Array n τ) *)
+  { (* Get *)
     pose proof (IHt sb sb_c H) as IHt. simp S in *.
     specialize IHt with t.
     destruct IHt as [f1 [g1 [Hs1 [Heq1 Heq2]]]]; subst.
@@ -862,7 +869,10 @@ Proof with quick.
   apply Heq2.
 Qed.
 
-Lemma perturbation_correctness :
+(* The generalized correctness statement for arbitrary factors in the
+    forward-mode context and arbitrary perturbations in the continuation
+    context. *)
+Theorem duality :
   forall n x
     (t : tm (repeat ℝ n) ℝ) (ctx : ⟦ repeat ℝ n ⟧ₜₓ),
   Vmap (Rmult x) (snd (⟦ Dtm n t ⟧ₜₘ (Dtm_ctx ctx))) =
@@ -875,6 +885,8 @@ Proof with quick.
   apply fundamental_property.
 Qed.
 
+(* The original correctness statement where the above is specialized to 1 to
+    get expected derivative values. *)
 Lemma correctness :
   forall n
     (t : tm (repeat ℝ n) ℝ) (ctx : ⟦ repeat ℝ n ⟧ₜₓ),
@@ -882,7 +894,7 @@ Lemma correctness :
     snd (⟦ Dtm_c n t ⟧ₜₘ (Dtm_ctx_c ctx)) 1.
 Proof with quick.
   intros.
-  erewrite <- (perturbation_correctness n 1).
+  erewrite <- (duality n 1).
   remember (snd (⟦ Dtm n t ⟧ₜₘ (Dtm_ctx ctx))).
   fold denote_t in *.
   clear Heqt0 t ctx.
