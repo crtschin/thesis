@@ -1,5 +1,9 @@
 \subsection{Defining the Macro and Target Language}\label{sec:combinator-macro}
-  The reverse-mode macro we will discuss in this chapter splits any type $\tau$ into pairs $(\tau_1, \tau_2)$, where $\tau_1$ and $\tau_2$ represent primal and tangent values.
+  The reverse-mode macro we will discuss in this chapter splits any type $\tau$ into pairs $(\tau_1, \tau_2)$, where $\tau_1$ and $\tau_2$ represent primal and adjoint values.
+  Reverse-mode AD gives an idea as to the mapping of $\tau$ to their corresponding adjoint, $\tau_2$.
+  Essentially, starting from an input vector and the derivative of the output variable, reverse-mode AD calculates the derivatives of each of the input variables.
+  On the type level, this can be formulated as transforming combinators $\comb{\tau}{\sigma}$ into a tuple of combinators $(\comb{(fst(\Drev(\tau)))}{(fst(\Drev(\sigma)))}, \comb{(fst(\Drev(\tau)) \synStar snd(\Drev(\sigma)))}{(snd(\Drev(\tau)))})$.
+
   Defining this transformation poses an issue, however, as we will illustrate with an example.
   Consider the combinators \<exl>, \<exr> and \<dupl> from \cref{sec:combinator-core}.
   Attempting to fill this in using type-directed programming following the type signature we mentioned previously, leads to the following:
@@ -10,10 +14,11 @@
   \end{align*}
   Note the usages of the $(\synO, \synP)$ combinators.
   While $\synO$ is used to explicitly zero out the unused terms in both \<exl> and \<exr>, $\synP$ is used to recombine terms in \<dupl>.
+
   As mentioned in the previous section, these combinators encode the dual structures to the contraction and weakening rules present in programming language inference rules.
-  This also appropriately encodes how we treat the fan-out problem, where $\synP : \comb{(\tau \synStar \tau)}{\tau}$ combines two terms of type $\tau$ generically.
+  They also appropriately encode how we treat the fan-out problem, where $\synP : \comb{(\tau \synStar \tau)}{\tau}$ combines two terms of type $\tau$ generically.
   Likewise, $\synO : \comb{\synUnit}{\tau}$ formulates how to zero out variables of arbitrary type $\tau$.
-  We can define these combinators by induction on their types, where $\vec{0}$ is the regular vector consisting of just zeroes.
+  We can define these combinators by induction on their types, where $\vec{0}$ is the vector consisting of just zeroes.
   \begin{align*}
     \synO_\tau =
       \left\{
@@ -26,7 +31,7 @@
         \end{array}
       \right.
   \end{align*}
-  Defining $\synO_\tau$ is straightforward as we only need to ensure that it preserves the structure of our types
+  Defining $\synO_\tau$ is straightforward as we only need to ensure that it preserves the structure of our types.
   For ground types $\synR$ and $\synRn$, we generate their respective interpretations of zero.
   For function types, we can ignore the input of argument type and recursively call $\synO$ on the result type.
   \begin{align*}
@@ -48,7 +53,7 @@
   \end{align*}
   With $\synP_\tau$, we can make recursive usage of the operator to combine subterms.
   For tuples, this involves creating a new tuple where the left and right components consist of, respectively, the combinations of all left and right projections.
-  With function types, both left and right input functions need to be evaluated separately before they can be combined.
+  With function types, both the left and right input functions need to be evaluated separately before they can be combined.
 
   We can reuse the same reasoning we used to derive how the combinators should be transformed for reverse-mode, to define the behavior of our macro on function types.
   This reasoning leads to the incomplete definition of
@@ -57,8 +62,7 @@
       \\ fst(\Drev(\tau)) \synStar snd (\Drev(\sigma)))
     \label{eqn:combinator_d_incorrect}
   \end{multline}
-  % TODO: Explain faulty use of products as tangent values.
-  In a sense, the tangent value at function types keeps track of the adjoints currently calculated so they can be combined with other adjoints down the line.
+  In a sense, the adjoint value at function types keeps track of the adjoints currently calculated so they can be accumulated with other usages down the line.
   Remember that in reverse-mode AD, the problem of fan-out involves combining each usage of a variable in the reverse pass.
   While we solved the issue of combining variable usages using the $\synP$ combinator, but still have to find something to keep track of which terms to combine.
 

@@ -1826,15 +1826,6 @@ coq_FunctionalInduction_Dtm :: Classes.FunctionalInduction
 coq_FunctionalInduction_Dtm =
   unsafeCoerce coq_Dtm_graph_correct
 
-coq_Denv :: (Definitions.Ctx Definitions.Coq_ty) -> Definitions.Env ->
-            Definitions.Env
-coq_Denv _ g =
-  case g of {
-   Definitions.Coq_env_nil -> Definitions.Coq_env_nil;
-   Definitions.Coq_env_cons _UU0393_0 _UU03c4_ t g0 ->
-    Definitions.Coq_env_cons (List.map coq_Dt _UU0393_0) (coq_Dt _UU03c4_)
-    (coq_Dtm _UU0393_0 _UU03c4_ t) (coq_Denv _UU0393_0 g0)}
-
 type Dsub =
   Definitions.Coq_ty -> (Definitions.Var Definitions.Coq_ty) ->
   Definitions.Coq_tm

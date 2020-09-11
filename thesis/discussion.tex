@@ -4,10 +4,10 @@ In contrast, we were able to encode this requirement directly within the logical
 In retrospect, this reduced a significant amount of the proof load needed as we did not have to redefine many of the properties of functions on smooth functions.
 Unfortunately, however, the set-theoretic denotational semantics limits the proof possibilities to total programming languages.
 
-The added value of creating the formalized correctness proof of the forward-mode automatic differentiation macro is immediately visible in the fact that we were also able to simplify the fundamental lemma in the original pen-and-paper proof.
-The exclusion of as much of the syntactic constructions as possible, such as substitutions, was critical in ensuring the proof went smoothly.
+The added value of creating the formalized correctness proof of the forward-mode automatic differentiation macro is immediately visible in the fact that we were able to simplify the fundamental lemma in the original pen-and-paper proof.
+The exclusion of as much syntactic constructions as possible, such as substitutions, was critical in ensuring that the proof went smoothly.
 If formulated incorrectly, the additional complexity involved with typing contexts and variable management muddies the corresponding cases of \<app> and \<abs> in the proof of the fundamental lemma.
-An unfortunate amount of time was spent in this hybrid approach of both syntactic and denotational structures, before focussing on the full denotational approach.
+We spent an unfortunate amount of time in this hybrid approach consisting of both syntactic and denotational structures, before focussing on the full denotational approach.
 
 Shaikhha et al.\cite{Shaikha2019} showed that the performance of forward-mode AD can approach that of reverse-mode AD given the right optimizations.
 It is useful to realize that the various macros discussed in this thesis all ultimately calculate the same values, but do so using different expressions.

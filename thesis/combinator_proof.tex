@@ -23,7 +23,7 @@
   \end{definition}
 
   \begin{definition}(Logical relation)
-    Denotation functions $f$ and their corresponding primal and tangent variants $g$ and $h$ are inductively defined on the structure of our types such that they follow the relation
+    Denotation functions $f$ and their corresponding primal and adjoint variants $g$ and $h$ are inductively defined on the structure of our types such that they follow the relation
     \begin{equation*}
       S_\tau(f, g, h) =
         \left\{
@@ -71,7 +71,7 @@
   We can state the correctness of the reverse-mode algorithm as the following proposition.
   Note the usage of the $\text{sum}$ function to combine all partial derivatives linearly.
   We additionally use a macro-specific initialization function $\Drev_n$ for our arguments akin to \cref{eqn:argument_df} used in \cref{sec:forward}.
-  The initialization function is only altered slightly to return a tuple of the original primal value and the tangent value defined as in \cref{eqn:argument_df}.
+  The initialization function is only altered slightly to return a tuple of the original primal value and the adjoint value defined as in \cref{eqn:argument_df}.
   \begin{equation*}
     \Drev_n(f) =
       \left\{
@@ -124,25 +124,27 @@
   As the denotation of $\synLin$, we picked regular functions.
   This choice proved much too unrestricted, as it does not ensure the linear behavior of the denotations of our monoidal combinators.
   The lists we used as the denotation of the tensor types were much more problematic.
-  A better denotation would have been map types with some additional restrictions, which we can be state as:
+  A better denotation would have been map types with some additional restrictions, which we can be state as the following.
+  Note that
   \begin{align}
     \{ x : \llbracket \synO \rrbracket \} &\equiv \emptyset \label{eqn:map_1}\\
     \{ x : a \} \cap \{ x : b \} &\equiv \{ x : a\ \llbracket \synP \rrbracket\ b \} \label{eqn:map_5}\\
-    m_1 \cup \llbracket \synO \rrbracket &\equiv m_1 \label{eqn:map_2}\\
+    m_1 \cup \emptyset &\equiv m_1 \label{eqn:map_2}\\
     m_1 \cup m_2 &\equiv m_2 \cup m_1 \label{eqn:map_3}\\
     m_1 \cup (m_2 \cup m_3) &\equiv (m_1 \cup m_2) \cup m_3 \label{eqn:map_4}
   \end{align}
-  Of these, the list type denotations we used in the incomplete proof only satisfies \cref{eqn:map_4}.
-  Transitioning from lists to maps or bags would improve on this by also satisfying \cref{eqn:map_3}.
-  \Cref{eqn:map_1,eqn:map_2}, however, pose a unique difficulty in \<Coq>.
-  Note that $\llbracket \synO \rrbracket$ is defined on the types of our target language, which includes these same tensor types.
-  So when defining these maps as the denotations of tensor types, we require a notion of equivalence that is itself also dependent on those same denotations.
+  Of these, the list type denotations we used in the incomplete proof only satisfies \cref{eqn:map_4,eqn:map_2}.
+  Transitioning from lists to maps or bags would improve this situation by also satisfying \cref{eqn:map_3}.
+
+  \Cref{eqn:map_1,eqn:map_5}, however, pose a unique difficulty in \<Coq>.
+  Note that we defined both $\llbracket \synO \rrbracket$ and $\llbracket \synP \rrbracket$ on the types of our target language, which includes these same tensor types.
+  So when using these maps as the denotations of our tensor types, we require a notion of equivalence that is itself also dependent on those same denotations.
   This recursive definitional requirement is problematic in the total language of \<Coq>.
   Another obstacle is the fact that maps require decidable equality on the types used as keys.
-  Remember that equality on both function or real number types is not generally decidable, and as such, cannot be used as keys in our maps.
+  Equality on both functions or real numbers is not generally decidable, and as such, cannot be used as keys in our maps denotations.
 
-  One presumed solution to the first problem is to define proper domains using canonical structures and setoids as the denotational semantics of our language.
+  One presumed solution to the first problem is to use proper domains using canonical structures and setoids as the denotational semantics of our language.
   One would then be able to attach, at each type, an element corresponding to $\llbracket \synO \rrbracket$.
-  We could then take \cref{eqn:map_1,eqn:map_2} into account in the equivalence relation.
+  We could then take \cref{eqn:map_1,eqn:map_2} into account in the corresponding equivalence relation.
   Embedding such a zero-element into the denotations directly, seemingly solve the first issue.
   How to concretely solve or avoid the second issue in a proof assistant is still unknown.

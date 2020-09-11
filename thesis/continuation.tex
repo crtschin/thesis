@@ -1,12 +1,12 @@
-  Huot, Staton and \Vakar{} showed the versatility of their denotational semantics on a continuation-based AD algorithm whose origin can be traced back to a description given by Karczmarczuk\cite{KarczmarczukLazyTimeReversal}.
-  While this algorithm does calculate gradients, it is not a true reverse-mode AD algorithm as the final computation graph differs from what would be expected of reverse-mode AD\cite{PearlmutterSiskind2008}.
-  A consequence of which is the excess usage of primitive operations.
-  Nonetheless, it is useful to give a formal proof of correctness of this algorithm in terms of what we have already established, to show the versatility of the proof technique used, and by extension, our simple set-theoretic denotational semantics.
+  There exists a well-known continuation-based supposedly reverse-mode AD algorithm whose origin can be traced back to a description given by Karczmarczuk\cite{KarczmarczukLazyTimeReversal}.
+  While this algorithm does indeed calculate gradients, it is not a true reverse-mode AD algorithm as the final computation graph differs from what one would expect of reverse-mode AD\cite{PearlmutterSiskind2008}.
+  The primary issue of which is the excess usage of primitive operations.
+  Nonetheless, it is useful to give a formal proof of correctness of this algorithm in terms of what we have already established, to show the versatility of the proof technique used, and by extension, our simple set-theoretic denotational semantics and language definitions.
 
-  The guiding principle in this algorithm is to build up the reverse pass as a continuation using a structure-preserving macro on the program syntax.
+  The guiding principle in this algorithm is to build up the reverse pass as a continuation.
   Like the forward-mode macro $\D$, the continuation-based macro $\Dc$ is structure-preserving and works with tuples at ground type $\synR$.
-  But unlike the forward-mode macro, which uses these tuples to represent dual-numbers, the continuation-based macro pairs the primal values with a continuation calculating an array containing all of the perturbation variables.
-  Notably, because the continuation-based macro, shown in \cref{fig:continuation_macro}, calculates all of the perturbation values with respect to each of the input variables, it is additionally indexed by the number of input variables.
+  But unlike the forward-mode macro, which uses these tuples to represent dual-numbers, the continuation-based macro pairs the primal values with continuations calculating an array containing all of the accumulator variables.
+  It should be noted that because the continuation-based macro, shown in \cref{fig:continuation_macro}, calculates all of the accumulation values with respect to each of the input variables, it is additionally indexed by the number of input variables.
 
   \begin{figure}
     \centering
@@ -38,7 +38,7 @@
 
   As we will phrase correctness in terms of the forward-mode macro, the forward-mode macro used in \cref{sec:formal_stlc} is slightly altered to calculate the partial derivatives with respect to all of the input variables.
   This change is slight and merely swaps what was previously the tangent value for a vector of the tangent values corresponding to the input variables.
-  The operations of reals are then swapped out for their vector element-wise counterparts.
+  Correspondingly, we swap out each of the operations on real numbers for their vector element-wise counterparts.
   The modified forward-mode macro is shown in \cref{fig:forward_mode_cont}.
 
   \begin{figure}
@@ -144,11 +144,11 @@
     For any well-typed term $x_1 : \synR, \dots, x_n : \synR \vdash t : \synR$ and function arguments $\vec{x} : \llbracket \synR^n \rrbracket$ we will take the partial derivatives relative to, we have that $snd(\llbracket\D_n(t)\rrbracket (\Darg_n(\vec{x}))) = snd(\llbracket\Dc_n(t)\rrbracket (\Dargc_n(\vec{x})))(1)$.
   \end{proposition}
   Unfortunately, this statement cannot be proven directly.
-  To see why, consider multiplication where we would have to prove
+  To see why, consider multiplication where we would have to prove the following statement, where $f$ and $g$ represent the generalization of $\Darg$ and $\Dargc$ to arbitrary typing contexts.
   \begin{equation*}
     snd(\llbracket \Dc_n(\mul{t_1}{t_2}) \rrbracket \circ f)= snd(\llbracket \Dc_n(\mul{t_1}{t_2}) \rrbracket \circ g)(1)
   \end{equation*}
-  This expression can be rewritten using the definitions of our denotations to
+  The expressions on both the left and the right hand side can be rewritten using the definitions of our denotations.
   \begin{align*}
     \lambda a. \vect(n, \lambda i, x. &fst(\llbracket \D_n(t_2) \rrbracket(x)) * \denGet{snd(\llbracket \D_n(t_1)\rrbracket(x))}{i}\ + \\
       &fst(\llbracket \D_n(t_1) \rrbracket(x)) * \denGet{snd(\llbracket \D_n(t_2)\rrbracket(x))}{i}, a) = \\

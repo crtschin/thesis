@@ -1,8 +1,8 @@
 \subsection{Core Combinator Language}\label{sec:combinator-core}
-  A well-known fact is the connection between CCC and simply-typed lambda calculi\cite{10.1007/3-540-15198-2_10}.
+  A well-known fact is the connection between CCC and simply-typed lambda calculi and that it is possible to translate freely between these two forms\cite{10.1007/3-540-15198-2_10}.
   We can define a simple core combinator language inspired by the various categorical laws related to CCC.
   The requirement for a combinator language to be able to do reverse-mode AD comes from the need to make the contraction and weakening rules usually kept implicit in the typing contexts of typed lambda calculi, explicit.
-  Translating from a simply-typed lambda calculus necessitates a translation between the implicit manipulation of the typing context to access variables, to one that is explicit in its usage of specific combinators.
+  Translating from a simply-typed lambda calculus to the core combinator language necessitates a translation between the implicit manipulation of the typing context to access variables, to one that is explicit in its variable usage through specific combinators.
 
   The core combinator language we will be using is shown in \cref{fig:combinator_core_lang}.
   Note the combinator language contains no typing context and are defined as terms $c : \comb{\tau}{\sigma}$, where $\tau$ and $\sigma$ are, respectively, the input and output types of the combinator $c$.
@@ -244,7 +244,7 @@
   \end{listing}
 
   The final translation function is the composition of both the translation functions in \cref{lst:combinator_stlc_to_ccl,lst:combinator_ccl_to_ccc}.
-  Note that we have to remove the extra $\synUnit$ type we added in the simply-typed lambda calculus to CCL translation shown \cref{lst:combinator_stlc_to_ccl}.
+  Note that we have to remove the extra $\synUnit$ type we added in the STLC-to-CCL translation.
 
   \begin{minted}{coq}
     Definition stlc_ccc ~$\Gamma$~ ~$\tau$~ : tm ~$\Gamma$~ ~$\tau$~ ~$\rightarrow$~ comb (translate_context ~$\Gamma$~) ~$\tau$~ :=

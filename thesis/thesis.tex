@@ -15,6 +15,7 @@
 \begin{document}
 
 \input{titlepage.tex}
+
 \newpage
 
 \newgeometry{right=1in,top=1.2in,bottom=1.5in,left=1.5in}
@@ -51,16 +52,17 @@
   \input{continuation.tex}
 \section{Towards Formalizing Reverse-Mode AD}\label{sec:rev}
   As mentioned in \cref{sec:related-work}, there have been many attempts at reverse-mode algorithms that operate on functional languages.
-  These algorithms, however, either fall short as they make use of unconventional semantics such as mutable state or delimited continuations, or they do not perform true reverse-mode AD.
-  Much of the problem with defining an efficient reverse-mode algorithm on functional languages comes from the difficulty with ensuring that fan-out, the various usages of a variable, in the forward pass, correctly transform to addition in the reverse pass.
+  These algorithms, however, either fall short as they make use of difficult to formalize semantics such as mutable state or delimited continuations, or they do not perform true reverse-mode AD.
+  Much of the problem with defining an efficient reverse-mode algorithm on functional languages comes from the difficulty with ensuring that fan-out, the various usages of a variable, in the forward pass, correctly accumulate in the reverse pass.
 
   Eliott posed a novel and principled approach to defining an AD algorithm using \textit{category theory}\cite{Elliott-2018-ad-icfp}.
   They take the category theoretical hammer to the problem by approaching it as an algorithm on categories, Cartesian closed categories \textit{(CCC)} to be exact, which are known to be equivalent to the simply-typed lambda calculi\cite{Elliott-2017-compiling-to-categories}\cite{10.1007/3-540-15198-2_10}.
-  The algorithm is, however, still restricted to first order programs.
+  The algorithm is, however, still restricted to first-order programs.
 
-  An extension of this technique is given by \Vakar{}\cite{vkr2020reverse}.
-  They go through first defining a small core combinator-based language.
+  \Vakar{} gives an extension of this technique to higher-order programs and types\cite{vkr2020reverse}.
+  They first go through defining a small core combinator-based language.
   They then define a reverse-mode macro along with an additional auxiliary target language enriched with simple linear types.
+  It is this extension which we attempt to prove correct.
   \input{combinator_lang.tex}
   \input{combinator_macro.tex}
   \input{combinator_proof.tex}

@@ -1,7 +1,6 @@
 With this thesis, we were able to successfully give a formalized correctness proof of a ubiquitous forward-mode automatic differentiation algorithm.
-We were also able to expand this proof to include array types, oft used in practice, and GPU-based environments.
-Additionally, we proved that the various relevant compile-time optimizations for efficient code-generation are correct with respect to our denotational semantics.
-While we were unfortunately unable to finish the formalized proof of correctness of the reverse-mode combinator-based macro, we have identified multiple issues and requirements for a proper future formalized proof.
-The final proofs are simple, both in terms of definitions and proof strategy, and can easily be modified at any number of points to extend the language used.
-
-% It is useful to realize that the array-based forward-mode macro shown in \cref{fig:forward_mode_cont}, the continuation-based pseudo-reverse-mode macro shown in \cref{fig:continuation_macro}, and the combinator-based reverse-mode macro discussed in \cref{sec:combinator-macro}, all computationally result in the same expressions modulo the distributive law.
+We were also able to expand this proof to include array types, oft used in practice, especially in GPU-based environments.
+Additionally, we proved that various relevant compile-time optimizations in the context of efficient code-generation for functional languages are correct with respect to our denotational semantics.
+As we have demonstrated with the correctness proof of the continuation-based algorithm, this proof implementation lends itself well to other algorithms.
+While we were unfortunately unable to finish the formalized correctness proof of the reverse-mode combinator-based algorithm, we have identified multiple issues and requirements for a proper future formalized proof.
+The final proofs are simple, both in terms of definitions and proof strategy, and can easily be modified at numerous points to extend the language used or the algorithm proven correct.

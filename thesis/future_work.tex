@@ -1,17 +1,17 @@
 There are several extensions possible on both the proof discussed in this thesis, and directions of new proofs in the same vein.
 
 \textbf{Recursion and Iteration.} Due to the limited nature of our chosen simply-typed lambda calculus, our contributions with respect to practical programming is still very limited.
-Both iteration and recursion are ubiquitous in programming.
+Both iteration and recursion are indispensable in practice.
 Their omission severely limits the usefulness of any functional programming language.
-As the set-theoretic denotational semantics we used in our proof is only able to support total languages, substituting this for the more domain-theoretical denotational semantics with \omega-cpos would be an improvement in this direction.
-On the more mathematical side, \Vakar{}\cite{vkr2020denotational} extends the original proof by Huot, Staton, and \Vakar{}\cite{huot2020correctness} with iteration and recursion, which should give an indication to which steps are needed in the corresponding formal proof.
+As the set-theoretic denotational semantics we used in our proof is only able to support total languages, substituting this for the more domain-theoretical denotational semantics with \omega-cpos would be an significant improvement in this direction.
+On the more mathematical side, \Vakar{}\cite{vkr2020denotational} extends the original proof by Huot, Staton, and \Vakar{}\cite{huot2020correctness} with iteration and recursion, which should give an indication as to which steps are necessary in future corresponding formal proof.
 Also relevant is the proof given by Abadi and Plotkin\cite{10.1145/3371106}, as their language also includes partial constructs.
 
 \textbf{Polymorphism and Impredicativity.} The intrinsic representation we used in this thesis was derived from the presentation by Benton et al.\cite{Benton2011}.
 One language aspect they also discussed, but we did not use, was polymorphism.
 Extending the proof to include polymorphic types or any other higher-order concepts such as rank-n types would help determine the feasibility of using this representation in eventual extensions to impredicativity.
 Due to the interactions between substitution and renaming, this may prove problematic with the proof load.
-In this case, alternative representations like the one described by Chlipala\cite{10.1145/1411203.1411226} may be a solution.
+In this case, alternatives representations like the one described by Chlipala\cite{10.1145/1411203.1411226} or even an extrinsic one may be a solution.
 
 \textbf{Reverse-Mode AD.} Reverse-mode AD was briefly discussed in \cref{sec:rev}, but we were unable to finish the proof.
 A possible research direction would be to give a completed formalized proof of correctness of the algorithm described by \Vakar{}\cite{vkr2020reverse}.
